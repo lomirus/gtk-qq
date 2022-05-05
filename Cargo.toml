@@ -4,3 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+relm4 = { version = "0.4.4", features = ["macros", "libadwaita"] }
+relm4-components = "0.4.4"
