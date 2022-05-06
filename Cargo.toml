@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 relm4 = { version = "0.4.4", features = ["macros", "libadwaita"] }
 relm4-components = "0.4.4"
+
+[profile.release]
+lto = true
