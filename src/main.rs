@@ -52,11 +52,10 @@ struct AppComponents {
 impl Widgets<AppModel, ()> for AppWidgets {
     view! {
         main_window = ApplicationWindow {
+            set_default_size: args!(960, 540),
             set_content: stack = Some(&Stack) {
                 set_transition_type: StackTransitionType::SlideLeft,
                 add_child: login_page = &Box {
-                    set_hexpand: true,
-                    set_vexpand: true,
                     append: components.login.root_widget(),
                 },
                 add_child: main_panel = &Box {
