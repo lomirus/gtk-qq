@@ -1,10 +1,7 @@
-use relm4::{
-    adw, gtk, AppUpdate, Components, Model, RelmApp, RelmComponent, Sender,
-    Widgets,
-};
+use relm4::{adw, gtk, AppUpdate, Components, Model, RelmApp, RelmComponent, Sender, Widgets};
 
-use adw::{ApplicationWindow, HeaderBar};
-use gtk::{Align, Box, Label, Orientation, Stack, StackTransitionType};
+use adw::ApplicationWindow;
+use gtk::{Box, Stack, StackTransitionType};
 
 use adw::prelude::*;
 
@@ -46,6 +43,7 @@ impl Model for AppModel {
 #[derive(Components)]
 struct AppComponents {
     login: RelmComponent<pages::login::LoginPageModel, AppModel>,
+    main: RelmComponent<pages::main::MainPageModel, AppModel>,
 }
 
 #[relm4::widget]
@@ -58,26 +56,9 @@ impl Widgets<AppModel, ()> for AppWidgets {
                 add_child: login_page = &Box {
                     append: components.login.root_widget(),
                 },
-                add_child: main_panel = &Box {
-                    set_orientation: Orientation::Vertical,
-                    append = &HeaderBar {
-                        set_title_widget = Some(&Label) {
-                            set_label: "GTK4 QQ"
-                        },
-                    },
-                    append = &Box {
-                        set_halign: Align::Center,
-                        set_valign: Align::Center,
-                        set_vexpand: true,
-                        set_orientation: Orientation::Vertical,
-                        append = &Box {
-                            append = &Label {
-                                set_label: "Hello, World!"
-                            },
-                        }
-                    }
-                }
-
+                add_child: main_page = &Box {
+                    append: components.main.root_widget(),
+                },
             }
         }
     }
@@ -85,7 +66,7 @@ impl Widgets<AppModel, ()> for AppWidgets {
     fn pre_view() {
         match model.page {
             Page::Login => self.stack.set_visible_child(&self.login_page),
-            Page::Main => self.stack.set_visible_child(&self.main_panel),
+            Page::Main => self.stack.set_visible_child(&self.main_page),
         }
     }
 }
