@@ -8,7 +8,7 @@ use gtk::{Align, Box, Label, Orientation, Stack, StackTransitionType};
 
 use adw::prelude::*;
 
-mod login;
+mod pages;
 
 struct AppModel {
     page: Page,
@@ -45,7 +45,7 @@ impl Model for AppModel {
 
 #[derive(Components)]
 struct AppComponents {
-    login: RelmComponent<login::LoginPageModel, AppModel>,
+    login: RelmComponent<pages::login::LoginPageModel, AppModel>,
 }
 
 #[relm4::widget]
