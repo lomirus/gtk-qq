@@ -1,7 +1,7 @@
 use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, Widgets};
 
 use adw::prelude::*;
-use adw::HeaderBar;
+use adw::{HeaderBar, Leaflet, ViewSwitcherTitle, ViewStack};
 use gtk::{Align, Box, Label, Orientation};
 
 use crate::{AppModel, Message};
@@ -45,7 +45,7 @@ impl ComponentUpdate<AppModel> for MainPageModel {
 #[relm4::widget(pub)]
 impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
     view! {
-        &adw::Leaflet {
+        &Leaflet {
             append: sidebar = &Box {
                 set_vexpand: true,
                 set_width_request: 360,
@@ -53,16 +53,24 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
                 append = &HeaderBar {
                     set_show_start_title_buttons: false,
                     set_show_end_title_buttons: false,
-                    set_title_widget = Some(&Label) {
-                        set_label: "Contact"
-                    },
+                    set_title_widget = Some(&ViewSwitcherTitle) {
+                        set_title: "Sidebar",
+                        set_stack: Some(&stack)
+                    }
                 },
-                append = &Box {
+                append: stack = &ViewStack {
                     set_vexpand: true,
-                    set_valign: Align::Center,
-                    set_halign: Align::Center,
-                    append = &Label {
-                        set_label: "Sidebar"
+                    add_titled(Some("chats"), "Chats") = &Box {
+                        set_halign: Align::Center,
+                        append: &Label::new(Some("Chats"))
+                    } -> {
+                        set_icon_name: Some("chat-symbolic")
+                    },
+                    add_titled(Some("contact"), "Contact") = &Box {
+                        set_halign: Align::Center,
+                        append: &Label::new(Some("Contact"))
+                    } -> {
+                        set_icon_name: Some("address-book-symbolic")
                     },
                 }
             } -> {
