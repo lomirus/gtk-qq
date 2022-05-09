@@ -1,18 +1,47 @@
-use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, Widgets};
+use relm4::factory::{FactoryPrototype, FactoryVec};
+use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, WidgetPlus, Widgets};
 
 use adw::prelude::*;
-use adw::{HeaderBar, Leaflet, ViewSwitcherTitle, ViewStack};
+use adw::{HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
 use gtk::{Align, Box, Label, Orientation};
 
 use crate::{AppModel, Message};
 
+const MOCK_CHATS_LIST: [(&str, &str); 2] = [
+    ("飞翔的企鹅", "Hello"),
+    ("奔跑的野猪", "World")
+];
+
 pub struct MainPageModel {
-    message: MainMsg,
+    message: Option<MainMsg>,
+    chats_list: FactoryVec<ChatsItem>,
 }
 
 pub enum MainMsg {
-    None,
-    FoldedChange,
+    WindowFolded,
+    _AddChatsItem(String, String),
+}
+
+struct ChatsItem {
+    username: String,
+    last_message: String,
+}
+
+#[relm4::factory_prototype]
+impl FactoryPrototype for ChatsItem {
+    type Factory = FactoryVec<Self>;
+    type Widgets = ChatsItemWidgets;
+    type Msg = MainMsg;
+    type View = Box;
+
+    view! {
+        Box {
+            append: &Label::new(Some(&self.username)),
+            append: &Label::new(Some(&self.last_message))
+        }
+    }
+
+    fn position(&self, _index: &usize) {}
 }
 
 impl Model for MainPageModel {
@@ -23,8 +52,16 @@ impl Model for MainPageModel {
 
 impl ComponentUpdate<AppModel> for MainPageModel {
     fn init_model(_parent_model: &AppModel) -> Self {
+        let mut chats_list = FactoryVec::<ChatsItem>::new();
+        MOCK_CHATS_LIST.iter().for_each(|(username, last_message)| {
+            chats_list.push(ChatsItem {
+                username: username.to_string(),
+                last_message: last_message.to_string(),
+            });
+        });
         MainPageModel {
-            message: MainMsg::None,
+            message: None,
+            chats_list,
         }
     }
 
@@ -36,8 +73,11 @@ impl ComponentUpdate<AppModel> for MainPageModel {
         _parent_sender: Sender<Message>,
     ) {
         match msg {
-            MainMsg::None => (),
-            MainMsg::FoldedChange => self.message = MainMsg::FoldedChange,
+            MainMsg::WindowFolded => self.message = Some(MainMsg::WindowFolded),
+            MainMsg::_AddChatsItem(username, last_message) => self.chats_list.push(ChatsItem {
+                username: username.to_string(),
+                last_message: last_message.to_string(),
+            }),
         }
     }
 }
@@ -61,8 +101,10 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
                 append: stack = &ViewStack {
                     set_vexpand: true,
                     add_titled(Some("chats"), "Chats") = &Box {
-                        set_halign: Align::Center,
-                        append: &Label::new(Some("Chats"))
+                        set_orientation: gtk::Orientation::Vertical,
+                        set_margin_all: 5,
+                        set_spacing: 5,
+                        factory!(model.chats_list)
                     } -> {
                         set_icon_name: Some("chat-symbolic")
                     },
@@ -100,18 +142,19 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
             } -> {
                 set_navigatable: true
             },
-            connect_folded_notify(sender) => move |_| {
-                send!(sender, MainMsg::FoldedChange);
+            connect_folded_notify(sender) => move |leaflet| {
+                if leaflet.is_folded() {
+                    send!(sender, MainMsg::WindowFolded);
+                }
             },
         }
     }
 
     fn pre_view() {
-        match model.message {
-            MainMsg::None => (),
-            MainMsg::FoldedChange => {
+        if let Some(message) = &model.message {
+            if let MainMsg::WindowFolded = message {
                 self.root_widget().set_visible_child(&self.chatroom);
             }
-        };
+        }
     }
 }
