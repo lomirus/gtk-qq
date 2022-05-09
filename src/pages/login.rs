@@ -59,23 +59,25 @@ impl Widgets<LoginPageModel, AppModel> for LoginPageWidgets {
                 set_halign: Align::Center,
                 set_valign: Align::Center,
                 set_vexpand: true,
-                set_orientation: Orientation::Vertical,
-                append = &Box {
-                    append = &Grid {
-                        set_row_spacing: 12,
-                        set_column_spacing: 12,
-                        attach(0, 0, 1, 1) = &Label {
-                            set_label: "Account"
-                        },
-                        attach(1, 0, 1, 1) = &Entry {
-                            set_placeholder_text: Some("请输入您的QQ号码")
-                        },
-                        attach(0, 1, 1, 1) = &Label {
-                            set_label: "Password"
-                        },
-                        attach(1, 1, 1, 1) = &Entry {
-                            set_placeholder_text: Some("请输入您的QQ密码")
-                        }
+                set_spacing: 32,
+                append = &adw::Avatar {
+                    set_text: Some("ADW"),
+                    set_size: 72,
+                },
+                append = &Grid {
+                    set_row_spacing: 12,
+                    set_column_spacing: 12,
+                    attach(0, 0, 1, 1) = &Label {
+                        set_label: "Account"
+                    },
+                    attach(1, 0, 1, 1) = &Entry {
+                        set_placeholder_text: Some("请输入您的QQ号码")
+                    },
+                    attach(0, 1, 1, 1) = &Label {
+                        set_label: "Password"
+                    },
+                    attach(1, 1, 1, 1) = &Entry {
+                        set_placeholder_text: Some("请输入您的QQ密码")
                     }
                 }
             }
