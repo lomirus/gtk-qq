@@ -1,7 +1,7 @@
 use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, Widgets};
 
-use adw::HeaderBar;
-use gtk::{Align, Box, Button, Entry, Grid, Label, Orientation};
+use adw::{HeaderBar, Avatar, PreferencesGroup, ActionRow};
+use gtk::{Align, Box, Button, Entry, Label, Orientation};
 
 use adw::prelude::*;
 
@@ -60,26 +60,26 @@ impl Widgets<LoginPageModel, AppModel> for LoginPageWidgets {
                 set_valign: Align::Center,
                 set_vexpand: true,
                 set_spacing: 32,
-                append = &adw::Avatar {
+                append = &Avatar {
                     set_text: Some("ADW"),
                     set_size: 72,
                 },
-                append = &Grid {
-                    set_row_spacing: 12,
-                    set_column_spacing: 12,
-                    attach(0, 0, 1, 1) = &Label {
-                        set_label: "Account"
+                append = &PreferencesGroup {
+                    add = &ActionRow {
+                        set_title: "Account",
+                        add_suffix = &Entry {
+                            set_valign: Align::Center,
+                            set_placeholder_text: Some("请输入您的QQ号码")
+                        },
                     },
-                    attach(1, 0, 1, 1) = &Entry {
-                        set_placeholder_text: Some("请输入您的QQ号码")
+                    add = &ActionRow {
+                        set_title: "Password",
+                        add_suffix = &Entry {
+                            set_valign: Align::Center,
+                            set_placeholder_text: Some("请输入您的QQ密码")
+                        },
                     },
-                    attach(0, 1, 1, 1) = &Label {
-                        set_label: "Password"
-                    },
-                    attach(1, 1, 1, 1) = &Entry {
-                        set_placeholder_text: Some("请输入您的QQ密码")
-                    }
-                }
+                },
             }
         }
     }
