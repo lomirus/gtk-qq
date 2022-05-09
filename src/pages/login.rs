@@ -1,6 +1,6 @@
 use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, Widgets};
 
-use adw::{HeaderBar, Avatar, PreferencesGroup, ActionRow};
+use adw::{ActionRow, Avatar, HeaderBar, PreferencesGroup};
 use gtk::{Align, Box, Button, Entry, Label, Orientation};
 
 use adw::prelude::*;
@@ -16,6 +16,7 @@ impl Model for LoginPageModel {
 }
 
 pub enum LoginPageMsg {
+    LoginStart,
     LoginSuccessful,
 }
 
@@ -27,11 +28,13 @@ impl ComponentUpdate<AppModel> for LoginPageModel {
         &mut self,
         msg: LoginPageMsg,
         _components: &(),
-        _sender: Sender<LoginPageMsg>,
+        sender: Sender<LoginPageMsg>,
         parent_sender: Sender<Message>,
     ) {
+        use LoginPageMsg::*;
         match msg {
-            LoginPageMsg::LoginSuccessful => send!(parent_sender, Message::LoginSuccessful),
+            LoginStart => send!(sender, LoginPageMsg::LoginSuccessful),
+            LoginSuccessful => send!(parent_sender, Message::LoginSuccessful),
         }
     }
 }
@@ -50,7 +53,7 @@ impl Widgets<LoginPageModel, AppModel> for LoginPageWidgets {
                 pack_end = &Button {
                     set_icon_name: "go-next",
                     connect_clicked(sender) => move |_| {
-                        send!(sender, LoginPageMsg::LoginSuccessful);
+                        send!(sender, LoginPageMsg::LoginStart);
                     },
                 },
                 pack_end: &Button::from_icon_name("dialog-information"),
