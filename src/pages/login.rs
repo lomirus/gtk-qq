@@ -7,7 +7,11 @@ use adw::prelude::*;
 
 use crate::{AppModel, Message};
 
-pub struct LoginPageModel;
+#[derive(Default, Debug)]
+pub struct LoginPageModel {
+    account: String,
+    password: String,
+}
 
 impl Model for LoginPageModel {
     type Msg = LoginPageMsg;
@@ -18,12 +22,15 @@ impl Model for LoginPageModel {
 pub enum LoginPageMsg {
     LoginStart,
     LoginSuccessful,
+    AccountChange(String),
+    PasswordChange(String),
 }
 
 impl ComponentUpdate<AppModel> for LoginPageModel {
     fn init_model(_parent_model: &AppModel) -> Self {
-        LoginPageModel
+        LoginPageModel::default()
     }
+
     fn update(
         &mut self,
         msg: LoginPageMsg,
@@ -33,8 +40,13 @@ impl ComponentUpdate<AppModel> for LoginPageModel {
     ) {
         use LoginPageMsg::*;
         match msg {
-            LoginStart => send!(sender, LoginPageMsg::LoginSuccessful),
+            LoginStart => {
+                println!("{:?}", self);
+                send!(sender, LoginPageMsg::LoginSuccessful)
+            }
             LoginSuccessful => send!(parent_sender, Message::LoginSuccessful),
+            AccountChange(new_account) => self.account = new_account,
+            PasswordChange(new_password) => self.password = new_password,
         }
     }
 }
@@ -72,14 +84,20 @@ impl Widgets<LoginPageModel, AppModel> for LoginPageWidgets {
                         set_title: "Account",
                         add_suffix = &Entry {
                             set_valign: Align::Center,
-                            set_placeholder_text: Some("请输入您的QQ号码")
+                            set_placeholder_text: Some("请输入您的QQ号码"),
+                            connect_activate(sender) => move |e| {
+                                sender.send(LoginPageMsg::AccountChange(e.buffer().text())).unwrap();
+                            }
                         },
                     },
                     add = &ActionRow {
                         set_title: "Password",
                         add_suffix = &Entry {
                             set_valign: Align::Center,
-                            set_placeholder_text: Some("请输入您的QQ密码")
+                            set_placeholder_text: Some("请输入您的QQ密码"),
+                            connect_activate(sender) => move |e| {
+                                sender.send(LoginPageMsg::PasswordChange(e.buffer().text())).unwrap();
+                            }
                         },
                     },
                 },
