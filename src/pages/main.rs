@@ -2,14 +2,19 @@ use relm4::factory::{FactoryPrototype, FactoryVec};
 use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, WidgetPlus, Widgets};
 
 use adw::prelude::*;
-use adw::{HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
+use adw::{HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle, Avatar};
 use gtk::{Align, Box, Label, Orientation};
 
 use crate::{AppModel, Message};
 
-const MOCK_CHATS_LIST: [(&str, &str); 2] = [
+const MOCK_CHATS_LIST: [(&str, &str); 7] = [
     ("飞翔的企鹅", "Hello"),
-    ("奔跑的野猪", "World")
+    ("奔跑的野猪", "World"),
+    ("摆烂的修勾", "World"),
+    ("躺平的猫咪", "World"),
+    ("想润的鼠鼠", "World"),
+    ("咆哮的先辈", "World"),
+    ("被填充过多并被用于测试对齐的字符串标签", "2333"),
 ];
 
 pub struct MainPageModel {
@@ -36,8 +41,26 @@ impl FactoryPrototype for ChatsItem {
 
     view! {
         Box {
-            append: &Label::new(Some(&self.username)),
-            append: &Label::new(Some(&self.last_message))
+            append = &Avatar {
+                set_text: Some(&self.username),
+                set_show_initials: true,
+                set_size: 56
+            },
+            append = &Box {
+                set_margin_all: 8,
+                set_orientation: Orientation::Vertical,
+                set_halign: Align::Center,
+                set_spacing: 8,
+                append = &Label {
+                    set_text: self.username.as_str(),
+                    add_css_class: "heading"
+                },
+                append = &Label {
+                    set_text: self.last_message.as_str(),
+                    add_css_class: "caption",
+                    set_xalign: 0.0,
+                },
+            },
         }
     }
 
@@ -102,7 +125,7 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
                     set_vexpand: true,
                     add_titled(Some("chats"), "Chats") = &Box {
                         set_orientation: gtk::Orientation::Vertical,
-                        set_margin_all: 5,
+                        set_margin_all: 12,
                         set_spacing: 5,
                         factory!(model.chats_list)
                     } -> {
