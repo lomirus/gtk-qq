@@ -32,4 +32,4 @@ depending on your purpose.
 
 ### Windows & MacOS
 
-Gtk applications are harder to be compiled on Windows & MacOS and it will need more configurations to make it work. But onsidering some special reasons that you know, this project will not offer the release on Windows and MacOS. You can build it still if you like, but I would suggest you not to distribute the Windows/MacOS build of this project to the public in order to ensure the maintenance of this project.
+Gtk applications are harder to be compiled on Windows & MacOS and it will need more configurations to make it work. But considering some special reasons that you know, this project will not offer the release on Windows and MacOS. You can build it still if you like, but I would suggest you not to distribute the Windows/MacOS build of this project to the public in order to ensure the maintenance of this project.
