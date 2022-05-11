@@ -1,11 +1,11 @@
+mod config;
+mod pages;
+
 use relm4::{adw, gtk, AppUpdate, Components, Model, RelmApp, RelmComponent, Sender, Widgets};
 
-use adw::ApplicationWindow;
-use gtk::{Box, Stack, StackTransitionType};
-
 use adw::prelude::*;
-
-mod pages;
+use adw::ApplicationWindow;
+use gtk::{gio, Box, Stack, StackTransitionType};
 
 struct AppModel {
     page: Page,
@@ -72,7 +72,16 @@ impl Widgets<AppModel, ()> for AppWidgets {
 }
 
 fn main() {
+    let res = gio::Resource::load(
+        config::PKGDATA_DIR.to_owned() + "/resources.gresource"
+    ).expect("Could not load resources");
+    gio::resources_register(&res);
+
+    let application = adw::Application::builder()
+        .application_id("indi.lomirus.gtk-qq")
+        .build();
+
     let model = AppModel { page: Page::Login };
-    let app = RelmApp::new(model);
+    let app = RelmApp::with_app(model, application);
     app.run()
 }

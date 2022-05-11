@@ -1,0 +1,1 @@
+pub static PKGDATA_DIR: &str = @PKGDATA_DIR@;
