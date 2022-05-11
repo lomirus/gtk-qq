@@ -2,19 +2,28 @@ use relm4::factory::{FactoryPrototype, FactoryVec};
 use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, WidgetPlus, Widgets};
 
 use adw::prelude::*;
-use adw::{HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle, Avatar};
-use gtk::{Align, Box, Label, Orientation};
+use adw::{Avatar, HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
+use gtk::{Align, Box, Label, Orientation, ScrolledWindow, Separator};
 
 use crate::{AppModel, Message};
 
-const MOCK_CHATS_LIST: [(&str, &str); 7] = [
+const MOCK_CHATS_LIST: [(&str, &str); 16] = [
     ("飞翔的企鹅", "Hello"),
     ("奔跑的野猪", "World"),
-    ("摆烂的修勾", "World"),
-    ("躺平的猫咪", "World"),
-    ("想润的鼠鼠", "World"),
-    ("咆哮的先辈", "World"),
-    ("被填充过多并被用于测试对齐的字符串标签", "2333"),
+    ("摆烂的修勾", "喵喵"),
+    ("躺平的猫咪", "汪汪"),
+    ("想润的鼠鼠", "鼠鼠我啊"),
+    ("咆哮的先辈", "哼哼"),
+    ("叛逆的鲁路", "2333"),
+    ("死亡的笔记", "2333"),
+    ("炼金的术士", "2333"),
+    ("忧郁的凉宫", "2333"),
+    ("灼眼的夏娜", "2333"),
+    ("科学的磁炮", "2333"),
+    ("王冕的父亲", "2333"),
+    ("历史的终结", "2333"),
+    ("时代的眼泪", "2333"),
+    ("被填充过多并被用于测试文本对齐和溢出的字符串标签", "2333"),
 ];
 
 pub struct MainPageModel {
@@ -123,11 +132,13 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
                 },
                 append: stack = &ViewStack {
                     set_vexpand: true,
-                    add_titled(Some("chats"), "Chats") = &Box {
-                        set_orientation: gtk::Orientation::Vertical,
-                        set_margin_all: 12,
-                        set_spacing: 5,
-                        factory!(model.chats_list)
+                    add_titled(Some("chats"), "Chats") = &ScrolledWindow {
+                        set_child = Some(&Box) {
+                            set_orientation: Orientation::Vertical,
+                            set_margin_all: 12,
+                            set_spacing: 5,
+                            factory!(model.chats_list)
+                        }
                     } -> {
                         set_icon_name: Some("chat-symbolic")
                     },
@@ -141,7 +152,7 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
             } -> {
                 set_navigatable: true
             },
-            append = &gtk::Separator::new(Orientation::Horizontal) {
+            append = &Separator::new(Orientation::Horizontal) {
             } -> {
                 set_navigatable: false
             },
