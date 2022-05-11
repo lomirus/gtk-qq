@@ -25,4 +25,5 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           override: true
+      - run: meson setup build
       - run: cargo build
