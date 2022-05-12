@@ -7,7 +7,7 @@ use adw::prelude::*;
 use adw::{ActionRow, Avatar, HeaderBar, PreferencesGroup, Toast, ToastOverlay};
 use gtk::{Align, Box, Button, Entry, Label, MenuButton, Orientation};
 
-use crate::{AppModel, Message};
+use crate::app::{AppModel, Message};
 
 #[derive(Default, Debug)]
 pub struct LoginPageModel {

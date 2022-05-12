@@ -9,7 +9,7 @@ use gtk::{
     Stack,
 };
 
-use crate::{AppModel, Message};
+use crate::app::{AppModel, Message};
 
 const MOCK_CHATS_LIST: [(&str, &str); 13] = [
     ("飞翔的企鹅", "Hello"),
