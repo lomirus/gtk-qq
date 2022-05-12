@@ -3,5 +3,6 @@
   <gresource prefix="/indi/lomirus/gtk-qq/icons/scalable/actions/">
     <file preprocess="xml-stripblanks">chat-symbolic.svg</file>
     <file preprocess="xml-stripblanks">address-book-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">send-symbolic.svg</file>
   </gresource>
 </gresources>
