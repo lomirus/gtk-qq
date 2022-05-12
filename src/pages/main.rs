@@ -3,7 +3,9 @@ use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, WidgetPlus, Widgets}
 
 use adw::prelude::*;
 use adw::{Avatar, HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
-use gtk::{Align, Box, Label, ListBox, Orientation, ScrolledWindow, Separator, Stack};
+use gtk::{
+    Align, Box, Button, Entry, Label, ListBox, Orientation, ScrolledWindow, Separator, Stack,
+};
 
 use crate::{AppModel, Message};
 
@@ -201,8 +203,25 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
                         set_label: "Chatroom"
                     },
                 },
-                append: chatroom_stack = &Stack {
-                    factory!(model.chatrooms)
+                append = &Box {
+                    set_orientation: Orientation::Vertical,
+                    append: chatroom_stack = &Stack {
+                        set_vexpand: true,
+                        set_halign: Align::Center,
+                        factory!(model.chatrooms)
+                    },
+                    append = &Box {
+                        set_margin_all: 8,
+                        append = &Entry {
+                            set_hexpand: true,
+                            set_show_emoji_icon: true,
+                            set_placeholder_text: Some("Send a message..."),
+                            set_margin_end: 8
+                        },
+                        append = &Button {
+                            set_icon_name: "send-symbolic",
+                        },
+                    }
                 }
             } -> {
                 set_navigatable: true
