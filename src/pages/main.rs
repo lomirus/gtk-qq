@@ -3,11 +3,11 @@ use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, WidgetPlus, Widgets}
 
 use adw::prelude::*;
 use adw::{Avatar, HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
-use gtk::{Align, Box, Label, Orientation, ScrolledWindow, Separator};
+use gtk::{Align, Box, Label, ListBox, Orientation, ScrolledWindow, Separator};
 
 use crate::{AppModel, Message};
 
-const MOCK_CHATS_LIST: [(&str, &str); 16] = [
+const MOCK_CHATS_LIST: [(&str, &str); 13] = [
     ("飞翔的企鹅", "Hello"),
     ("奔跑的野猪", "World"),
     ("摆烂的修勾", "喵喵"),
@@ -16,14 +16,12 @@ const MOCK_CHATS_LIST: [(&str, &str); 16] = [
     ("咆哮的先辈", "哼哼"),
     ("叛逆的鲁路", "2333"),
     ("死亡的笔记", "2333"),
+    ("进击的巨人", "2333"),
     ("炼金的术士", "2333"),
     ("忧郁的凉宫", "2333"),
     ("灼眼的夏娜", "2333"),
     ("科学的磁炮", "2333"),
-    ("王冕的父亲", "2333"),
-    ("历史的终结", "2333"),
-    ("时代的眼泪", "2333"),
-    ("被填充过多并被用于测试文本对齐和溢出的字符串标签", "2333"),
+    // ("被填充过多并被用于测试文本对齐和溢出的字符串标签", "2333"),
 ];
 
 pub struct MainPageModel {
@@ -33,7 +31,6 @@ pub struct MainPageModel {
 
 pub enum MainMsg {
     WindowFolded,
-    _AddChatsItem(String, String),
 }
 
 struct ChatsItem {
@@ -46,7 +43,7 @@ impl FactoryPrototype for ChatsItem {
     type Factory = FactoryVec<Self>;
     type Widgets = ChatsItemWidgets;
     type Msg = MainMsg;
-    type View = Box;
+    type View = ListBox;
 
     view! {
         Box {
@@ -106,10 +103,6 @@ impl ComponentUpdate<AppModel> for MainPageModel {
     ) {
         match msg {
             MainMsg::WindowFolded => self.message = Some(MainMsg::WindowFolded),
-            MainMsg::_AddChatsItem(username, last_message) => self.chats_list.push(ChatsItem {
-                username: username.to_string(),
-                last_message: last_message.to_string(),
-            }),
         }
     }
 }
@@ -133,10 +126,12 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
                 append: stack = &ViewStack {
                     set_vexpand: true,
                     add_titled(Some("chats"), "Chats") = &ScrolledWindow {
-                        set_child = Some(&Box) {
-                            set_orientation: Orientation::Vertical,
-                            set_margin_all: 12,
-                            set_spacing: 5,
+                        set_child = Some(&ListBox) {
+                            set_css_classes: &["navigation-sidebar"],
+                            connect_row_activated(sender) => move |_, selected_row| {
+                                let index = selected_row.index();
+                                println!("index: {}", index);
+                            },
                             factory!(model.chats_list)
                         }
                     } -> {
