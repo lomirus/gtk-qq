@@ -1,9 +1,9 @@
-use relm4::factory::{FactoryPrototype, FactoryVec};
+use relm4::factory::{positions::StackPageInfo, FactoryPrototype, FactoryVec};
 use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, WidgetPlus, Widgets};
 
 use adw::prelude::*;
 use adw::{Avatar, HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
-use gtk::{Align, Box, Label, ListBox, Orientation, ScrolledWindow, Separator};
+use gtk::{Align, Box, Label, ListBox, Orientation, ScrolledWindow, Separator, Stack};
 
 use crate::{AppModel, Message};
 
@@ -27,10 +27,12 @@ const MOCK_CHATS_LIST: [(&str, &str); 13] = [
 pub struct MainPageModel {
     message: Option<MainMsg>,
     chats_list: FactoryVec<ChatsItem>,
+    chatrooms: FactoryVec<Chatroom>,
 }
 
 pub enum MainMsg {
     WindowFolded,
+    SelectChatroom(i32),
 }
 
 struct ChatsItem {
@@ -73,6 +75,37 @@ impl FactoryPrototype for ChatsItem {
     fn position(&self, _index: &usize) {}
 }
 
+struct Chatroom {
+    username: String,
+    messages: Vec<String>,
+}
+
+#[relm4::factory_prototype]
+impl FactoryPrototype for Chatroom {
+    type Factory = FactoryVec<Self>;
+    type Widgets = ChatroomWidgets;
+    type Msg = MainMsg;
+    type View = Stack;
+
+    view! {
+        Box {
+            append = &Label {
+                set_text: args!(format!("{}: ", self.username).as_str()),
+            },
+            append = &Label {
+                set_text: self.messages.join(", ").as_str(),
+            },
+        }
+    }
+
+    fn position(&self, index: &usize) -> StackPageInfo {
+        StackPageInfo {
+            name: Some(index.to_string()),
+            title: Some(index.to_string()),
+        }
+    }
+}
+
 impl Model for MainPageModel {
     type Msg = MainMsg;
     type Widgets = MainPageWidgets;
@@ -82,15 +115,21 @@ impl Model for MainPageModel {
 impl ComponentUpdate<AppModel> for MainPageModel {
     fn init_model(_parent_model: &AppModel) -> Self {
         let mut chats_list = FactoryVec::<ChatsItem>::new();
+        let mut chatrooms = FactoryVec::<Chatroom>::new();
         MOCK_CHATS_LIST.iter().for_each(|(username, last_message)| {
             chats_list.push(ChatsItem {
                 username: username.to_string(),
                 last_message: last_message.to_string(),
             });
+            chatrooms.push(Chatroom {
+                username: username.to_string(),
+                messages: vec![last_message.to_string()],
+            });
         });
         MainPageModel {
             message: None,
             chats_list,
+            chatrooms,
         }
     }
 
@@ -101,8 +140,10 @@ impl ComponentUpdate<AppModel> for MainPageModel {
         _sender: Sender<MainMsg>,
         _parent_sender: Sender<Message>,
     ) {
+        use MainMsg::*;
         match msg {
-            MainMsg::WindowFolded => self.message = Some(MainMsg::WindowFolded),
+            WindowFolded => self.message = Some(MainMsg::WindowFolded),
+            SelectChatroom(id) => self.message = Some(MainMsg::SelectChatroom(id)),
         }
     }
 }
@@ -130,7 +171,7 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
                             set_css_classes: &["navigation-sidebar"],
                             connect_row_activated(sender) => move |_, selected_row| {
                                 let index = selected_row.index();
-                                println!("index: {}", index);
+                                send!(sender, MainMsg::SelectChatroom(index))
                             },
                             factory!(model.chats_list)
                         }
@@ -160,13 +201,8 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
                         set_label: "Chatroom"
                     },
                 },
-                append = &Box {
-                    set_vexpand: true,
-                    set_valign: Align::Center,
-                    set_halign: Align::Center,
-                    append = &Label {
-                        set_label: "Chatroom"
-                    },
+                append: chatroom_stack = &Stack {
+                    factory!(model.chatrooms)
                 }
             } -> {
                 set_navigatable: true
@@ -181,8 +217,12 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
 
     fn pre_view() {
         if let Some(message) = &model.message {
-            if let MainMsg::WindowFolded = message {
-                self.root_widget().set_visible_child(&self.chatroom);
+            use MainMsg::*;
+            match message {
+                WindowFolded => self.root_widget().set_visible_child(&self.chatroom),
+                SelectChatroom(id) => self
+                    .chatroom_stack
+                    .set_visible_child_name(id.to_string().as_str()),
             }
         }
     }
