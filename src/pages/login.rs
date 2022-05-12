@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use relm4::actions::{RelmActionGroup, RelmAction};
+use relm4::actions::{RelmAction, RelmActionGroup};
 use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, Widgets};
 
 use adw::prelude::*;
@@ -140,7 +140,7 @@ impl Widgets<LoginPageModel, AppModel> for LoginPageWidgets {
         relm4::new_action_group!(WindowActionGroup, "menu");
         relm4::new_stateless_action!(ShortcutsAction, WindowActionGroup, "shortcuts");
         relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
-        
+
         let shortcuts_action: RelmAction<ShortcutsAction> = RelmAction::new_stateless(move |_| {
             println!("Keyboard Shortcuts");
         });

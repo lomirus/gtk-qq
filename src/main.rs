@@ -72,9 +72,8 @@ impl Widgets<AppModel, ()> for AppWidgets {
 }
 
 fn main() {
-    let res = gio::Resource::load(
-        config::PKGDATA_DIR.to_owned() + "/resources.gresource"
-    ).expect("Could not load resources");
+    let res = gio::Resource::load(config::PKGDATA_DIR.to_owned() + "/resources.gresource")
+        .expect("Could not load resources");
     gio::resources_register(&res);
 
     let application = adw::Application::builder()

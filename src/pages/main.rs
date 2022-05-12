@@ -1,10 +1,12 @@
+use relm4::actions::{RelmAction, RelmActionGroup};
 use relm4::factory::{positions::StackPageInfo, FactoryPrototype, FactoryVec};
 use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, WidgetPlus, Widgets};
 
 use adw::prelude::*;
 use adw::{Avatar, HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
 use gtk::{
-    Align, Box, Button, Entry, Label, ListBox, Orientation, ScrolledWindow, Separator, Stack,
+    Align, Box, Button, Entry, Label, ListBox, MenuButton, Orientation, ScrolledWindow, Separator,
+    Stack,
 };
 
 use crate::{AppModel, Message};
@@ -153,7 +155,7 @@ impl ComponentUpdate<AppModel> for MainPageModel {
 #[relm4::widget(pub)]
 impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
     view! {
-        &Leaflet {
+        main_page = &Leaflet {
             append: sidebar = &Box {
                 set_vexpand: true,
                 set_width_request: 360,
@@ -202,6 +204,10 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
                     set_title_widget = Some(&Label) {
                         set_label: "Chatroom"
                     },
+                    pack_end = &MenuButton {
+                        set_icon_name: "menu-symbolic",
+                        set_menu_model: Some(&main_menu),
+                    }
                 },
                 append = &Box {
                     set_orientation: Orientation::Vertical,
@@ -232,6 +238,32 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
                 }
             },
         }
+    }
+
+    menu! {
+        main_menu: {
+            "Keyboard Shortcuts" => ShortcutsAction,
+            "About Gtk QQ" => AboutAction
+        }
+    }
+
+    fn post_init() {
+        relm4::new_action_group!(WindowActionGroup, "menu");
+        relm4::new_stateless_action!(ShortcutsAction, WindowActionGroup, "shortcuts");
+        relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
+
+        let shortcuts_action: RelmAction<ShortcutsAction> = RelmAction::new_stateless(move |_| {
+            println!("Keyboard Shortcuts");
+        });
+        let about_action: RelmAction<AboutAction> = RelmAction::new_stateless(move |_| {
+            println!("About Gtk QQ");
+        });
+        let group: RelmActionGroup<WindowActionGroup> = RelmActionGroup::new();
+        group.add_action(shortcuts_action);
+        group.add_action(about_action);
+
+        let actions = group.into_action_group();
+        main_page.insert_action_group("menu", Some(&actions));
     }
 
     fn pre_view() {
