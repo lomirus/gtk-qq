@@ -1,7 +1,8 @@
+mod chatroom;
 mod chats_item;
 
 use relm4::actions::{RelmAction, RelmActionGroup};
-use relm4::factory::{positions::StackPageInfo, FactoryPrototype, FactoryVec};
+use relm4::factory::FactoryVec;
 use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, WidgetPlus, Widgets};
 
 use adw::prelude::*;
@@ -11,8 +12,8 @@ use gtk::{
     Stack,
 };
 
+use self::{chats_item::ChatsItem, chatroom::Chatroom};
 use crate::app::{AppModel, Message};
-use self::chats_item::ChatsItem;
 
 const MOCK_CHATS_LIST: [(&str, &str); 13] = [
     ("飞翔的企鹅", "Hello"),
@@ -40,37 +41,6 @@ pub struct MainPageModel {
 pub enum MainMsg {
     WindowFolded,
     SelectChatroom(i32),
-}
-
-struct Chatroom {
-    username: String,
-    messages: Vec<String>,
-}
-
-#[relm4::factory_prototype]
-impl FactoryPrototype for Chatroom {
-    type Factory = FactoryVec<Self>;
-    type Widgets = ChatroomWidgets;
-    type Msg = MainMsg;
-    type View = Stack;
-
-    view! {
-        Box {
-            append = &Label {
-                set_text: args!(format!("{}: ", self.username).as_str()),
-            },
-            append = &Label {
-                set_text: self.messages.join(", ").as_str(),
-            },
-        }
-    }
-
-    fn position(&self, index: &usize) -> StackPageInfo {
-        StackPageInfo {
-            name: Some(index.to_string()),
-            title: Some(index.to_string()),
-        }
-    }
 }
 
 impl Model for MainPageModel {
