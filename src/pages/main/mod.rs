@@ -1,15 +1,18 @@
+mod chats_item;
+
 use relm4::actions::{RelmAction, RelmActionGroup};
 use relm4::factory::{positions::StackPageInfo, FactoryPrototype, FactoryVec};
 use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, WidgetPlus, Widgets};
 
 use adw::prelude::*;
-use adw::{Avatar, HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
+use adw::{HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
 use gtk::{
     Align, Box, Button, Entry, Label, ListBox, MenuButton, Orientation, ScrolledWindow, Separator,
     Stack,
 };
 
 use crate::app::{AppModel, Message};
+use self::chats_item::ChatsItem;
 
 const MOCK_CHATS_LIST: [(&str, &str); 13] = [
     ("飞翔的企鹅", "Hello"),
@@ -37,46 +40,6 @@ pub struct MainPageModel {
 pub enum MainMsg {
     WindowFolded,
     SelectChatroom(i32),
-}
-
-struct ChatsItem {
-    username: String,
-    last_message: String,
-}
-
-#[relm4::factory_prototype]
-impl FactoryPrototype for ChatsItem {
-    type Factory = FactoryVec<Self>;
-    type Widgets = ChatsItemWidgets;
-    type Msg = MainMsg;
-    type View = ListBox;
-
-    view! {
-        Box {
-            append = &Avatar {
-                set_text: Some(&self.username),
-                set_show_initials: true,
-                set_size: 56
-            },
-            append = &Box {
-                set_margin_all: 8,
-                set_orientation: Orientation::Vertical,
-                set_halign: Align::Center,
-                set_spacing: 8,
-                append = &Label {
-                    set_text: self.username.as_str(),
-                    add_css_class: "heading"
-                },
-                append = &Label {
-                    set_text: self.last_message.as_str(),
-                    add_css_class: "caption",
-                    set_xalign: 0.0,
-                },
-            },
-        }
-    }
-
-    fn position(&self, _index: &usize) {}
 }
 
 struct Chatroom {
