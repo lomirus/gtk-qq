@@ -13,7 +13,7 @@ fn main() {
     gio::resources_register(&res);
 
     let application = adw::Application::builder()
-        .application_id("indi.lomirus.gtk-qq")
+        .application_id(config::APPLICATION_ID)
         .build();
 
     let model = AppModel::new();

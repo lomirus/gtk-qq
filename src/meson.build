@@ -1,10 +1,11 @@
-global_conf = configuration_data()
-global_conf.set_quoted('PKGDATA_DIR', pkgdatadir)
+conf = configuration_data()
+conf.set_quoted('VERSION', meson.project_version())
+conf.set_quoted('PKGDATA_DIR', pkgdatadir)
 
 config_output_file = configure_file(
   input: 'config.rs.in',
   output: 'config.rs',
-  configuration: global_conf
+  configuration: conf
 )
 # Copy the config.rs output to the source directory.
 run_command(
