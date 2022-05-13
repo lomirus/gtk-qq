@@ -12,7 +12,7 @@ use gtk::{
     Stack,
 };
 
-use self::{chats_item::ChatsItem, chatroom::Chatroom};
+use self::{chatroom::Chatroom, chats_item::ChatsItem};
 use crate::app::{AppModel, Message};
 
 const MOCK_CHATS_LIST: [(&str, &str); 13] = [
@@ -60,7 +60,10 @@ impl ComponentUpdate<AppModel> for MainPageModel {
             });
             chatrooms.push(Chatroom {
                 username: username.to_string(),
-                messages: vec![last_message.to_string()],
+                messages: Vec::from([last_message; 10])
+                    .iter()
+                    .map(|t| t.to_string())
+                    .collect(),
             });
         });
         MainPageModel {
@@ -146,7 +149,7 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
                     set_orientation: Orientation::Vertical,
                     append: chatroom_stack = &Stack {
                         set_vexpand: true,
-                        set_halign: Align::Center,
+                        set_hexpand: true,
                         factory!(model.chatrooms)
                     },
                     append = &Box {
