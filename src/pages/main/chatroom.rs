@@ -1,10 +1,9 @@
 use relm4::factory::{positions::StackPageInfo, FactoryPrototype, FactoryVec};
-use relm4::gtk::ScrolledWindow;
 use relm4::{adw, gtk, Sender};
 
 use adw::prelude::*;
 use adw::Avatar;
-use gtk::{Box, Label, Orientation, Stack};
+use gtk::{Align, Box, Label, Orientation, ScrolledWindow, Stack};
 
 use super::MainMsg;
 
@@ -19,16 +18,39 @@ pub struct ChatroomWidgets {
 }
 
 fn generate_message_widget(username: &String, message: &String) -> Box {
-    let root_box = Box::new(Orientation::Horizontal, 2);
+    let root_box = Box::builder()
+        .orientation(Orientation::Horizontal)
+        .spacing(8)
+        .margin_bottom(8)
+        .build();
     let avatar = Avatar::new(32, Some(username.as_str()), true);
-    let right_box = Box::new(Orientation::Vertical, 2);
-    let username = Label::new(Some(username.as_str()));
-    let message_box = Box::default();
-    let message = Label::new(Some(message.as_str()));
+    let left_box = Box::builder()
+        .orientation(Orientation::Vertical)
+        .build();
+    let right_box = Box::builder()
+        .orientation(Orientation::Vertical)
+        .spacing(4)
+        .build();
+    let username_box = Box::builder().build();
+    let username = Label::builder()
+        .label(username.as_str())
+        .css_classes(vec!["caption".to_string()])
+        .build();
+    let message_box = Box::builder()
+        .css_classes(vec!["message-box".to_string()])
+        .halign(Align::Start)
+        .build();
+    let message = Label::builder()
+        .label(message.as_str())
+        .selectable(true)
+        .build();
+
     message_box.append(&message);
-    right_box.append(&username);
+    username_box.append(&username);
+    left_box.append(&avatar);
+    right_box.append(&username_box);
     right_box.append(&message_box);
-    root_box.append(&avatar);
+    root_box.append(&left_box);
     root_box.append(&right_box);
     root_box
 }
@@ -42,7 +64,9 @@ impl FactoryPrototype for Chatroom {
 
     fn init_view(&self, _key: &usize, _sender: Sender<MainMsg>) -> ChatroomWidgets {
         let list = Box::new(Orientation::Vertical, 2);
+        list.add_css_class("chatroom-box");
         for (i, message) in self.messages.iter().enumerate() {
+            let message = &format!("{}___________{}", message, i);
             if i % 2 == 0 {
                 list.append(&generate_message_widget(&self.username, message));
             } else {

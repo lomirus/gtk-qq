@@ -18,5 +18,7 @@ fn main() {
 
     let model = AppModel::new();
     let app = RelmApp::with_app(model, application);
+    relm4::set_global_css(include_bytes!("styles/style.css"));
+    
     app.run()
 }
