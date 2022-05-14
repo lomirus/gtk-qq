@@ -21,7 +21,7 @@ enum Page {
     Main,
 }
 
-pub enum Message {
+pub enum AppMessage {
     LoginSuccessful,
 }
 
@@ -33,14 +33,14 @@ impl AppUpdate for AppModel {
         _sender: relm4::Sender<Self::Msg>,
     ) -> bool {
         match msg {
-            Message::LoginSuccessful => self.page = Page::Main,
+            AppMessage::LoginSuccessful => self.page = Page::Main,
         }
         true
     }
 }
 
 impl Model for AppModel {
-    type Msg = Message;
+    type Msg = AppMessage;
     type Widgets = AppWidgets;
     type Components = AppComponents;
 }

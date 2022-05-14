@@ -12,8 +12,11 @@ use gtk::{
     Stack,
 };
 
-use self::{chatroom::Chatroom, chats_item::ChatsItem};
-use crate::app::{AppModel, Message};
+use self::{
+    chatroom::{Chatroom, Message},
+    chats_item::ChatsItem,
+};
+use crate::app::{AppMessage, AppModel};
 
 const MOCK_CHATS_LIST: [(&str, &str); 13] = [
     ("飞翔的企鹅", "Hello"),
@@ -58,12 +61,26 @@ impl ComponentUpdate<AppModel> for MainPageModel {
                 username: username.to_string(),
                 last_message: last_message.to_string(),
             });
-            chatrooms.push(Chatroom {
-                username: username.to_string(),
-                messages: Vec::from([last_message; 10])
-                    .iter()
-                    .map(|t| t.to_string())
-                    .collect(),
+            chatrooms.push({
+                let mut messages = FactoryVec::new();
+                for i in 0..18 {
+                    let message = format!("{}___________{}", last_message, i).to_string();
+                    if i % 4 == 0 {
+                        messages.push(Message {
+                            author: "You".to_string(),
+                            content: message,
+                        });
+                    } else {
+                        messages.push(Message {
+                            author: username.to_string(),
+                            content: message,
+                        });
+                    }
+                }
+                Chatroom {
+                    username: username.to_string(),
+                    messages
+                }
             });
         });
         MainPageModel {
@@ -78,7 +95,7 @@ impl ComponentUpdate<AppModel> for MainPageModel {
         msg: MainMsg,
         _components: &(),
         _sender: Sender<MainMsg>,
-        _parent_sender: Sender<Message>,
+        _parent_sender: Sender<AppMessage>,
     ) {
         use MainMsg::*;
         match msg {

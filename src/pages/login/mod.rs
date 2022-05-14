@@ -7,7 +7,7 @@ use adw::prelude::*;
 use adw::{ActionRow, Avatar, HeaderBar, PreferencesGroup, Toast, ToastOverlay};
 use gtk::{Align, Box, Button, Entry, Label, MenuButton, Orientation};
 
-use crate::app::{AppModel, Message};
+use crate::app::{AppModel, AppMessage};
 
 #[derive(Default, Debug)]
 pub struct LoginPageModel {
@@ -41,7 +41,7 @@ impl ComponentUpdate<AppModel> for LoginPageModel {
         msg: LoginPageMsg,
         _components: &(),
         sender: Sender<LoginPageMsg>,
-        parent_sender: Sender<Message>,
+        parent_sender: Sender<AppMessage>,
     ) {
         use LoginPageMsg::*;
         match msg {
@@ -57,7 +57,7 @@ impl ComponentUpdate<AppModel> for LoginPageModel {
                 }
                 send!(sender, LoginPageMsg::LoginSuccessful)
             }
-            LoginSuccessful => send!(parent_sender, Message::LoginSuccessful),
+            LoginSuccessful => send!(parent_sender, AppMessage::LoginSuccessful),
             AccountChange(new_account) => self.account = new_account,
             PasswordChange(new_password) => self.password = new_password,
             PushToast(message) => self.toast_stack.push_back(message),
