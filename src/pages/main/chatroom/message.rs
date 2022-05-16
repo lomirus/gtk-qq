@@ -1,4 +1,4 @@
-use relm4::factory::{FactoryPrototype, FactoryVec};
+use relm4::factory::{DynamicIndex, FactoryComponent};
 use relm4::{adw, gtk, Sender};
 
 use adw::{prelude::*, Avatar};
@@ -6,29 +6,54 @@ use gtk::{Align, Box, Label, Orientation};
 
 use super::super::MainMsg;
 
+#[derive(Debug)]
 pub struct Message {
     pub author: String,
     pub content: String,
 }
 
 #[derive(Debug)]
-pub struct MessageWidgets {
-    root: Box,
-}
+pub struct MessageWidgets {}
 
-impl FactoryPrototype for Message {
-    type Factory = FactoryVec<Self>;
+impl FactoryComponent<Box, MainMsg> for Message {
     type Widgets = MessageWidgets;
-    type Msg = MainMsg;
-    type View = Box;
+    type Input = MainMsg;
     type Root = Box;
+    type Command = ();
+    type CommandOutput = ();
+    type InitParams = Message;
+    type Output = ();
 
-    fn init_view(&self, _key: &usize, _sender: Sender<MainMsg>) -> MessageWidgets {
+    fn init_model(
+        value: Self::InitParams,
+        _index: &DynamicIndex,
+        _input: &Sender<Self::Input>,
+        _output: &Sender<Self::Output>,
+    ) -> Message {
+        Message {
+            author: String::new(),
+            content: String::new(),
+        }
+    }
+
+    fn init_root() -> Self::Root {
         let root_box = Box::builder()
             .orientation(Orientation::Horizontal)
             .spacing(8)
             .margin_bottom(8)
             .build();
+
+        root_box
+    }
+
+    fn init_widgets(
+        &mut self,
+        index: &DynamicIndex,
+        root: &Self::Root,
+        _returned_widget: &gtk::Widget,
+        input: &Sender<Self::Input>,
+        output: &Sender<Self::Output>,
+    ) -> Self::Widgets {
         let avatar = Avatar::new(32, Some(self.author.as_str()), true);
         let left_box = Box::builder().orientation(Orientation::Vertical).build();
         let right_box = Box::builder()
@@ -54,17 +79,8 @@ impl FactoryPrototype for Message {
         left_box.append(&avatar);
         right_box.append(&username_box);
         right_box.append(&message_box);
-        root_box.append(&left_box);
-        root_box.append(&right_box);
-
-        MessageWidgets { root: root_box }
-    }
-
-    fn view(&self, _key: &usize, _widgets: &MessageWidgets) {}
-
-    fn position(&self, _index: &usize) {}
-
-    fn root_widget(widgets: &MessageWidgets) -> &Box {
-        &widgets.root
+        root.append(&left_box);
+        root.append(&right_box);
+        MessageWidgets {}
     }
 }

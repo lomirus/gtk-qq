@@ -2,8 +2,8 @@ mod chatroom;
 mod chats_item;
 
 use relm4::actions::{RelmAction, RelmActionGroup};
-use relm4::factory::FactoryVec;
-use relm4::{adw, gtk, send, ComponentUpdate, Model, Sender, WidgetPlus, Widgets};
+use relm4::factory::FactoryVecDeque;
+use relm4::{adw, gtk, send, ComponentParts, ComponentSender, Sender, SimpleComponent, WidgetPlus};
 
 use adw::prelude::*;
 use adw::{HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
@@ -16,7 +16,7 @@ use self::{
     chatroom::{Chatroom, Message},
     chats_item::ChatsItem,
 };
-use crate::app::{AppMessage, AppModel};
+use crate::app::AppMessage;
 
 const MOCK_CHATS_LIST: [(&str, &str); 13] = [
     ("飞翔的企鹅", "Hello"),
@@ -37,76 +37,27 @@ const MOCK_CHATS_LIST: [(&str, &str); 13] = [
 
 pub struct MainPageModel {
     message: Option<MainMsg>,
-    chats_list: FactoryVec<ChatsItem>,
-    chatrooms: FactoryVec<Chatroom>,
+    chats_list: FactoryVecDeque<ListBox, ChatsItem, MainMsg>,
+    chatrooms: FactoryVecDeque<Stack, Chatroom, MainMsg>,
 }
 
+#[derive(Debug)]
 pub enum MainMsg {
     WindowFolded,
     SelectChatroom(i32),
 }
 
-impl Model for MainPageModel {
-    type Msg = MainMsg;
+relm4::new_action_group!(WindowActionGroup, "menu");
+relm4::new_stateless_action!(ShortcutsAction, WindowActionGroup, "shortcuts");
+relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
+
+#[relm4::component(pub)]
+impl SimpleComponent for MainPageModel {
+    type Input = MainMsg;
+    type Output = AppMessage;
     type Widgets = MainPageWidgets;
-    type Components = ();
-}
+    type InitParams = ();
 
-impl ComponentUpdate<AppModel> for MainPageModel {
-    fn init_model(_parent_model: &AppModel) -> Self {
-        let mut chats_list = FactoryVec::<ChatsItem>::new();
-        let mut chatrooms = FactoryVec::<Chatroom>::new();
-        MOCK_CHATS_LIST.iter().for_each(|(username, last_message)| {
-            chats_list.push(ChatsItem {
-                username: username.to_string(),
-                last_message: last_message.to_string(),
-            });
-            chatrooms.push({
-                let mut messages = FactoryVec::new();
-                for i in 0..18 {
-                    let message = format!("{}___________{}", last_message, i).to_string();
-                    if i % 4 == 0 {
-                        messages.push(Message {
-                            author: "You".to_string(),
-                            content: message,
-                        });
-                    } else {
-                        messages.push(Message {
-                            author: username.to_string(),
-                            content: message,
-                        });
-                    }
-                }
-                Chatroom {
-                    username: username.to_string(),
-                    messages
-                }
-            });
-        });
-        MainPageModel {
-            message: None,
-            chats_list,
-            chatrooms,
-        }
-    }
-
-    fn update(
-        &mut self,
-        msg: MainMsg,
-        _components: &(),
-        _sender: Sender<MainMsg>,
-        _parent_sender: Sender<AppMessage>,
-    ) {
-        use MainMsg::*;
-        match msg {
-            WindowFolded => self.message = Some(MainMsg::WindowFolded),
-            SelectChatroom(id) => self.message = Some(MainMsg::SelectChatroom(id)),
-        }
-    }
-}
-
-#[relm4::widget(pub)]
-impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
     view! {
         main_page = &Leaflet {
             append: sidebar = &Box {
@@ -124,13 +75,12 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
                 append: stack = &ViewStack {
                     set_vexpand: true,
                     add_titled(Some("chats"), "Chats") = &ScrolledWindow {
-                        set_child = Some(&ListBox) {
+                        set_child: sidebar_chats = Some(&ListBox) {
                             set_css_classes: &["navigation-sidebar"],
                             connect_row_activated(sender) => move |_, selected_row| {
                                 let index = selected_row.index();
-                                send!(sender, MainMsg::SelectChatroom(index))
+                                sender.input(MainMsg::SelectChatroom(index));
                             },
-                            factory!(model.chats_list)
                         }
                     } -> {
                         set_icon_name: Some("chat-symbolic")
@@ -167,7 +117,6 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
                     append: chatroom_stack = &Stack {
                         set_vexpand: true,
                         set_hexpand: true,
-                        factory!(model.chatrooms)
                     },
                     append = &Box {
                         set_margin_all: 8,
@@ -187,7 +136,7 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
             },
             connect_folded_notify(sender) => move |leaflet| {
                 if leaflet.is_folded() {
-                    send!(sender, MainMsg::WindowFolded);
+                    sender.input(MainMsg::WindowFolded);
                 }
             },
         }
@@ -200,11 +149,12 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
         }
     }
 
-    fn post_init() {
-        relm4::new_action_group!(WindowActionGroup, "menu");
-        relm4::new_stateless_action!(ShortcutsAction, WindowActionGroup, "shortcuts");
-        relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
-
+    fn init(
+        init_params: Self::InitParams,
+        root: &Self::Root,
+        sender: &ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        let widgets = view_output!();
         let shortcuts_action: RelmAction<ShortcutsAction> = RelmAction::new_stateless(move |_| {
             println!("Keyboard Shortcuts");
         });
@@ -216,15 +166,63 @@ impl Widgets<MainPageModel, AppModel> for MainPageWidgets {
         group.add_action(about_action);
 
         let actions = group.into_action_group();
-        main_page.insert_action_group("menu", Some(&actions));
+        widgets.main_page.insert_action_group("menu", Some(&actions));
+
+        let model = init_params;
+
+        let mut chats_list = FactoryVecDeque::<ListBox, ChatsItem, MainMsg>::new(widgets.sidebar_chats.clone(), &sender.input);
+        let mut chatrooms = FactoryVecDeque::<Stack, Chatroom, MainMsg>::new(widgets.chatroom_stack.clone(), &sender.input);
+        MOCK_CHATS_LIST.iter().for_each(|(username, last_message)| {
+            chats_list.push_back(ChatsItem {
+                username: username.to_string(),
+                last_message: last_message.to_string(),
+            });
+            chatrooms.push_back({
+                let mut messages = FactoryVecDeque::new(Box::default(), &sender.input);
+                for i in 0..18 {
+                    let message = format!("{}___________{}", last_message, i).to_string();
+                    if i % 4 == 0 {
+                        messages.push_back(Message {
+                            author: "You".to_string(),
+                            content: message,
+                        });
+                    } else {
+                        messages.push_back(Message {
+                            author: username.to_string(),
+                            content: message,
+                        });
+                    }
+                }
+                Chatroom {
+                    username: username.to_string(),
+                    messages,
+                }
+            });
+        });
+
+        
+
+        ComponentParts { model: MainPageModel { message: None, chats_list, chatrooms }, widgets }
+    }
+
+    fn update(
+        &mut self,
+        msg: MainMsg,
+        _sender: &ComponentSender<Self>,
+    ) {
+        use MainMsg::*;
+        match msg {
+            WindowFolded => self.message = Some(MainMsg::WindowFolded),
+            SelectChatroom(id) => self.message = Some(MainMsg::SelectChatroom(id)),
+        }
     }
 
     fn pre_view() {
         if let Some(message) = &model.message {
             use MainMsg::*;
             match message {
-                WindowFolded => self.root_widget().set_visible_child(&self.chatroom),
-                SelectChatroom(id) => self
+                WindowFolded => widgets.main_page.set_visible_child(&widgets.chatroom),
+                SelectChatroom(id) => widgets
                     .chatroom_stack
                     .set_visible_child_name(id.to_string().as_str()),
             }

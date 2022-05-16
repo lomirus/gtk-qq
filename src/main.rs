@@ -12,13 +12,8 @@ fn main() {
         .expect("Could not load resources");
     gio::resources_register(&res);
 
-    let application = adw::Application::builder()
-        .application_id(config::APPLICATION_ID)
-        .build();
-
-    let model = AppModel::new();
-    let app = RelmApp::with_app(model, application);
+    let app: RelmApp<AppModel> = RelmApp::new(config::APPLICATION_ID);
     relm4::set_global_css(include_bytes!("styles/style.css"));
-    
-    app.run()
+
+    app.run(());
 }
