@@ -1,9 +1,11 @@
 mod chatroom;
 mod chats_item;
 
+use std::collections::VecDeque;
+
 use relm4::actions::{RelmAction, RelmActionGroup};
 use relm4::factory::FactoryVecDeque;
-use relm4::{adw, gtk, send, ComponentParts, ComponentSender, Sender, SimpleComponent, WidgetPlus};
+use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent, WidgetPlus};
 
 use adw::prelude::*;
 use adw::{HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
@@ -12,6 +14,7 @@ use gtk::{
     Stack,
 };
 
+use self::chatroom::ChatroomInitParams;
 use self::{
     chatroom::{Chatroom, Message},
     chats_item::ChatsItem,
@@ -150,11 +153,12 @@ impl SimpleComponent for MainPageModel {
     }
 
     fn init(
-        init_params: Self::InitParams,
+        _init_params: Self::InitParams,
         root: &Self::Root,
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let widgets = view_output!();
+
         let shortcuts_action: RelmAction<ShortcutsAction> = RelmAction::new_stateless(move |_| {
             println!("Keyboard Shortcuts");
         });
@@ -166,19 +170,22 @@ impl SimpleComponent for MainPageModel {
         group.add_action(about_action);
 
         let actions = group.into_action_group();
-        widgets.main_page.insert_action_group("menu", Some(&actions));
+        widgets
+            .main_page
+            .insert_action_group("menu", Some(&actions));
 
-        let model = init_params;
+        let mut chats_list: FactoryVecDeque<ListBox, ChatsItem, MainMsg> =
+            FactoryVecDeque::new(widgets.sidebar_chats.clone(), &sender.input);
+        let mut chatrooms: FactoryVecDeque<Stack, Chatroom, MainMsg> =
+            FactoryVecDeque::new(widgets.chatroom_stack.clone(), &sender.input);
 
-        let mut chats_list = FactoryVecDeque::<ListBox, ChatsItem, MainMsg>::new(widgets.sidebar_chats.clone(), &sender.input);
-        let mut chatrooms = FactoryVecDeque::<Stack, Chatroom, MainMsg>::new(widgets.chatroom_stack.clone(), &sender.input);
         MOCK_CHATS_LIST.iter().for_each(|(username, last_message)| {
             chats_list.push_back(ChatsItem {
                 username: username.to_string(),
                 last_message: last_message.to_string(),
             });
             chatrooms.push_back({
-                let mut messages = FactoryVecDeque::new(Box::default(), &sender.input);
+                let mut messages = VecDeque::new();
                 for i in 0..18 {
                     let message = format!("{}___________{}", last_message, i).to_string();
                     if i % 4 == 0 {
@@ -193,28 +200,32 @@ impl SimpleComponent for MainPageModel {
                         });
                     }
                 }
-                Chatroom {
+                ChatroomInitParams {
                     username: username.to_string(),
                     messages,
                 }
             });
         });
-
-        
-
-        ComponentParts { model: MainPageModel { message: None, chats_list, chatrooms }, widgets }
+        chats_list.render_changes();
+        chatrooms.render_changes();
+        ComponentParts {
+            model: MainPageModel {
+                message: None,
+                chats_list,
+                chatrooms,
+            },
+            widgets,
+        }
     }
 
-    fn update(
-        &mut self,
-        msg: MainMsg,
-        _sender: &ComponentSender<Self>,
-    ) {
+    fn update(&mut self, msg: MainMsg, _sender: &ComponentSender<Self>) {
         use MainMsg::*;
         match msg {
             WindowFolded => self.message = Some(MainMsg::WindowFolded),
             SelectChatroom(id) => self.message = Some(MainMsg::SelectChatroom(id)),
         }
+        self.chats_list.render_changes();
+        self.chatrooms.render_changes();
     }
 
     fn pre_view() {
@@ -227,5 +238,7 @@ impl SimpleComponent for MainPageModel {
                     .set_visible_child_name(id.to_string().as_str()),
             }
         }
+
+        self.chatrooms.render_changes();
     }
 }

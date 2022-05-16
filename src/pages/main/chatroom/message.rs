@@ -6,7 +6,7 @@ use gtk::{Align, Box, Label, Orientation};
 
 use super::super::MainMsg;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Message {
     pub author: String,
     pub content: String,

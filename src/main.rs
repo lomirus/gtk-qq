@@ -1,9 +1,12 @@
+// Delete this after migration
+#![allow(unused_variables)]
+
 mod app;
 mod config;
 mod pages;
 
 use gtk::gio;
-use relm4::{adw, gtk, RelmApp};
+use relm4::{gtk, RelmApp};
 
 use app::AppModel;
 

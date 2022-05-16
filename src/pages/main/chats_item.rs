@@ -46,11 +46,11 @@ impl FactoryComponent<ListBox, MainMsg> for ChatsItem {
 
     fn init_widgets(
         &mut self,
-        index: &DynamicIndex,
+        _index: &DynamicIndex,
         root: &Self::Root,
         _returned_widget: &gtk::ListBoxRow,
-        input: &Sender<Self::Input>,
-        output: &Sender<Self::Output>,
+        _input: &Sender<Self::Input>,
+        _output: &Sender<Self::Output>,
     ) -> Self::Widgets {
         relm4::view! {
             item = Box {

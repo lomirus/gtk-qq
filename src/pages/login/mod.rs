@@ -27,7 +27,6 @@ pub enum LoginPageMsg {
 }
 
 pub struct LoginPageWidgets {
-    headerbar: HeaderBar,
     toast_overlay: ToastOverlay,
 }
 
@@ -66,16 +65,33 @@ impl SimpleComponent for LoginPageModel {
     }
 
     fn init(
-        init_params: Self::InitParams,
+        _init_params: Self::InitParams,
         root: &Self::Root,
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        relm4::new_action_group!(WindowActionGroup, "menu");
+        relm4::new_stateless_action!(ShortcutsAction, WindowActionGroup, "shortcuts");
+        relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
+
         relm4::menu! {
             main_menu: {
                 "Keyboard Shortcuts" => ShortcutsAction,
                 "About Gtk QQ" => AboutAction
             }
         }
+
+        let shortcuts_action: RelmAction<ShortcutsAction> = RelmAction::new_stateless(move |_| {
+            println!("Keyboard Shortcuts");
+        });
+        let about_action: RelmAction<AboutAction> = RelmAction::new_stateless(move |_| {
+            println!("About Gtk QQ");
+        });
+        let group: RelmActionGroup<WindowActionGroup> = RelmActionGroup::new();
+        group.add_action(shortcuts_action);
+        group.add_action(about_action);
+
+        let actions = group.into_action_group();
+        root.insert_action_group("menu", Some(&actions));
 
         relm4::view! {
             headerbar = &HeaderBar {
@@ -86,7 +102,7 @@ impl SimpleComponent for LoginPageModel {
                     set_icon_name: "go-next",
                     connect_clicked(sender) => move |_| {
                         sender.input(LoginPageMsg::LoginStart);
-                    }
+                    },
                 },
                 pack_end = &MenuButton {
                     set_icon_name: "menu-symbolic",
@@ -94,6 +110,8 @@ impl SimpleComponent for LoginPageModel {
                 }
             }
         }
+
+        root.append(&headerbar);
 
         relm4::view! {
             toast_overlay = &ToastOverlay {
@@ -111,7 +129,7 @@ impl SimpleComponent for LoginPageModel {
                             set_title: "Account",
                             add_suffix = &Entry {
                                 set_valign: Align::Center,
-                                set_placeholder_text: Some("Please input your QQ account"),
+                                set_placeholder_text: Some("Please input your QQ account "),
                                 connect_changed(sender) => move |e| {
                                     sender.input(LoginPageMsg::AccountChange(e.buffer().text()));
                                 }
@@ -132,29 +150,13 @@ impl SimpleComponent for LoginPageModel {
             }
         }
 
-        relm4::new_action_group!(WindowActionGroup, "menu");
-        relm4::new_stateless_action!(ShortcutsAction, WindowActionGroup, "shortcuts");
-        relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
-
-        let shortcuts_action: RelmAction<ShortcutsAction> = RelmAction::new_stateless(move |_| {
-            println!("Keyboard Shortcuts");
-        });
-        let about_action: RelmAction<AboutAction> = RelmAction::new_stateless(move |_| {
-            println!("About Gtk QQ");
-        });
-        let group: RelmActionGroup<WindowActionGroup> = RelmActionGroup::new();
-        group.add_action(shortcuts_action);
-        group.add_action(about_action);
-
-        let actions = group.into_action_group();
-        root.insert_action_group("menu", Some(&actions));
-
         let model = LoginPageModel::default();
+
+        root.append(&toast_overlay);
 
         ComponentParts {
             model,
             widgets: LoginPageWidgets {
-                headerbar,
                 toast_overlay,
             },
         }
@@ -168,6 +170,7 @@ impl SimpleComponent for LoginPageModel {
                 set_orientation: Orientation::Vertical,
             }
         }
+
         login_page
     }
 
