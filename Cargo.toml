@@ -7,7 +7,7 @@ edition = "2021"
 git = "https://github.com/Relm4/Relm4.git"
 # branch = "next"
 # May 15, 2022
-rev = "39e2c6c94663688d537ed5a808ef425513f45aa9"
+rev = "65e4b37758fcb95ade347e70acc1efe5a96c0592"
 features = [
     "macros",
     "libadwaita",
