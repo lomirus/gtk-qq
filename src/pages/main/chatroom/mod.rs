@@ -1,53 +1,77 @@
 mod message;
 
-use relm4::adw::prelude::WidgetExt;
-use relm4::factory::Factory;
-use relm4::factory::{positions::StackPageInfo, FactoryPrototype, FactoryVec};
-use relm4::{gtk, Sender};
+use std::collections::VecDeque;
 
-use gtk::{Box, Orientation, ScrolledWindow, Stack};
+use relm4::factory::{DynamicIndex, FactoryComponent, FactoryVecDeque};
+use relm4::{adw, gtk, Sender};
+
+use adw::prelude::*;
+use gtk::{Box, Orientation, ScrolledWindow, Stack, StackPage};
 
 use super::MainMsg;
 pub use message::Message;
 
+#[derive(Debug)]
 pub struct Chatroom {
     pub username: String,
-    pub messages: FactoryVec<Message>,
+    pub messages: FactoryVecDeque<Box, Message, MainMsg>,
 }
 
-#[derive(Debug)]
-pub struct ChatroomWidgets {
-    root: ScrolledWindow,
+pub struct ChatroomInitParams {
+    pub username: String,
+    pub messages: VecDeque<Message>,
 }
 
-impl FactoryPrototype for Chatroom {
-    type Factory = FactoryVec<Self>;
-    type Widgets = ChatroomWidgets;
-    type Msg = MainMsg;
-    type View = Stack;
+impl FactoryComponent<Stack, MainMsg> for Chatroom {
+    type Widgets = ();
+    type Input = MainMsg;
     type Root = ScrolledWindow;
+    type Command = ();
+    type CommandOutput = ();
+    type Output = ();
+    type InitParams = ChatroomInitParams;
 
-    fn init_view(&self, _key: &usize, sender: Sender<MainMsg>) -> ChatroomWidgets {
-        let list = Box::new(Orientation::Vertical, 2);
-        list.set_css_classes(&["chatroom-box"]);
-        self.messages.generate(&list, sender);
-
+    fn init_root(&self) -> Self::Root {
         let root = ScrolledWindow::new();
-        root.set_child(Some(&list));
-
-        ChatroomWidgets { root }
+        root.set_child(Some(self.messages.widget()));
+        root
     }
 
-    fn view(&self, _key: &usize, _widgets: &ChatroomWidgets) {}
+    fn init_widgets(
+        &mut self,
+        index: &DynamicIndex,
+        _root: &Self::Root,
+        returned_widget: &StackPage,
+        _input: &Sender<Self::Input>,
+        _output: &Sender<Self::Output>,
+    ) -> Self::Widgets {
+        let index = index.current_index().to_string();
+        let index = index.as_str();
+        returned_widget.set_name(index);
+        returned_widget.set_title(index);
 
-    fn position(&self, index: &usize) -> StackPageInfo {
-        StackPageInfo {
-            name: Some(index.to_string()),
-            title: Some(index.to_string()),
+        ()
+    }
+
+    fn init_model(
+        init_params: Self::InitParams,
+        _index: &DynamicIndex,
+        input: &Sender<Self::Input>,
+        _output: &Sender<Self::Output>,
+    ) -> Self {
+        let ChatroomInitParams {
+            username,
+            messages: messages_src,
+        } = init_params;
+        let messages_box = Box::new(Orientation::Vertical, 2);
+        messages_box.set_css_classes(&["chatroom-box"]);
+
+        let mut messages: FactoryVecDeque<Box, Message, MainMsg> =
+            FactoryVecDeque::new(messages_box, input);
+        for msg_src in messages_src.iter() {
+            messages.push_back(msg_src.clone());
         }
-    }
-
-    fn root_widget(widgets: &ChatroomWidgets) -> &ScrolledWindow {
-        &widgets.root
+        messages.render_changes();
+        Chatroom { username, messages }
     }
 }
