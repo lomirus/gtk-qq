@@ -36,7 +36,7 @@ impl FactoryComponent<ListBox, MainMsg> for ChatsItem {
         init_params
     }
 
-    fn init_root() -> Self::Root {
+    fn init_root(&self) -> Self::Root {
         relm4::view! {
             root = gtk::Box {
             }

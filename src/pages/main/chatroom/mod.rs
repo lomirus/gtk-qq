@@ -32,11 +32,9 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
     type Output = ();
     type InitParams = ChatroomInitParams;
 
-    fn init_root() -> Self::Root {
+    fn init_root(&self) -> Self::Root {
         let root = ScrolledWindow::new();
-        // let root = Box::new(Orientation::Vertical, 2);
-        // root.set_child(Some(model.messages.widget()));
-        // root.set_child(todo!());
+        root.set_child(Some(self.messages.widget()));
         root
     }
 
@@ -48,8 +46,6 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
         _input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
     ) -> Self::Widgets {
-        let message_box = self.messages.widget();
-        message_box.set_css_classes(&["chatroom-box"]);
         let index = index.current_index().to_string();
         let index = index.as_str();
         returned_widget.set_name(index);
@@ -70,11 +66,13 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
         } = init_params;
         let messages_box = Box::new(Orientation::Vertical, 2);
         messages_box.set_css_classes(&["chatroom-box"]);
+
         let mut messages: FactoryVecDeque<Box, Message, MainMsg> =
-            FactoryVecDeque::new(messages_box.clone(), input);
+            FactoryVecDeque::new(messages_box, input);
         for msg_src in messages_src.iter() {
             messages.push_back(msg_src.clone());
         }
+        messages.render_changes();
         Chatroom { username, messages }
     }
 }

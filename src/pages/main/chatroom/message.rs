@@ -25,18 +25,15 @@ impl FactoryComponent<Box, MainMsg> for Message {
     type Output = ();
 
     fn init_model(
-        value: Self::InitParams,
+        message: Self::InitParams,
         _index: &DynamicIndex,
         _input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
     ) -> Message {
-        Message {
-            author: String::new(),
-            content: String::new(),
-        }
+        message
     }
 
-    fn init_root() -> Self::Root {
+    fn init_root(&self) -> Self::Root {
         let root_box = Box::builder()
             .orientation(Orientation::Horizontal)
             .spacing(8)
