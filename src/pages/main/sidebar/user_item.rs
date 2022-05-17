@@ -12,14 +12,10 @@ pub struct UserItem {
     pub last_message: String,
 }
 
-pub struct UserItemWidgets {
-    
-}
-
 impl FactoryComponent<ListBox, MainMsg> for UserItem {
     type InitParams = UserItem;
-    type Widgets = UserItemWidgets;
-    type Input = MainMsg;
+    type Widgets = ();
+    type Input = ();
     type Output = ();
     type Command = ();
     type CommandOutput = ();
@@ -77,6 +73,6 @@ impl FactoryComponent<ListBox, MainMsg> for UserItem {
         }
 
         root.append(&item);
-        UserItemWidgets { }
+        ()
     }
 }
