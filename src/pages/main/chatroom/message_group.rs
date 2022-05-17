@@ -7,21 +7,18 @@ use gtk::{Align, Box, Label, Orientation, Widget};
 use super::super::MainMsg;
 
 #[derive(Debug, Clone)]
-pub struct Message {
+pub struct MessageGroup {
     pub author: String,
-    pub content: String,
+    pub messages: Vec<String>,
 }
 
-#[derive(Debug)]
-pub struct MessageWidgets {}
-
-impl FactoryComponent<Box, MainMsg> for Message {
-    type Widgets = MessageWidgets;
+impl FactoryComponent<Box, MainMsg> for MessageGroup {
+    type Widgets = ();
     type Input = MainMsg;
     type Root = Box;
     type Command = ();
     type CommandOutput = ();
-    type InitParams = Message;
+    type InitParams = MessageGroup;
     type Output = ();
 
     fn init_model(
@@ -29,7 +26,7 @@ impl FactoryComponent<Box, MainMsg> for Message {
         _index: &DynamicIndex,
         _input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
-    ) -> Message {
+    ) -> MessageGroup {
         message
     }
 
@@ -62,22 +59,29 @@ impl FactoryComponent<Box, MainMsg> for Message {
             .label(self.author.as_str())
             .css_classes(vec!["caption".to_string()])
             .build();
-        let message_box = Box::builder()
-            .css_classes(vec!["message-box".to_string()])
-            .halign(Align::Start)
+        let messages_box = Box::builder()
+            .orientation(Orientation::Vertical)
+            .spacing(4)
             .build();
-        let message = Label::builder()
-            .label(self.content.as_str())
-            .selectable(true)
-            .build();
-
-        message_box.append(&message);
+        for content in self.messages.iter() {
+            let message_box = Box::builder()
+                .css_classes(vec!["message-box".to_string()])
+                .halign(Align::Start)
+                .build();
+            let message = Label::builder()
+                .label(content.as_str())
+                .selectable(true)
+                .build();
+            message_box.append(&message);
+            messages_box.append(&message_box);
+        }
         username_box.append(&username);
         left_box.append(&avatar);
         right_box.append(&username_box);
-        right_box.append(&message_box);
+        right_box.append(&messages_box);
         root.append(&left_box);
         root.append(&right_box);
-        MessageWidgets {}
+
+        ()
     }
 }

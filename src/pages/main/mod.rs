@@ -14,10 +14,7 @@ use gtk::{
 };
 
 use self::chatroom::ChatroomInitParams;
-use self::{
-    chatroom::{Chatroom, Message},
-    sidebar::UserItem,
-};
+use self::{chatroom::Chatroom, sidebar::UserItem};
 use crate::app::AppMessage;
 
 const MOCK_CHATS_LIST: [(&str, &str); 13] = [
@@ -41,6 +38,12 @@ pub struct MainPageModel {
     message: Option<MainMsg>,
     chats_list: FactoryVecDeque<ListBox, UserItem, MainMsg>,
     chatrooms: FactoryVecDeque<Stack, Chatroom, MainMsg>,
+}
+
+#[derive(Clone)]
+pub struct Message {
+    author: String,
+    message: String,
 }
 
 #[derive(Debug)]
@@ -190,12 +193,12 @@ impl SimpleComponent for MainPageModel {
                     if i % 4 == 0 {
                         messages.push_back(Message {
                             author: "You".to_string(),
-                            content: message,
+                            message,
                         });
                     } else {
                         messages.push_back(Message {
                             author: username.to_string(),
-                            content: message,
+                            message,
                         });
                     }
                 }
