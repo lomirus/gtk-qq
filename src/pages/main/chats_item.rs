@@ -1,9 +1,8 @@
 use relm4::factory::{DynamicIndex, FactoryComponent};
 use relm4::{adw, gtk, Sender, WidgetPlus};
 
-use adw::prelude::*;
-use adw::Avatar;
-use gtk::{Align, Box, Label, ListBox, Orientation};
+use adw::{Avatar, prelude::*};
+use gtk::{Align, Box, Label, ListBox, Orientation, ListBoxRow};
 
 use super::MainMsg;
 
@@ -38,7 +37,7 @@ impl FactoryComponent<ListBox, MainMsg> for ChatsItem {
 
     fn init_root(&self) -> Self::Root {
         relm4::view! {
-            root = gtk::Box {
+            root = Box {
             }
         }
         root
@@ -48,7 +47,7 @@ impl FactoryComponent<ListBox, MainMsg> for ChatsItem {
         &mut self,
         _index: &DynamicIndex,
         root: &Self::Root,
-        _returned_widget: &gtk::ListBoxRow,
+        _returned_widget: &ListBoxRow,
         _input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
     ) -> Self::Widgets {

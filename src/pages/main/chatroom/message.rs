@@ -2,7 +2,7 @@ use relm4::factory::{DynamicIndex, FactoryComponent};
 use relm4::{adw, gtk, Sender};
 
 use adw::{prelude::*, Avatar};
-use gtk::{Align, Box, Label, Orientation};
+use gtk::{Align, Box, Label, Orientation, Widget};
 
 use super::super::MainMsg;
 
@@ -47,7 +47,7 @@ impl FactoryComponent<Box, MainMsg> for Message {
         &mut self,
         index: &DynamicIndex,
         root: &Self::Root,
-        _returned_widget: &gtk::Widget,
+        _returned_widget: &Widget,
         input: &Sender<Self::Input>,
         output: &Sender<Self::Output>,
     ) -> Self::Widgets {

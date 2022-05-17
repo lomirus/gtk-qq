@@ -3,8 +3,7 @@ use std::collections::VecDeque;
 use relm4::actions::{RelmAction, RelmActionGroup};
 use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
 
-use adw::prelude::*;
-use adw::{ActionRow, Avatar, HeaderBar, PreferencesGroup, Toast, ToastOverlay};
+use adw::{prelude::*, ActionRow, Avatar, HeaderBar, PreferencesGroup, Toast, ToastOverlay};
 use gtk::{Align, Box, Button, Entry, Label, MenuButton, Orientation};
 
 use crate::app::AppMessage;
@@ -156,9 +155,7 @@ impl SimpleComponent for LoginPageModel {
 
         ComponentParts {
             model,
-            widgets: LoginPageWidgets {
-                toast_overlay,
-            },
+            widgets: LoginPageWidgets { toast_overlay },
         }
     }
 

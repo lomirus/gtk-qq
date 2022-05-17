@@ -2,12 +2,11 @@ mod message;
 
 use std::collections::VecDeque;
 
-use relm4::adw::prelude::WidgetExt;
 use relm4::factory::{DynamicIndex, FactoryComponent, FactoryVecDeque};
-use relm4::gtk::ScrolledWindow;
-use relm4::{gtk, Sender};
+use relm4::{adw, gtk, Sender};
 
-use gtk::{Box, Orientation, Stack, StackPage};
+use adw::prelude::*;
+use gtk::{Box, Orientation, ScrolledWindow, Stack, StackPage};
 
 use super::MainMsg;
 pub use message::Message;

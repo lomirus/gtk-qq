@@ -1,10 +1,9 @@
-use relm4::Component;
 use relm4::{
-    adw, gtk, ComponentController, ComponentParts, ComponentSender, Controller, SimpleComponent,
+    adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller,
+    SimpleComponent,
 };
 
-use adw::prelude::*;
-use adw::ApplicationWindow;
+use adw::{prelude::*, ApplicationWindow};
 use gtk::{Box, Stack, StackTransitionType};
 
 use crate::pages::{login::LoginPageModel, main::MainPageModel};

@@ -7,8 +7,7 @@ use relm4::actions::{RelmAction, RelmActionGroup};
 use relm4::factory::FactoryVecDeque;
 use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent, WidgetPlus};
 
-use adw::prelude::*;
-use adw::{HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
+use adw::{prelude::*, HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
 use gtk::{
     Align, Box, Button, Entry, Label, ListBox, MenuButton, Orientation, ScrolledWindow, Separator,
     Stack,
