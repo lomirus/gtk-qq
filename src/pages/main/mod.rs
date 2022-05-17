@@ -1,5 +1,5 @@
 mod chatroom;
-mod chats_item;
+mod sidebar;
 
 use std::collections::VecDeque;
 
@@ -16,7 +16,7 @@ use gtk::{
 use self::chatroom::ChatroomInitParams;
 use self::{
     chatroom::{Chatroom, Message},
-    chats_item::ChatsItem,
+    sidebar::UserItem,
 };
 use crate::app::AppMessage;
 
@@ -39,7 +39,7 @@ const MOCK_CHATS_LIST: [(&str, &str); 13] = [
 
 pub struct MainPageModel {
     message: Option<MainMsg>,
-    chats_list: FactoryVecDeque<ListBox, ChatsItem, MainMsg>,
+    chats_list: FactoryVecDeque<ListBox, UserItem, MainMsg>,
     chatrooms: FactoryVecDeque<Stack, Chatroom, MainMsg>,
 }
 
@@ -173,13 +173,13 @@ impl SimpleComponent for MainPageModel {
             .main_page
             .insert_action_group("menu", Some(&actions));
 
-        let mut chats_list: FactoryVecDeque<ListBox, ChatsItem, MainMsg> =
+        let mut chats_list: FactoryVecDeque<ListBox, UserItem, MainMsg> =
             FactoryVecDeque::new(widgets.sidebar_chats.clone(), &sender.input);
         let mut chatrooms: FactoryVecDeque<Stack, Chatroom, MainMsg> =
             FactoryVecDeque::new(widgets.chatroom_stack.clone(), &sender.input);
 
         MOCK_CHATS_LIST.iter().for_each(|(username, last_message)| {
-            chats_list.push_back(ChatsItem {
+            chats_list.push_back(UserItem {
                 username: username.to_string(),
                 last_message: last_message.to_string(),
             });

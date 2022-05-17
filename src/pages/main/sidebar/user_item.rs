@@ -4,21 +4,21 @@ use relm4::{adw, gtk, Sender, WidgetPlus};
 use adw::{Avatar, prelude::*};
 use gtk::{Align, Box, Label, ListBox, Orientation, ListBoxRow};
 
-use super::MainMsg;
+use crate::pages::main::MainMsg;
 
 #[derive(Debug)]
-pub struct ChatsItem {
+pub struct UserItem {
     pub username: String,
     pub last_message: String,
 }
 
-pub struct ChatItemWidgets {
+pub struct UserItemWidgets {
     
 }
 
-impl FactoryComponent<ListBox, MainMsg> for ChatsItem {
-    type InitParams = ChatsItem;
-    type Widgets = ChatItemWidgets;
+impl FactoryComponent<ListBox, MainMsg> for UserItem {
+    type InitParams = UserItem;
+    type Widgets = UserItemWidgets;
     type Input = MainMsg;
     type Output = ();
     type Command = ();
@@ -77,6 +77,6 @@ impl FactoryComponent<ListBox, MainMsg> for ChatsItem {
         }
 
         root.append(&item);
-        ChatItemWidgets { }
+        UserItemWidgets { }
     }
 }
