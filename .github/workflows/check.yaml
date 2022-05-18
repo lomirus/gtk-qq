@@ -1,4 +1,4 @@
-name: CI
+name: check
 
 on:
   push:
@@ -9,21 +9,16 @@ on:
       - '**.md'
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/gtk-rs/gtk4-rs/gtk4:latest
-    strategy:
-      matrix:
-        rust:
-          - stable
-          - beta
-          - nightly
+    env:
+      RUSTFLAGS: -D warnings
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{ matrix.rust }}
-          override: true
+          toolchain: stable
       - run: meson setup build
-      - run: cargo build
+      - run: cargo check

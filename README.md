@@ -1,7 +1,18 @@
 # GTK QQ (WIP)
 
-[![CI](https://github.com/lomirus/gtk-qq/actions/workflows/ci.yaml/badge.svg)](https://github.com/lomirus/gtk-qq/actions/workflows/ci.yaml)
-[![dependency status](https://deps.rs/repo/github/lomirus/gtk-qq/status.svg)](https://deps.rs/repo/github/lomirus/gtk-qq)
+[![check-badge]][check-link]
+[![fmt-badge]][fmt-link]
+[![clippy-badge]][clippy-link]
+[![dependency-badge]][dependency-link]
+
+[check-badge]: https://github.com/lomirus/gtk-qq/workflows/check/badge.svg
+[check-link]: https://github.com/lomirus/gtk-qq/actions/workflows/check.yaml
+[fmt-badge]: https://github.com/lomirus/gtk-qq/workflows/fmt/badge.svg
+[fmt-link]: https://github.com/lomirus/gtk-qq/actions/workflows/fmt.yaml
+[clippy-badge]: https://github.com/lomirus/gtk-qq/workflows/clippy/badge.svg
+[clippy-link]: https://github.com/lomirus/gtk-qq/actions/workflows/clippy.yaml
+[dependency-badge]: https://deps.rs/repo/github/lomirus/gtk-qq/status.svg
+[dependency-link]: https://deps.rs/repo/github/lomirus/gtk-qq
 
 Unofficial Linux [QQ](https://im.qq.com/) client, based on GTK4 and libadwaita, developed with Rust and [Relm4](https://relm4.org/).
 
