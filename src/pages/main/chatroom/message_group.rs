@@ -2,7 +2,7 @@ use relm4::factory::{DynamicIndex, FactoryComponent};
 use relm4::{adw, gtk, Sender};
 
 use adw::{prelude::*, Avatar};
-use gtk::{Box, Label, ListBox, Orientation, Widget};
+use gtk::{Align, Box, Label, ListBox, Orientation, Widget};
 
 use super::super::MainMsg;
 
@@ -37,6 +37,10 @@ impl FactoryComponent<Box, MainMsg> for MessageGroup {
             .margin_bottom(8)
             .build();
 
+        if self.author == "You" {
+            root_box.set_halign(Align::End)
+        }
+
         root_box
     }
 
@@ -49,8 +53,8 @@ impl FactoryComponent<Box, MainMsg> for MessageGroup {
         output: &Sender<Self::Output>,
     ) -> Self::Widgets {
         let avatar = Avatar::new(32, Some(self.author.as_str()), true);
-        let left_box = Box::new(Orientation::Vertical, 0);
-        let right_box = Box::new(Orientation::Vertical, 4);
+        let avatar_box = Box::new(Orientation::Vertical, 0);
+        let main_box = Box::new(Orientation::Vertical, 4);
         let username_box = Box::default();
 
         let username = Label::new(Some(self.author.as_str()));
@@ -72,11 +76,19 @@ impl FactoryComponent<Box, MainMsg> for MessageGroup {
         }
 
         username_box.append(&username);
-        left_box.append(&avatar);
-        right_box.append(&username_box);
-        right_box.append(&messages_box);
-        root.append(&left_box);
-        root.append(&right_box);
+        avatar_box.append(&avatar);
+        main_box.append(&username_box);
+        main_box.append(&messages_box);
+
+        if self.author == "You" {
+            username_box.set_halign(Align::End);
+            root.append(&main_box);
+            root.append(&avatar_box);
+        } else {
+            username_box.set_halign(Align::Start);
+            root.append(&avatar_box);
+            root.append(&main_box);
+        }
 
         ()
     }
