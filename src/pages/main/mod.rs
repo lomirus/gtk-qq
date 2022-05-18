@@ -37,7 +37,7 @@ pub struct MainPageModel {
     chatrooms: FactoryVecDeque<Stack, Chatroom, MainMsg>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Message {
     author: String,
     message: String,

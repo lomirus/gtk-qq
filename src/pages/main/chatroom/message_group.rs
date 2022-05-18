@@ -4,7 +4,7 @@ use relm4::{adw, gtk, Sender};
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, Orientation, Widget};
 
-use super::super::MainMsg;
+use super::ChatroomMsg;
 
 #[derive(Debug, Clone)]
 pub struct MessageGroup {
@@ -12,9 +12,9 @@ pub struct MessageGroup {
     pub messages: Vec<String>,
 }
 
-impl FactoryComponent<Box, MainMsg> for MessageGroup {
+impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
     type Widgets = ();
-    type Input = MainMsg;
+    type Input = ChatroomMsg;
     type Root = Box;
     type Command = ();
     type CommandOutput = ();

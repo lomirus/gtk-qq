@@ -14,11 +14,14 @@ use message_group::MessageGroup;
 #[derive(Debug)]
 pub struct Chatroom {
     pub username: String,
-    pub messages: FactoryVecDeque<Box, MessageGroup, MainMsg>,
+    messages: FactoryVecDeque<Box, MessageGroup, ChatroomMsg>,
+    input_box: Box,
 }
 
-pub enum ChatroomRelmMessage {
+#[derive(Debug)]
+pub enum ChatroomMsg {
     AddMessage(Message),
+    SendMessage(Message),
 }
 
 pub struct ChatroomInitParams {
@@ -28,7 +31,7 @@ pub struct ChatroomInitParams {
 
 impl FactoryComponent<Stack, MainMsg> for Chatroom {
     type Widgets = ();
-    type Input = ChatroomRelmMessage;
+    type Input = ChatroomMsg;
     type Root = Box;
     type Command = ();
     type CommandOutput = ();
@@ -46,23 +49,8 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
             }
         }
 
-        relm4::view! {
-            input = &Box {
-                set_margin_all: 8,
-                append = &Entry {
-                    set_hexpand: true,
-                    set_show_emoji_icon: true,
-                    set_placeholder_text: Some("Send a message..."),
-                    set_margin_end: 8
-                },
-                append = &Button {
-                    set_icon_name: "send-symbolic",
-                },
-            }
-        }
-        
         root.append(&view);
-        root.append(&input);
+        root.append(&self.input_box);
         root
     }
 
@@ -93,22 +81,49 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
         let messages_box = Box::new(Orientation::Vertical, 2);
         messages_box.set_css_classes(&["chatroom-box"]);
 
-        let messages: FactoryVecDeque<Box, MessageGroup, MainMsg> =
-            FactoryVecDeque::new(messages_box, output);
+        let messages: FactoryVecDeque<Box, MessageGroup, ChatroomMsg> =
+            FactoryVecDeque::new(messages_box, input);
         for msg_src in messages_src.iter() {
-            input.send(ChatroomRelmMessage::AddMessage(msg_src.clone()))
+            input.send(ChatroomMsg::AddMessage(msg_src.clone()))
         }
-        Chatroom { username, messages }
+
+        relm4::view! {
+            input_box = &Box {
+                set_margin_all: 8,
+                append: entry = &Entry {
+                    set_hexpand: true,
+                    set_show_emoji_icon: true,
+                    set_placeholder_text: Some("Send a message..."),
+                    set_margin_end: 8,
+                },
+                append = &Button {
+                    set_icon_name: "send-symbolic",
+                    connect_clicked(input) => move |_| {
+                        input.send(ChatroomMsg::SendMessage(Message {
+                            author: "You".to_string(),
+                            message: entry.buffer().text()
+                        }));
+                        entry.buffer().set_text("");
+                    }
+                },
+            }
+        }
+
+        Chatroom {
+            username,
+            messages,
+            input_box,
+        }
     }
 
     fn update(
         &mut self,
         relm_msg: Self::Input,
-        _input: &Sender<Self::Input>,
+        input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
     ) -> Option<Self::Command> {
         match relm_msg {
-            ChatroomRelmMessage::AddMessage(message) => {
+            ChatroomMsg::AddMessage(message) => {
                 if !self.messages.is_empty() {
                     let mut last_message_group = self.messages.pop_back().unwrap();
                     if last_message_group.author == message.author {
@@ -125,11 +140,15 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
                     self.messages.push_back(MessageGroup {
                         author: message.author,
                         messages: vec![message.message],
-                    })
+                    });
                 }
+
+                self.messages.render_changes();
+            }
+            ChatroomMsg::SendMessage(message) => {
+                input.send(ChatroomMsg::AddMessage(message));
             }
         }
-        self.messages.render_changes();
         None
     }
 }
