@@ -2,16 +2,8 @@
     padding: 8px;
 }
 
-.message-box {
-    /* background-color: red; */
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
-    padding: 8px;
-    /* margin-left: 8px; */
-    /*
-     * I don't know why, but this causes `(process:39024): 
-     * Gtk-WARNING **: 11:32:09.312: Theme parser warning:
-     * <data>:4:24-25: Empty declaration`. Try to remove
-     * this warning some days.
-     */
-    border-radius: 8px;;
+/* @override libadwaita */
+row > box.header.message-box {
+    margin: 6px;
+    min-height: unset;
 }

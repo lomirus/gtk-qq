@@ -2,7 +2,7 @@ use relm4::factory::{DynamicIndex, FactoryComponent};
 use relm4::{adw, gtk, Sender};
 
 use adw::{prelude::*, Avatar};
-use gtk::{Align, Box, Label, Orientation, Widget};
+use gtk::{Box, Label, ListBox, Orientation, Widget};
 
 use super::super::MainMsg;
 
@@ -49,32 +49,28 @@ impl FactoryComponent<Box, MainMsg> for MessageGroup {
         output: &Sender<Self::Output>,
     ) -> Self::Widgets {
         let avatar = Avatar::new(32, Some(self.author.as_str()), true);
-        let left_box = Box::builder().orientation(Orientation::Vertical).build();
-        let right_box = Box::builder()
-            .orientation(Orientation::Vertical)
-            .spacing(4)
-            .build();
-        let username_box = Box::builder().build();
-        let username = Label::builder()
-            .label(self.author.as_str())
-            .css_classes(vec!["caption".to_string()])
-            .build();
-        let messages_box = Box::builder()
-            .orientation(Orientation::Vertical)
-            .spacing(4)
-            .build();
+        let left_box = Box::new(Orientation::Vertical, 0);
+        let right_box = Box::new(Orientation::Vertical, 4);
+        let username_box = Box::default();
+
+        let username = Label::new(Some(self.author.as_str()));
+        username.add_css_class("caption");
+
+        let messages_box = ListBox::new();
+        messages_box.add_css_class("boxed-list");
+
         for content in self.messages.iter() {
-            let message_box = Box::builder()
-                .css_classes(vec!["message-box".to_string()])
-                .halign(Align::Start)
-                .build();
-            let message = Label::builder()
-                .label(content.as_str())
-                .selectable(true)
-                .build();
+            let message_box = Box::default();
+            message_box.add_css_class("header");
+            message_box.add_css_class("message-box");
+
+            let message = Label::new(Some(content.as_str()));
+            message.set_selectable(true);
+
             message_box.append(&message);
             messages_box.append(&message_box);
         }
+
         username_box.append(&username);
         left_box.append(&avatar);
         right_box.append(&username_box);
