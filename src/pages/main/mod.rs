@@ -5,13 +5,10 @@ use std::collections::VecDeque;
 
 use relm4::actions::{RelmAction, RelmActionGroup};
 use relm4::factory::FactoryVecDeque;
-use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent, WidgetPlus};
+use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
 
 use adw::{prelude::*, HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
-use gtk::{
-    Align, Box, Button, Entry, Label, ListBox, MenuButton, Orientation, ScrolledWindow, Separator,
-    Stack,
-};
+use gtk::{Align, Box, Label, ListBox, MenuButton, Orientation, ScrolledWindow, Separator, Stack};
 
 use self::chatroom::ChatroomInitParams;
 use self::{chatroom::Chatroom, sidebar::UserItem};
@@ -117,25 +114,7 @@ impl SimpleComponent for MainPageModel {
                         set_menu_model: Some(&main_menu),
                     }
                 },
-                append = &Box {
-                    set_orientation: Orientation::Vertical,
-                    append: chatroom_stack = &Stack {
-                        set_vexpand: true,
-                        set_hexpand: true,
-                    },
-                    append = &Box {
-                        set_margin_all: 8,
-                        append = &Entry {
-                            set_hexpand: true,
-                            set_show_emoji_icon: true,
-                            set_placeholder_text: Some("Send a message..."),
-                            set_margin_end: 8
-                        },
-                        append = &Button {
-                            set_icon_name: "send-symbolic",
-                        },
-                    }
-                }
+                append: chatroom_stack = &Stack {},
             } -> {
                 set_navigatable: true
             },

@@ -3,13 +3,13 @@ mod message_group;
 use std::collections::VecDeque;
 
 use relm4::factory::{DynamicIndex, FactoryComponent, FactoryVecDeque};
-use relm4::{adw, gtk, Sender};
+use relm4::{adw, gtk, Sender, WidgetPlus};
 
 use adw::prelude::*;
-use gtk::{Box, Orientation, ScrolledWindow, Stack, StackPage};
+use gtk::{Box, Button, Entry, Orientation, ScrolledWindow, Stack, StackPage};
 
 use super::{MainMsg, Message};
-pub use message_group::MessageGroup;
+use message_group::MessageGroup;
 
 #[derive(Debug)]
 pub struct Chatroom {
@@ -29,15 +29,40 @@ pub struct ChatroomInitParams {
 impl FactoryComponent<Stack, MainMsg> for Chatroom {
     type Widgets = ();
     type Input = ChatroomRelmMessage;
-    type Root = ScrolledWindow;
+    type Root = Box;
     type Command = ();
     type CommandOutput = ();
     type Output = MainMsg;
     type InitParams = ChatroomInitParams;
 
     fn init_root(&self) -> Self::Root {
-        let root = ScrolledWindow::new();
-        root.set_child(Some(self.messages.widget()));
+        let root = Box::new(Orientation::Vertical, 0);
+
+        relm4::view! {
+            view = &ScrolledWindow {
+                set_vexpand: true,
+                set_hexpand: true,
+                set_child: Some(self.messages.widget())
+            }
+        }
+
+        relm4::view! {
+            input = &Box {
+                set_margin_all: 8,
+                append = &Entry {
+                    set_hexpand: true,
+                    set_show_emoji_icon: true,
+                    set_placeholder_text: Some("Send a message..."),
+                    set_margin_end: 8
+                },
+                append = &Button {
+                    set_icon_name: "send-symbolic",
+                },
+            }
+        }
+        
+        root.append(&view);
+        root.append(&input);
         root
     }
 
