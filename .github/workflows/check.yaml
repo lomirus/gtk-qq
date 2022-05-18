@@ -20,5 +20,5 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - run: meson setup build
+      - run: meson setup builddir
       - run: cargo check

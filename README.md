@@ -33,8 +33,8 @@ Note:
 If you want join the development or just to build this project, you need first to setup the environment by [meson](https://mesonbuild.com/Quick-guide.html) in the root directory of this project:
 
 ```bash
-meson setup build
-meson install -C build
+meson setup builddir
+meson install -C builddir
 ```
 
 Then as usual, just run:
