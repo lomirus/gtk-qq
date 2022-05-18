@@ -5,6 +5,16 @@
 
 Unofficial Linux [QQ](https://im.qq.com/) client, based on GTK4 and libadwaita, developed with Rust and [Relm4](https://relm4.org/).
 
+## Screenshots
+
+| Light                                      | Dark                                     |
+| ------------------------------------------ | ---------------------------------------- |
+| ![Light Mode Screenshot](./docs/light.png) | ![Dark Mode Screenshot](./docs/dark.png) |
+
+Note: 
+- These screenshots do not represent the final UI.
+- The chatting function is not implemented yet.
+
 ## Run & Build
 
 ### Linux
