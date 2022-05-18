@@ -189,7 +189,12 @@ impl SimpleComponent for MainPageModel {
             chatrooms.push_back({
                 let mut messages = VecDeque::new();
                 for i in 0..18 {
-                    let message = format!("{}\nThis is the No.{} message in this page.", last_message, i + 1).to_string();
+                    let message = format!(
+                        "{}\nThis is the No.{} message in this page.",
+                        last_message,
+                        i + 1
+                    )
+                    .to_string();
                     if i % 4 == 0 {
                         messages.push_back(Message {
                             author: "You".to_string(),

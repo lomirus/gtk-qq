@@ -53,8 +53,6 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
         let index = index.as_str();
         returned_widget.set_name(index);
         returned_widget.set_title(index);
-
-        ()
     }
 
     fn init_model(
@@ -86,7 +84,7 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
     ) -> Option<Self::Command> {
         match relm_msg {
             ChatroomRelmMessage::AddMessage(message) => {
-                if self.messages.len() > 0 {
+                if !self.messages.is_empty() {
                     let mut last_message_group = self.messages.pop_back().unwrap();
                     if last_message_group.author == message.author {
                         last_message_group.messages.push(message.message);

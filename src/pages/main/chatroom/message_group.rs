@@ -89,7 +89,5 @@ impl FactoryComponent<Box, MainMsg> for MessageGroup {
             root.append(&avatar_box);
             root.append(&main_box);
         }
-
-        ()
     }
 }

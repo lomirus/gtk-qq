@@ -1,8 +1,8 @@
 use relm4::factory::{DynamicIndex, FactoryComponent};
 use relm4::{adw, gtk, Sender, WidgetPlus};
 
-use adw::{Avatar, prelude::*};
-use gtk::{Align, Box, Label, ListBox, Orientation, ListBoxRow};
+use adw::{prelude::*, Avatar};
+use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation};
 
 use crate::pages::main::MainMsg;
 
@@ -20,7 +20,6 @@ impl FactoryComponent<ListBox, MainMsg> for UserItem {
     type Command = ();
     type CommandOutput = ();
     type Root = Box;
-
 
     fn init_model(
         init_params: Self::InitParams,
@@ -73,6 +72,5 @@ impl FactoryComponent<ListBox, MainMsg> for UserItem {
         }
 
         root.append(&item);
-        ()
     }
 }

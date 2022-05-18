@@ -41,11 +41,11 @@ impl SimpleComponent for LoginPageModel {
         match msg {
             LoginStart => {
                 println!("{:?}", self);
-                if self.account == "" {
+                if self.account.is_empty() {
                     sender.input(PushToast("Account cannot be empty".to_string()));
                     return;
                 }
-                if self.password == "" {
+                if self.password.is_empty() {
                     sender.input(PushToast("Password cannot be empty".to_string()));
                     return;
                 }
