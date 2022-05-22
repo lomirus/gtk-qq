@@ -88,22 +88,28 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
         }
 
         relm4::view! {
+            entry = &Entry {
+                set_hexpand: true,
+                set_show_emoji_icon: true,
+                set_placeholder_text: Some("Send a message..."),
+                set_margin_end: 8,
+            }
+        }
+
+        let entry_buffer = entry.buffer();
+
+        relm4::view! {
             input_box = &Box {
                 set_margin_all: 8,
-                append: entry = &Entry {
-                    set_hexpand: true,
-                    set_show_emoji_icon: true,
-                    set_placeholder_text: Some("Send a message..."),
-                    set_margin_end: 8,
-                },
+                append: &entry,
                 append = &Button {
                     set_icon_name: "send-symbolic",
-                    connect_clicked(input) => move |_| {
+                    connect_clicked[input] => move |_| {
                         input.send(ChatroomMsg::SendMessage(Message {
                             author: "You".to_string(),
-                            message: entry.buffer().text()
+                            message: entry_buffer.text()
                         }));
-                        entry.buffer().set_text("");
+                        entry_buffer.set_text("");
                     }
                 },
             }

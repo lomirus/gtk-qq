@@ -61,6 +61,7 @@ impl SimpleComponent for MainPageModel {
     type InitParams = ();
 
     view! {
+        #[root]
         main_page = &Leaflet {
             append: sidebar = &Box {
                 set_vexpand: true,
@@ -76,30 +77,9 @@ impl SimpleComponent for MainPageModel {
                 },
                 append: stack = &ViewStack {
                     set_vexpand: true,
-                    add_titled(Some("chats"), "Chats") = &ScrolledWindow {
-                        set_child: sidebar_chats = Some(&ListBox) {
-                            set_css_classes: &["navigation-sidebar"],
-                            connect_row_activated(sender) => move |_, selected_row| {
-                                let index = selected_row.index();
-                                sender.input(MainMsg::SelectChatroom(index));
-                            },
-                        }
-                    } -> {
-                        set_icon_name: Some("chat-symbolic")
-                    },
-                    add_titled(Some("contact"), "Contact") = &Box {
-                        set_halign: Align::Center,
-                        append: &Label::new(Some("Contact"))
-                    } -> {
-                        set_icon_name: Some("address-book-symbolic")
-                    },
                 }
-            } -> {
-                set_navigatable: true
             },
             append = &Separator::new(Orientation::Horizontal) {
-            } -> {
-                set_navigatable: false
             },
             append: chatroom = &Box {
                 set_vexpand: true,
@@ -115,14 +95,25 @@ impl SimpleComponent for MainPageModel {
                     }
                 },
                 append: chatroom_stack = &Stack {},
-            } -> {
-                set_navigatable: true
             },
-            connect_folded_notify(sender) => move |leaflet| {
+            connect_folded_notify[sender] => move |leaflet| {
                 if leaflet.is_folded() {
                     sender.input(MainMsg::WindowFolded);
                 }
             },
+        },
+        chats_stack = ScrolledWindow {
+            set_child: sidebar_chats = Some(&ListBox) {
+                set_css_classes: &["navigation-sidebar"],
+                connect_row_activated[sender] => move |_, selected_row| {
+                    let index = selected_row.index();
+                    sender.input(MainMsg::SelectChatroom(index));
+                },
+            }
+        },
+        contact_stack = &Box {
+            set_halign: Align::Center,
+            append: &Label::new(Some("Contact"))
         }
     }
 
@@ -139,6 +130,12 @@ impl SimpleComponent for MainPageModel {
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let widgets = view_output!();
+
+        let stack: &ViewStack = &widgets.stack;
+        let chats_stack = stack.add_titled(&widgets.chats_stack, None, "Chats");
+        let contact_stack = stack.add_titled(&widgets.contact_stack, None, "Contact");
+        chats_stack.set_icon_name(Some("chat-symbolic"));
+        contact_stack.set_icon_name(Some("address-book-symbolic"));
 
         let shortcuts_action: RelmAction<ShortcutsAction> = RelmAction::new_stateless(move |_| {
             println!("Keyboard Shortcuts");

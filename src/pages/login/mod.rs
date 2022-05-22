@@ -99,7 +99,7 @@ impl SimpleComponent for LoginPageModel {
                 },
                 pack_end = &Button {
                     set_icon_name: "go-next",
-                    connect_clicked(sender) => move |_| {
+                    connect_clicked[sender] => move |_| {
                         sender.input(LoginPageMsg::LoginStart);
                     },
                 },
@@ -129,7 +129,7 @@ impl SimpleComponent for LoginPageModel {
                             add_suffix = &Entry {
                                 set_valign: Align::Center,
                                 set_placeholder_text: Some("Please input your QQ account "),
-                                connect_changed(sender) => move |e| {
+                                connect_changed[sender] => move |e| {
                                     sender.input(LoginPageMsg::AccountChange(e.buffer().text()));
                                 }
                             },
@@ -139,7 +139,7 @@ impl SimpleComponent for LoginPageModel {
                             add_suffix = &Entry {
                                 set_valign: Align::Center,
                                 set_placeholder_text: Some("Please input your QQ password"),
-                                connect_changed(sender) => move |e| {
+                                connect_changed[sender] => move |e| {
                                     sender.input(LoginPageMsg::PasswordChange(e.buffer().text()));
                                 }
                             },
