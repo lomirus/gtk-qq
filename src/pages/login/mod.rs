@@ -139,6 +139,7 @@ impl SimpleComponent for LoginPageModel {
                             add_suffix = &Entry {
                                 set_valign: Align::Center,
                                 set_placeholder_text: Some("Please input your QQ password"),
+                                set_visibility: false,
                                 connect_changed[sender] => move |e| {
                                     sender.input(LoginPageMsg::PasswordChange(e.buffer().text()));
                                 }
