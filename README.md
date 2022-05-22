@@ -22,15 +22,15 @@ Unofficial Linux [QQ](https://im.qq.com/) client, based on GTK4 and libadwaita, 
 | ------------------------------------------ | ---------------------------------------- |
 | ![Light Mode Screenshot](./docs/light.png) | ![Dark Mode Screenshot](./docs/dark.png) |
 
-Note: 
-- These screenshots do not represent the final UI.
-- The chatting function is not implemented yet.
+> **Note**
+> - These screenshots do not represent the final UI.
+> - The chatting function is not implemented yet.
 
 ## Run & Build
 
 ### Linux
 
-If you want join the development or just to build this project, you need first to setup the environment by [meson](https://mesonbuild.com/Quick-guide.html) in the root directory of this project:
+If you want join the development or just to build this project from source, you need first to setup the environment by [meson](https://mesonbuild.com/Quick-guide.html) in the root directory of this project:
 
 ```bash
 meson setup builddir
@@ -49,11 +49,17 @@ or
 cargo build --release
 ```
 
-depending on your purpose.
+up to your purpose.
 
 ### Windows & MacOS
 
-Gtk applications are harder to be compiled on Windows & MacOS and it will need more configurations to make it work. But considering some special reasons that you know, this project will not offer the release on Windows and MacOS. You can build it still if you like, but I hope you not to distribute the Windows/MacOS build of the project to the public in order to ensure the maintenance of this project.
+Gtk4 based projects would be more complex to compile on Windows/MacOS platform. Nevertheless, considering some special reasons that you know, we shall not offer the Windows/MacOS release or even build scripts. 
+
+> **Warning**
+> 
+> You can try to build it still if you are just for personal use. At the same time, you should also promise that you will not distribute the Windows/MacOS build to the public in order to ensure the maintenance of this project.
+>
+> The user builds, uses or distributes this project at the user's own risk. This project and its contributors assume no responsibility.
 
 ## Contributing
 
