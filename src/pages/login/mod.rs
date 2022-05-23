@@ -9,6 +9,7 @@ use gtk::{Align, Box, Button, Entry, Label, MenuButton, Orientation};
 use rand::prelude::*;
 use ricq::{
     device::Device,
+    ext::common::after_login,
     version::{get_version, Protocol},
     Client, LoginDeviceLocked, LoginResponse, LoginUnknownStatus,
 };
@@ -79,7 +80,6 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
     match res {
         LoginResponse::Success(_) => {
             sender.input(LoginSuccessful);
-            handle.await.unwrap();
         }
         LoginResponse::NeedCaptcha(_) => println!("NeedCaptcha"),
         LoginResponse::AccountFrozen => println!("AccountFrozen"),
@@ -96,20 +96,23 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
             println!("message: {:?}", message);
             println!("sms_phone: {:?}", sms_phone);
             println!("verify_url: {:?}", verify_url);
+            return;
         }
         LoginResponse::TooManySMSRequest => println!("TooManySMSRequest"),
         LoginResponse::DeviceLockLogin(_) => {
             if let Err(err) = client.device_lock_login().await {
                 sender.input(LoginFailed(err.to_string()));
+                return;
             } else {
                 sender.input(LoginSuccessful);
-                handle.await.unwrap();
             }
         }
         LoginResponse::UnknownStatus(LoginUnknownStatus { ref message, .. }) => {
             sender.input(LoginFailed(message.to_string()))
         }
     }
+    after_login(&client).await;
+    handle.await.unwrap();
 }
 
 #[relm4::component(pub)]

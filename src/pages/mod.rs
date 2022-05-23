@@ -1,5 +1,2 @@
-mod login;
-mod main;
-
-pub use login::LoginPageModel;
-pub use main::MainPageModel;
+pub mod login;
+pub mod main;

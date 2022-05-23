@@ -8,6 +8,7 @@ use crate::pages::main::MainMsg;
 
 #[derive(Debug)]
 pub struct UserItem {
+    pub account: i64,
     pub username: String,
     pub last_message: String,
 }

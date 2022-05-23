@@ -1,39 +1,29 @@
 mod chatroom;
 mod sidebar;
 
+use std::cell::RefCell;
 use std::collections::VecDeque;
 
+use once_cell::sync::OnceCell;
 use relm4::factory::FactoryVecDeque;
 use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
+use ricq::msg::elem::RQElem;
+use ricq::structs::FriendMessage;
 
 use adw::{prelude::*, HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
 use gtk::{Align, Box, Label, ListBox, MenuButton, Orientation, ScrolledWindow, Separator, Stack};
 
-use self::chatroom::ChatroomInitParams;
 use self::{chatroom::Chatroom, sidebar::UserItem};
 use crate::app::AppMessage;
+use crate::pages::main::chatroom::ChatroomInitParams;
 
-const MOCK_CHATS_LIST: [(&str, &str); 13] = [
-    ("飞翔的企鹅", "Hello"),
-    ("奔跑的野猪", "World"),
-    ("摆烂的修勾", "喵喵"),
-    ("躺平的猫咪", "汪汪"),
-    ("想润的鼠鼠", "鼠鼠我啊"),
-    ("咆哮的先辈", "哼哼"),
-    ("叛逆的鲁路", "2333"),
-    ("死神的笔记", "2333"),
-    ("进击的巨人", "2333"),
-    ("炼金的术士", "2333"),
-    ("忧郁的凉宫", "2333"),
-    ("灼眼的夏娜", "2333"),
-    ("科学的磁炮", "2333"),
-    // ("被填充过多并被用于测试文本对齐和溢出的字符串标签", "2333"),
-];
+pub static MAIN_SENDER: OnceCell<ComponentSender<MainPageModel>> = OnceCell::new();
 
+#[derive(Debug)]
 pub struct MainPageModel {
-    message: Option<MainMsg>,
-    chats_list: FactoryVecDeque<ListBox, UserItem, MainMsg>,
-    chatrooms: FactoryVecDeque<Stack, Chatroom, MainMsg>,
+    message: Option<ViewMsg>,
+    chats_list: RefCell<FactoryVecDeque<ListBox, UserItem, MainMsg>>,
+    chatrooms: RefCell<FactoryVecDeque<Stack, Chatroom, MainMsg>>,
 }
 
 #[derive(Clone, Debug)]
@@ -45,7 +35,14 @@ pub struct Message {
 #[derive(Debug)]
 pub enum MainMsg {
     WindowFolded,
+    UpdateChatItem(FriendMessage),
     SelectChatroom(i32),
+}
+
+#[derive(Debug)]
+enum ViewMsg {
+    WindowFolded,
+    SelectChatroom(i64),
 }
 
 relm4::new_action_group!(WindowActionGroup, "menu");
@@ -128,6 +125,9 @@ impl SimpleComponent for MainPageModel {
         root: &Self::Root,
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        MAIN_SENDER
+            .set(sender.clone())
+            .expect("failed to initialize main sender");
         let widgets = view_output!();
 
         let stack: &ViewStack = &widgets.stack;
@@ -136,50 +136,16 @@ impl SimpleComponent for MainPageModel {
         chats_stack.set_icon_name(Some("chat-symbolic"));
         contact_stack.set_icon_name(Some("address-book-symbolic"));
 
-        let mut chats_list: FactoryVecDeque<ListBox, UserItem, MainMsg> =
+        let chats_list: FactoryVecDeque<ListBox, UserItem, MainMsg> =
             FactoryVecDeque::new(widgets.sidebar_chats.clone(), &sender.input);
-        let mut chatrooms: FactoryVecDeque<Stack, Chatroom, MainMsg> =
+        let chatrooms: FactoryVecDeque<Stack, Chatroom, MainMsg> =
             FactoryVecDeque::new(widgets.chatroom_stack.clone(), &sender.input);
 
-        MOCK_CHATS_LIST.iter().for_each(|(username, last_message)| {
-            chats_list.push_back(UserItem {
-                username: username.to_string(),
-                last_message: last_message.to_string(),
-            });
-            chatrooms.push_back({
-                let mut messages = VecDeque::new();
-                for i in 0..18 {
-                    let message = format!(
-                        "{}\nThis is the No.{} message in this page.",
-                        last_message,
-                        i + 1
-                    )
-                    .to_string();
-                    if i % 4 == 0 {
-                        messages.push_back(Message {
-                            author: "You".to_string(),
-                            message,
-                        });
-                    } else {
-                        messages.push_back(Message {
-                            author: username.to_string(),
-                            message,
-                        });
-                    }
-                }
-                ChatroomInitParams {
-                    username: username.to_string(),
-                    messages,
-                }
-            });
-        });
-        chats_list.render_changes();
-        chatrooms.render_changes();
         ComponentParts {
             model: MainPageModel {
                 message: None,
-                chats_list,
-                chatrooms,
+                chats_list: RefCell::new(chats_list),
+                chatrooms: RefCell::new(chatrooms),
             },
             widgets,
         }
@@ -188,16 +154,62 @@ impl SimpleComponent for MainPageModel {
     fn update(&mut self, msg: MainMsg, _sender: &ComponentSender<Self>) {
         use MainMsg::*;
         match msg {
-            WindowFolded => self.message = Some(MainMsg::WindowFolded),
-            SelectChatroom(id) => self.message = Some(MainMsg::SelectChatroom(id)),
+            WindowFolded => self.message = Some(ViewMsg::WindowFolded),
+            SelectChatroom(index) => {
+                let account = self.chats_list.borrow().get(index as usize).account;
+                self.message = Some(ViewMsg::SelectChatroom(account));
+            }
+            UpdateChatItem(message) => {
+                // Get sender account
+                let account = message.from_uin;
+                // Get message content
+                let mut content = String::new();
+                for elem in message.elements {
+                    if let RQElem::Text(text) = elem {
+                        content = text.content;
+                    }
+                }
+                // Check if the sender is already in the chat list
+                let mut has_sender_already_in_list = false;
+                let mut chats_list = self.chats_list.borrow_mut();
+                let mut chatrooms = self.chatrooms.borrow_mut();
+                for i in 0..chats_list.len() {
+                    let this_account = chats_list.get(i).account;
+                    if this_account == account {
+                        has_sender_already_in_list = true;
+                        chats_list.swap(0, i);
+                        chats_list.front_mut().unwrap().last_message = content.clone();
+                        chatrooms.swap(0, i);
+                        chatrooms.front_mut().unwrap().add_message(Message {
+                            author: account.to_string(),
+                            message: content.to_string(),
+                        });
+                        break;
+                    }
+                }
+
+                if !has_sender_already_in_list {
+                    chats_list.push_front(UserItem {
+                        account,
+                        username: account.to_string(),
+                        last_message: content.to_string(),
+                    });
+                    let mut messages = VecDeque::new();
+                    messages.push_back(Message {
+                        author: account.to_string(),
+                        message: content,
+                    });
+                    chatrooms.push_front(ChatroomInitParams { account, messages });
+                }
+            }
         }
-        self.chats_list.render_changes();
-        self.chatrooms.render_changes();
+        self.chats_list.borrow().render_changes();
+        self.chatrooms.borrow().render_changes();
     }
 
     fn pre_view() {
         if let Some(message) = &model.message {
-            use MainMsg::*;
+            use ViewMsg::*;
             match message {
                 WindowFolded => widgets.main_page.set_visible_child(&widgets.chatroom),
                 SelectChatroom(id) => widgets
@@ -206,6 +218,6 @@ impl SimpleComponent for MainPageModel {
             }
         }
 
-        self.chatrooms.render_changes();
+        self.chatrooms.borrow().render_changes();
     }
 }

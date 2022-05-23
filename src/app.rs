@@ -8,7 +8,7 @@ use gtk::{Box, Stack, StackTransitionType};
 
 use crate::{
     actions::create_gactions,
-    pages::{LoginPageModel, MainPageModel},
+    pages::{login::LoginPageModel, main::MainPageModel},
 };
 
 pub struct AppModel {
@@ -22,6 +22,7 @@ enum Page {
     Main,
 }
 
+#[derive(Debug)]
 pub enum AppMessage {
     LoginSuccessful,
 }

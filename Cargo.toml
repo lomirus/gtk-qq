@@ -21,6 +21,7 @@ rev = "a4d92b66ff4c04a9ed0d79d8412d2a2222daa0ec"
 tokio = "1.18.2"
 rand = "0.8.5"
 async-trait = "0.1.53"
+once_cell = "1.11.0"
 
 [profile.release]
 lto = true

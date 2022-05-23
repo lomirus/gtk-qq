@@ -2,6 +2,8 @@ use async_trait::async_trait;
 use ricq::client::event::*;
 use ricq::handler::{Handler, QEvent::*};
 
+use crate::pages::main::{MainMsg, MAIN_SENDER};
+
 pub struct AppHandler;
 
 #[async_trait]
@@ -19,7 +21,8 @@ impl Handler for AppHandler {
                 println!("SelfGroupMessage");
             }
             FriendMessage(FriendMessageEvent { client, message }) => {
-                println!("FriendMessage");
+                let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
+                main_sender.input(MainMsg::UpdateChatItem(message))
             }
             FriendAudioMessage(FriendAudioMessageEvent { client, message }) => {
                 println!("FriendAudioMessage");

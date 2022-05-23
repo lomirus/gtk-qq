@@ -13,9 +13,34 @@ use message_group::MessageGroup;
 
 #[derive(Debug)]
 pub struct Chatroom {
-    pub username: String,
-    messages: FactoryVecDeque<Box, MessageGroup, ChatroomMsg>,
+    pub account: i64,
+    pub messages: FactoryVecDeque<Box, MessageGroup, ChatroomMsg>,
     input_box: Box,
+}
+
+impl Chatroom {
+    pub fn add_message(&mut self, message: Message) {
+        if !self.messages.is_empty() {
+            let mut last_message_group = self.messages.pop_back().unwrap();
+            if last_message_group.author == message.author {
+                last_message_group.messages.push(message.message);
+                self.messages.push_back(last_message_group);
+            } else {
+                self.messages.push_back(last_message_group);
+                self.messages.push_back(MessageGroup {
+                    author: message.author,
+                    messages: vec![message.message],
+                });
+            }
+        } else {
+            self.messages.push_back(MessageGroup {
+                author: message.author,
+                messages: vec![message.message],
+            });
+        }
+
+        self.messages.render_changes();
+    }
 }
 
 #[derive(Debug)]
@@ -25,7 +50,7 @@ pub enum ChatroomMsg {
 }
 
 pub struct ChatroomInitParams {
-    pub username: String,
+    pub account: i64,
     pub messages: VecDeque<Message>,
 }
 
@@ -64,8 +89,8 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
     ) -> Self::Widgets {
         let index = index.current_index().to_string();
         let index = index.as_str();
-        returned_widget.set_name(index);
-        returned_widget.set_title(index);
+        returned_widget.set_name(&self.account.to_string());
+        returned_widget.set_title(&self.account.to_string());
     }
 
     fn init_model(
@@ -75,7 +100,7 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
         output: &Sender<Self::Output>,
     ) -> Self {
         let ChatroomInitParams {
-            username,
+            account,
             messages: messages_src,
         } = init_params;
         let messages_box = Box::new(Orientation::Vertical, 2);
@@ -116,7 +141,7 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
         }
 
         Chatroom {
-            username,
+            account,
             messages,
             input_box,
         }
@@ -129,28 +154,7 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
         _output: &Sender<Self::Output>,
     ) -> Option<Self::Command> {
         match relm_msg {
-            ChatroomMsg::AddMessage(message) => {
-                if !self.messages.is_empty() {
-                    let mut last_message_group = self.messages.pop_back().unwrap();
-                    if last_message_group.author == message.author {
-                        last_message_group.messages.push(message.message);
-                        self.messages.push_back(last_message_group);
-                    } else {
-                        self.messages.push_back(last_message_group);
-                        self.messages.push_back(MessageGroup {
-                            author: message.author,
-                            messages: vec![message.message],
-                        });
-                    }
-                } else {
-                    self.messages.push_back(MessageGroup {
-                        author: message.author,
-                        messages: vec![message.message],
-                    });
-                }
-
-                self.messages.render_changes();
-            }
+            ChatroomMsg::AddMessage(message) => self.add_message(message),
             ChatroomMsg::SendMessage(message) => {
                 input.send(ChatroomMsg::AddMessage(message));
             }
