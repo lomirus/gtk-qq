@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/indi/lomirus/gtk-qq/icons/scalable/actions/">
-    <file preprocess="xml-stripblanks">chat-symbolic.svg</file>
-    <file preprocess="xml-stripblanks">address-book-symbolic.svg</file>
-    <file preprocess="xml-stripblanks">send-symbolic.svg</file>
-    <file preprocess="xml-stripblanks">menu-symbolic.svg</file>
+    <file preprocess="xml-stripblanks" alias="chat-symbolic.svg">icons/chat-symbolic.svg</file>
+    <file preprocess="xml-stripblanks" alias="address-book-symbolic.svg">icons/address-book-symbolic.svg</file>
+    <file preprocess="xml-stripblanks" alias="send-symbolic.svg">icons/send-symbolic.svg</file>
+    <file preprocess="xml-stripblanks" alias="menu-symbolic.svg">icons/menu-symbolic.svg</file>
   </gresource>
 </gresources>
