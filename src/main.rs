@@ -1,6 +1,7 @@
 // Delete this after migration
 #![allow(unused_variables)]
 
+mod actions;
 mod app;
 mod config;
 mod pages;

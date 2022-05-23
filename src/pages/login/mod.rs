@@ -1,11 +1,11 @@
 use std::collections::VecDeque;
 
-use relm4::actions::{RelmAction, RelmActionGroup};
 use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
 
 use adw::{prelude::*, ActionRow, Avatar, HeaderBar, PreferencesGroup, Toast, ToastOverlay};
 use gtk::{Align, Box, Button, Entry, Label, MenuButton, Orientation};
 
+use crate::actions::{AboutAction, ShortcutsAction};
 use crate::app::AppMessage;
 
 #[derive(Default, Debug)]
@@ -68,29 +68,12 @@ impl SimpleComponent for LoginPageModel {
         root: &Self::Root,
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        relm4::new_action_group!(WindowActionGroup, "menu");
-        relm4::new_stateless_action!(ShortcutsAction, WindowActionGroup, "shortcuts");
-        relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
-
         relm4::menu! {
             main_menu: {
                 "Keyboard Shortcuts" => ShortcutsAction,
                 "About Gtk QQ" => AboutAction
             }
         }
-
-        let shortcuts_action: RelmAction<ShortcutsAction> = RelmAction::new_stateless(move |_| {
-            println!("Keyboard Shortcuts");
-        });
-        let about_action: RelmAction<AboutAction> = RelmAction::new_stateless(move |_| {
-            println!("About Gtk QQ");
-        });
-        let group: RelmActionGroup<WindowActionGroup> = RelmActionGroup::new();
-        group.add_action(shortcuts_action);
-        group.add_action(about_action);
-
-        let actions = group.into_action_group();
-        root.insert_action_group("menu", Some(&actions));
 
         relm4::view! {
             headerbar = &HeaderBar {
@@ -109,7 +92,6 @@ impl SimpleComponent for LoginPageModel {
                 }
             }
         }
-
         root.append(&headerbar);
 
         relm4::view! {
@@ -149,11 +131,9 @@ impl SimpleComponent for LoginPageModel {
                 },
             }
         }
-
-        let model = LoginPageModel::default();
-
         root.append(&toast_overlay);
 
+        let model = LoginPageModel::default();
         ComponentParts {
             model,
             widgets: LoginPageWidgets { toast_overlay },

@@ -3,7 +3,6 @@ mod sidebar;
 
 use std::collections::VecDeque;
 
-use relm4::actions::{RelmAction, RelmActionGroup};
 use relm4::factory::FactoryVecDeque;
 use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
 
@@ -136,21 +135,6 @@ impl SimpleComponent for MainPageModel {
         let contact_stack = stack.add_titled(&widgets.contact_stack, None, "Contact");
         chats_stack.set_icon_name(Some("chat-symbolic"));
         contact_stack.set_icon_name(Some("address-book-symbolic"));
-
-        let shortcuts_action: RelmAction<ShortcutsAction> = RelmAction::new_stateless(move |_| {
-            println!("Keyboard Shortcuts");
-        });
-        let about_action: RelmAction<AboutAction> = RelmAction::new_stateless(move |_| {
-            println!("About Gtk QQ");
-        });
-        let group: RelmActionGroup<WindowActionGroup> = RelmActionGroup::new();
-        group.add_action(shortcuts_action);
-        group.add_action(about_action);
-
-        let actions = group.into_action_group();
-        widgets
-            .main_page
-            .insert_action_group("menu", Some(&actions));
 
         let mut chats_list: FactoryVecDeque<ListBox, UserItem, MainMsg> =
             FactoryVecDeque::new(widgets.sidebar_chats.clone(), &sender.input);

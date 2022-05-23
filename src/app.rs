@@ -6,7 +6,10 @@ use relm4::{
 use adw::{prelude::*, ApplicationWindow};
 use gtk::{Box, Stack, StackTransitionType};
 
-use crate::pages::{login::LoginPageModel, main::MainPageModel};
+use crate::{
+    actions::create_gactions,
+    pages::{LoginPageModel, MainPageModel},
+};
 
 pub struct AppModel {
     page: Page,
@@ -72,6 +75,10 @@ impl SimpleComponent for AppModel {
                 .forward(&sender.input, |message| message),
         };
         let widgets = view_output!();
+
+        let actions = create_gactions(root.clone());
+        root.insert_action_group("menu", Some(&actions));
+
         ComponentParts { model, widgets }
     }
 }
