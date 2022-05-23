@@ -18,17 +18,30 @@ use tokio::{net::TcpStream, task};
 use crate::actions::{AboutAction, ShortcutsAction};
 use crate::app::AppMessage;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct LoginPageModel {
     account: String,
     password: String,
+    is_login_button_enabled: bool,
     toast_stack: VecDeque<String>,
+}
+
+impl Default for LoginPageModel {
+    fn default() -> Self {
+        LoginPageModel {
+            account: String::new(),
+            password: String::new(),
+            is_login_button_enabled: true,
+            toast_stack: VecDeque::<String>::new(),
+        }
+    }
 }
 
 #[derive(Debug)]
 pub enum LoginPageMsg {
     LoginStart,
     LoginSuccessful,
+    LoginFailed(String),
     AccountChange(String),
     PasswordChange(String),
     PushToast(String),
@@ -36,7 +49,7 @@ pub enum LoginPageMsg {
 }
 
 async fn login(account: i64, password: String, sender: ComponentSender<LoginPageModel>) {
-    use LoginPageMsg::{LoginSuccessful, PushToast};
+    use LoginPageMsg::{LoginFailed, LoginSuccessful};
     // Initialize device and client
     let device = Device::random_with_rng(&mut StdRng::seed_from_u64(account as u64));
     let client = Arc::new(Client::new(
@@ -48,7 +61,7 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
     let stream = match TcpStream::connect(client.get_address()).await {
         Ok(stream) => stream,
         Err(err) => {
-            sender.input(PushToast(format!("Error: {}", err)));
+            sender.input(LoginFailed(err.to_string()));
             return;
         }
     };
@@ -58,7 +71,7 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
     let res = match client.password_login(account, &password).await {
         Ok(res) => res,
         Err(err) => {
-            sender.input(PushToast(format!("Error: {}", err)));
+            sender.input(LoginFailed(err.to_string()));
             return;
         }
     };
@@ -76,10 +89,10 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
             ref message,
             ..
         }) => {
-            sender.input(PushToast(
+            sender.input(LoginFailed(
                 "Device Locked. See more in the console.".to_string(),
             ));
-            println!("------");
+            println!("------[TODO: Add GUI for this]");
             println!("message: {:?}", message);
             println!("sms_phone: {:?}", sms_phone);
             println!("verify_url: {:?}", verify_url);
@@ -87,14 +100,14 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
         LoginResponse::TooManySMSRequest => println!("TooManySMSRequest"),
         LoginResponse::DeviceLockLogin(_) => {
             if let Err(err) = client.device_lock_login().await {
-                sender.input(PushToast(err.to_string()));
+                sender.input(LoginFailed(err.to_string()));
             } else {
                 sender.input(LoginSuccessful);
                 handle.await.unwrap();
             }
         }
         LoginResponse::UnknownStatus(LoginUnknownStatus { ref message, .. }) => {
-            sender.input(PushToast(message.to_string()))
+            sender.input(LoginFailed(message.to_string()))
         }
     }
 }
@@ -122,7 +135,7 @@ impl SimpleComponent for LoginPageModel {
                 set_title_widget = Some(&Label) {
                     set_label: "Login"
                 },
-                pack_end = &Button {
+                pack_end: go_next_button = &Button {
                     set_icon_name: "go-next",
                     connect_clicked[sender] => move |_| {
                         sender.input(LoginPageMsg::LoginStart);
@@ -193,9 +206,14 @@ impl SimpleComponent for LoginPageModel {
                     self.password.to_string()
                 };
                 println!("account: {}, password: {}", account, self.password);
+                self.is_login_button_enabled = false;
                 task::spawn(login(account, password, sender.clone()));
             }
             LoginSuccessful => sender.output(AppMessage::LoginSuccessful),
+            LoginFailed(msg) => {
+                sender.input(PushToast(msg));
+                self.is_login_button_enabled = true;
+            }
             AccountChange(new_account) => self.account = new_account,
             PasswordChange(new_password) => self.password = new_password,
             PushToast(message) => self.toast_stack.push_back(message),
@@ -223,5 +241,8 @@ impl SimpleComponent for LoginPageModel {
             sender.input(LoginPageMsg::ShiftToast);
             widgets.toast_overlay.add_toast(&Toast::new(toast_message));
         }
+        widgets
+            .go_next_button
+            .set_sensitive(self.is_login_button_enabled);
     }
 }
