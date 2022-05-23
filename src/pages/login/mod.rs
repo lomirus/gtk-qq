@@ -146,6 +146,7 @@ impl SimpleComponent for LoginPageModel {
                     append = &PreferencesGroup {
                         add = &ActionRow {
                             set_title: "Account",
+                            set_focusable: false,
                             add_suffix = &Entry {
                                 set_valign: Align::Center,
                                 set_placeholder_text: Some("Please input your QQ account "),
@@ -156,6 +157,7 @@ impl SimpleComponent for LoginPageModel {
                         },
                         add = &ActionRow {
                             set_title: "Password",
+                            set_focusable: false,
                             add_suffix = &Entry {
                                 set_valign: Align::Center,
                                 set_placeholder_text: Some("Please input your QQ password"),
