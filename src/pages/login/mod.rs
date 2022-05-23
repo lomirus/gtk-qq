@@ -35,10 +35,6 @@ pub enum LoginPageMsg {
     ShiftToast,
 }
 
-pub struct LoginPageWidgets {
-    toast_overlay: ToastOverlay,
-}
-
 async fn login(account: i64, password: String, sender: ComponentSender<LoginPageModel>) {
     use LoginPageMsg::{LoginSuccessful, PushToast};
     // Initialize device and client
@@ -103,12 +99,77 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
     }
 }
 
+#[relm4::component(pub)]
 impl SimpleComponent for LoginPageModel {
     type Widgets = LoginPageWidgets;
     type InitParams = ();
     type Input = LoginPageMsg;
     type Output = AppMessage;
-    type Root = Box;
+
+    menu! {
+        main_menu: {
+            "Keyboard Shortcuts" => ShortcutsAction,
+            "About Gtk QQ" => AboutAction
+        }
+    }
+
+    view! {
+        login_page = Box {
+            set_hexpand: true,
+            set_vexpand: true,
+            set_orientation: Orientation::Vertical,
+            append: headerbar = &HeaderBar {
+                set_title_widget = Some(&Label) {
+                    set_label: "Login"
+                },
+                pack_end = &Button {
+                    set_icon_name: "go-next",
+                    connect_clicked[sender] => move |_| {
+                        sender.input(LoginPageMsg::LoginStart);
+                    },
+                },
+                pack_end = &MenuButton {
+                    set_icon_name: "menu-symbolic",
+                    set_menu_model: Some(&main_menu),
+                }
+            },
+            append: toast_overlay = &ToastOverlay {
+                set_child = Some(&Box) {
+                    set_halign: Align::Center,
+                    set_valign: Align::Center,
+                    set_vexpand: true,
+                    set_spacing: 32,
+                    append = &Avatar {
+                        set_text: Some("ADW"),
+                        set_size: 72,
+                    },
+                    append = &PreferencesGroup {
+                        add = &ActionRow {
+                            set_title: "Account",
+                            add_suffix = &Entry {
+                                set_valign: Align::Center,
+                                set_placeholder_text: Some("Please input your QQ account "),
+                                connect_changed[sender] => move |e| {
+                                    sender.input(LoginPageMsg::AccountChange(e.buffer().text()));
+                                }
+                            },
+                        },
+                        add = &ActionRow {
+                            set_title: "Password",
+                            add_suffix = &Entry {
+                                set_valign: Align::Center,
+                                set_placeholder_text: Some("Please input your QQ password"),
+                                set_visibility: false,
+                                connect_changed[sender] => move |e| {
+                                    sender.input(LoginPageMsg::PasswordChange(e.buffer().text()));
+                                }
+                            },
+                        },
+                    },
+                },
+            }
+        }
+    }
 
     fn update(&mut self, msg: LoginPageMsg, sender: &ComponentSender<Self>) {
         use LoginPageMsg::*;
@@ -149,91 +210,12 @@ impl SimpleComponent for LoginPageModel {
         root: &Self::Root,
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        relm4::menu! {
-            main_menu: {
-                "Keyboard Shortcuts" => ShortcutsAction,
-                "About Gtk QQ" => AboutAction
-            }
-        }
-
-        relm4::view! {
-            headerbar = &HeaderBar {
-                set_title_widget = Some(&Label) {
-                    set_label: "Login"
-                },
-                pack_end = &Button {
-                    set_icon_name: "go-next",
-                    connect_clicked[sender] => move |_| {
-                        sender.input(LoginPageMsg::LoginStart);
-                    },
-                },
-                pack_end = &MenuButton {
-                    set_icon_name: "menu-symbolic",
-                    set_menu_model: Some(&main_menu),
-                }
-            }
-        }
-        root.append(&headerbar);
-
-        relm4::view! {
-            toast_overlay = &ToastOverlay {
-                set_child = Some(&Box) {
-                    set_halign: Align::Center,
-                    set_valign: Align::Center,
-                    set_vexpand: true,
-                    set_spacing: 32,
-                    append = &Avatar {
-                        set_text: Some("ADW"),
-                        set_size: 72,
-                    },
-                    append = &PreferencesGroup {
-                        add = &ActionRow {
-                            set_title: "Account",
-                            add_suffix = &Entry {
-                                set_valign: Align::Center,
-                                set_placeholder_text: Some("Please input your QQ account "),
-                                connect_changed[sender] => move |e| {
-                                    sender.input(LoginPageMsg::AccountChange(e.buffer().text()));
-                                }
-                            },
-                        },
-                        add = &ActionRow {
-                            set_title: "Password",
-                            add_suffix = &Entry {
-                                set_valign: Align::Center,
-                                set_placeholder_text: Some("Please input your QQ password"),
-                                set_visibility: false,
-                                connect_changed[sender] => move |e| {
-                                    sender.input(LoginPageMsg::PasswordChange(e.buffer().text()));
-                                }
-                            },
-                        },
-                    },
-                },
-            }
-        }
-        root.append(&toast_overlay);
-
+        let widgets = view_output!();
         let model = LoginPageModel::default();
-        ComponentParts {
-            model,
-            widgets: LoginPageWidgets { toast_overlay },
-        }
+        ComponentParts { model, widgets }
     }
 
-    fn init_root() -> Self::Root {
-        relm4::view! {
-            login_page = Box {
-                set_hexpand: true,
-                set_vexpand: true,
-                set_orientation: Orientation::Vertical,
-            }
-        }
-
-        login_page
-    }
-
-    fn update_view(&self, widgets: &mut Self::Widgets, sender: &ComponentSender<Self>) {
+    fn pre_view(&self, widgets: &mut Self::Widgets, sender: &ComponentSender<Self>) {
         if !self.toast_stack.is_empty() {
             let toast_message = self.toast_stack[0].as_str();
             sender.input(LoginPageMsg::ShiftToast);
