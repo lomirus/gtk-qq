@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use ricq::client::event::*;
 use ricq::handler::{Handler, QEvent::*};
 
 pub struct AppHandler;
@@ -7,73 +8,71 @@ pub struct AppHandler;
 impl Handler for AppHandler {
     async fn handle(&self, event: ricq::handler::QEvent) {
         match event {
-            Login(_) => {
-                println!("Login");
-            }
-            GroupMessage(_) => {
+            Login(_) => {}
+            GroupMessage(GroupMessageEvent { client, message }) => {
                 println!("GroupMessage");
             }
-            GroupAudioMessage(_) => {
+            GroupAudioMessage(GroupAudioMessageEvent { client, message }) => {
                 println!("GroupAudioMessage");
             }
-            SelfGroupMessage(_) => {
+            SelfGroupMessage(GroupMessageEvent { client, message }) => {
                 println!("SelfGroupMessage");
             }
-            FriendMessage(_) => {
+            FriendMessage(FriendMessageEvent { client, message }) => {
                 println!("FriendMessage");
             }
-            FriendAudioMessage(_) => {
+            FriendAudioMessage(FriendAudioMessageEvent { client, message }) => {
                 println!("FriendAudioMessage");
             }
-            TempMessage(_) => {
+            TempMessage(TempMessageEvent { client, message }) => {
                 println!("TempMessage");
             }
-            GroupRequest(_) => {
+            GroupRequest(GroupRequestEvent { client, request }) => {
                 println!("GroupRequest");
             }
-            SelfInvited(_) => {
+            SelfInvited(SelfInvitedEvent { client, request }) => {
                 println!("SelfInvited");
             }
-            FriendRequest(_) => {
+            FriendRequest(FriendRequestEvent { client, request }) => {
                 println!("FriendRequest");
             }
-            NewMember(_) => {
+            NewMember(NewMemberEvent { client, new_member }) => {
                 println!("NewMember");
             }
-            GroupMute(_) => {
+            GroupMute(GroupMuteEvent { client, group_mute }) => {
                 println!("GroupMute");
             }
-            FriendMessageRecall(_) => {
+            FriendMessageRecall(FriendMessageRecallEvent { client, recall }) => {
                 println!("FriendMessageRecall");
             }
-            GroupMessageRecall(_) => {
+            GroupMessageRecall(GroupMessageRecallEvent { client, recall }) => {
                 println!("GroupMessageRecall");
             }
-            NewFriend(_) => {
+            NewFriend(NewFriendEvent { client, friend }) => {
                 println!("NewFriend");
             }
-            GroupLeave(_) => {
+            GroupLeave(GroupLeaveEvent { client, leave }) => {
                 println!("GroupLeave");
             }
-            GroupDisband(_) => {
+            GroupDisband(GroupDisbandEvent { client, disband }) => {
                 println!("GroupDisband");
             }
-            FriendPoke(_) => {
+            FriendPoke(FriendPokeEvent { client, poke }) => {
                 println!("FriendPoke");
             }
-            GroupNameUpdate(_) => {
+            GroupNameUpdate(GroupNameUpdateEvent { client, update }) => {
                 println!("GroupNameUpdate");
             }
-            DeleteFriend(_) => {
+            DeleteFriend(DeleteFriendEvent { client, delete }) => {
                 println!("DeleteFriend");
             }
-            MemberPermissionChange(_) => {
+            MemberPermissionChange(MemberPermissionChangeEvent { client, change }) => {
                 println!("MemberPermissionChange");
             }
-            KickedOffline(_) => {
+            KickedOffline(KickedOfflineEvent { client, offline }) => {
                 println!("KickedOffline");
             }
-            MSFOffline(_) => {
+            MSFOffline(MSFOfflineEvent { client, offline }) => {
                 println!("MSFOffline");
             }
         };
