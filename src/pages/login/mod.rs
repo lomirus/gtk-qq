@@ -1,9 +1,19 @@
 use std::collections::VecDeque;
+use std::sync::Arc;
 
 use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
 
 use adw::{prelude::*, ActionRow, Avatar, HeaderBar, PreferencesGroup, Toast, ToastOverlay};
 use gtk::{Align, Box, Button, Entry, Label, MenuButton, Orientation};
+
+use rand::prelude::*;
+use ricq::{
+    device::Device,
+    handler::DefaultHandler,
+    version::{get_version, Protocol},
+    Client, LoginDeviceLocked, LoginResponse, LoginUnknownStatus,
+};
+use tokio::{net::TcpStream, task};
 
 use crate::actions::{AboutAction, ShortcutsAction};
 use crate::app::AppMessage;
@@ -29,6 +39,70 @@ pub struct LoginPageWidgets {
     toast_overlay: ToastOverlay,
 }
 
+async fn login(account: i64, password: String, sender: ComponentSender<LoginPageModel>) {
+    use LoginPageMsg::{LoginSuccessful, PushToast};
+    // Initialize device and client
+    let device = Device::random_with_rng(&mut StdRng::seed_from_u64(account as u64));
+    let client = Arc::new(Client::new(
+        device,
+        get_version(Protocol::MacOS),
+        DefaultHandler,
+    ));
+    // Connect to server
+    let stream = match TcpStream::connect(client.get_address()).await {
+        Ok(stream) => stream,
+        Err(err) => {
+            sender.input(PushToast(format!("Error: {}", err)));
+            return;
+        }
+    };
+    let client_cloned = client.clone();
+    let handle = tokio::spawn(async move { client_cloned.start(stream).await });
+    task::yield_now().await;
+    let res = match client.password_login(account, &password).await {
+        Ok(res) => res,
+        Err(err) => {
+            sender.input(PushToast(format!("Error: {}", err)));
+            return;
+        }
+    };
+    // Handle login response
+    match res {
+        LoginResponse::Success(_) => {
+            sender.input(LoginSuccessful);
+            handle.await.unwrap();
+        }
+        LoginResponse::NeedCaptcha(_) => println!("NeedCaptcha"),
+        LoginResponse::AccountFrozen => println!("AccountFrozen"),
+        LoginResponse::DeviceLocked(LoginDeviceLocked {
+            ref sms_phone,
+            ref verify_url,
+            ref message,
+            ..
+        }) => {
+            sender.input(PushToast(
+                "Device Locked. See more in the console.".to_string(),
+            ));
+            println!("------");
+            println!("message: {:?}", message);
+            println!("sms_phone: {:?}", sms_phone);
+            println!("verify_url: {:?}", verify_url);
+        }
+        LoginResponse::TooManySMSRequest => println!("TooManySMSRequest"),
+        LoginResponse::DeviceLockLogin(_) => {
+            if let Err(err) = client.device_lock_login().await {
+                sender.input(PushToast(err.to_string()));
+            } else {
+                sender.input(LoginSuccessful);
+                handle.await.unwrap();
+            }
+        }
+        LoginResponse::UnknownStatus(LoginUnknownStatus { ref message, .. }) => {
+            sender.input(PushToast(message.to_string()))
+        }
+    }
+}
+
 impl SimpleComponent for LoginPageModel {
     type Widgets = LoginPageWidgets;
     type InitParams = ();
@@ -40,16 +114,23 @@ impl SimpleComponent for LoginPageModel {
         use LoginPageMsg::*;
         match msg {
             LoginStart => {
-                println!("{:?}", self);
-                if self.account.is_empty() {
-                    sender.input(PushToast("Account cannot be empty".to_string()));
-                    return;
-                }
-                if self.password.is_empty() {
+                // Get the account
+                let account: i64 = match self.account.parse::<i64>() {
+                    Ok(account) => account,
+                    Err(_) => {
+                        sender.input(PushToast("Account is invalid".to_string()));
+                        return;
+                    }
+                };
+                // Get the password
+                let password = if self.password.is_empty() {
                     sender.input(PushToast("Password cannot be empty".to_string()));
                     return;
-                }
-                sender.input(LoginPageMsg::LoginSuccessful);
+                } else {
+                    self.password.to_string()
+                };
+                println!("account: {}, password: {}", account, self.password);
+                task::spawn(login(account, password, sender.clone()));
             }
             LoginSuccessful => sender.output(AppMessage::LoginSuccessful),
             AccountChange(new_account) => self.account = new_account,

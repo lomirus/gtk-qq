@@ -1,5 +1,6 @@
 // Delete this after migration
 #![allow(unused_variables)]
+#![feature(async_closure)]
 
 mod actions;
 mod app;
@@ -11,7 +12,8 @@ use relm4::{gtk, RelmApp};
 
 use app::AppModel;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let res = gio::Resource::load(config::PKGDATA_DIR.to_owned() + "/resources.gresource")
         .expect("Could not load resources");
     gio::resources_register(&res);

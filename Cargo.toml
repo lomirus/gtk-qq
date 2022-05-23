@@ -5,13 +5,22 @@ edition = "2021"
 
 [dependencies.relm4]
 git = "https://github.com/Relm4/Relm4.git"
-# branch = "next"
-# May 22, 2022
+# branch = "next", May 22, 2022
 rev = "def8be677fe3b8609dc09e5f7ed008d2c9745255"
 features = [
     "macros",
     "libadwaita",
 ]
+
+[dependencies.ricq]
+git = "https://github.com/lz1998/ricq.git"
+# branch = "master", May 23, 2022
+rev = "a4d92b66ff4c04a9ed0d79d8412d2a2222daa0ec"
+
+[dependencies]
+tokio = "1.18.2"
+rand = "0.8.5"
+
 
 [profile.release]
 lto = true
