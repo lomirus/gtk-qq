@@ -5,6 +5,7 @@
 mod actions;
 mod app;
 mod config;
+mod handler;
 mod pages;
 
 use gtk::gio;

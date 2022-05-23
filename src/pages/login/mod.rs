@@ -9,7 +9,6 @@ use gtk::{Align, Box, Button, Entry, Label, MenuButton, Orientation};
 use rand::prelude::*;
 use ricq::{
     device::Device,
-    handler::DefaultHandler,
     version::{get_version, Protocol},
     Client, LoginDeviceLocked, LoginResponse, LoginUnknownStatus,
 };
@@ -17,6 +16,7 @@ use tokio::{net::TcpStream, task};
 
 use crate::actions::{AboutAction, ShortcutsAction};
 use crate::app::AppMessage;
+use crate::handler::AppHandler;
 
 #[derive(Debug)]
 pub struct LoginPageModel {
@@ -55,7 +55,7 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
     let client = Arc::new(Client::new(
         device,
         get_version(Protocol::MacOS),
-        DefaultHandler,
+        AppHandler,
     ));
     // Connect to server
     let stream = match TcpStream::connect(client.get_address()).await {
@@ -205,7 +205,7 @@ impl SimpleComponent for LoginPageModel {
                 } else {
                     self.password.to_string()
                 };
-                println!("account: {}, password: {}", account, self.password);
+
                 self.is_login_button_enabled = false;
                 task::spawn(login(account, password, sender.clone()));
             }
