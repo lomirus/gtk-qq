@@ -1,6 +1,7 @@
 conf = configuration_data()
 conf.set_quoted('VERSION', meson.project_version())
 conf.set_quoted('PKGDATA_DIR', pkgdatadir)
+conf.set_quoted('APPLICATION_ID', application_id)
 
 config_output_file = configure_file(
   input: 'config.rs.in',

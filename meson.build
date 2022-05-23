@@ -8,5 +8,7 @@ prefix = get_option('prefix')
 datadir = prefix / get_option('datadir')
 pkgdatadir = datadir / meson.project_name()
 
+application_id = 'indi.lomirus.gtk-qq'
+
 subdir('src')
 subdir('assets')
