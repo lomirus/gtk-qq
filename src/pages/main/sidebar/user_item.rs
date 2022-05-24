@@ -32,11 +32,7 @@ impl FactoryComponent<ListBox, MainMsg> for UserItem {
     }
 
     fn init_root(&self) -> Self::Root {
-        relm4::view! {
-            root = Box {
-            }
-        }
-        root
+        Box::default()
     }
 
     fn init_widgets(

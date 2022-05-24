@@ -4,7 +4,7 @@ use relm4::{adw, gtk, Sender};
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, Orientation, Widget};
 
-use crate::handler::ACCOUNT;
+use crate::handler::{ACCOUNT, FRIEND_LIST};
 
 use super::ChatroomMsg;
 
@@ -65,13 +65,20 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
             }
         }
 
+        let user = FRIEND_LIST
+            .get()
+            .unwrap()
+            .iter()
+            .find(|user| user.uin == self.account)
+            .unwrap();
+
         relm4::view! {
             main_box = Box {
                 set_orientation: Orientation::Vertical,
                 set_spacing: 4,
                 append: username_box = &Box {
                     Label {
-                        set_label: self.account.to_string().as_str(),
+                        set_label: &user.remark,
                         set_css_classes: &["caption"]
                     }
                 },

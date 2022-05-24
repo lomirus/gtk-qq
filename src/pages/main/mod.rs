@@ -16,6 +16,7 @@ use ricq::structs::FriendMessage;
 
 use self::{chatroom::Chatroom, sidebar::UserItem};
 use crate::app::AppMessage;
+use crate::handler::FRIEND_LIST;
 use crate::pages::main::chatroom::ChatroomInitParams;
 
 pub static MAIN_SENDER: OnceCell<ComponentSender<MainPageModel>> = OnceCell::new();
@@ -191,9 +192,10 @@ impl SimpleComponent for MainPageModel {
                     }
                 }
                 if !has_sender_already_in_list {
+                    let user = FRIEND_LIST.get().unwrap().iter().find(|user| user.uin == account).unwrap();
                     chats_list.push_front(UserItem {
                         account,
-                        username: account.to_string(),
+                        username: user.remark.clone(),
                         last_message: content.to_string(),
                     });
                     let mut messages = VecDeque::new();

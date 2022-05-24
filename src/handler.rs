@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use once_cell::sync::OnceCell;
 use ricq::client::event::*;
 use ricq::handler::{Handler, QEvent::*};
+use ricq::structs::FriendInfo;
 use ricq::Client;
 
 use crate::pages::main::{MainMsg, MAIN_SENDER};
@@ -12,6 +13,7 @@ pub struct AppHandler;
 
 pub static CLIENT: OnceCell<Arc<Client>> = OnceCell::new();
 pub static ACCOUNT: OnceCell<i64> = OnceCell::new();
+pub static FRIEND_LIST: OnceCell<Vec<FriendInfo>> = OnceCell::new();
 
 #[async_trait]
 impl Handler for AppHandler {

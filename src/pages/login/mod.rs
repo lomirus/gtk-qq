@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::sync::Arc;
 
-use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
+use relm4::{adw, gtk, ComponentParts, ComponentSender, JoinHandle, SimpleComponent};
 
 use adw::{prelude::*, ActionRow, Avatar, HeaderBar, PreferencesGroup, Toast, ToastOverlay};
 use gtk::{Align, Box, Button, Entry, Label, MenuButton, Orientation};
@@ -15,12 +15,12 @@ use ricq::{
 };
 use tokio::{net::TcpStream, task};
 
-use crate::app::AppMessage;
 use crate::handler::AppHandler;
 use crate::{
     actions::{AboutAction, ShortcutsAction},
     handler::{ACCOUNT, CLIENT},
 };
+use crate::{app::AppMessage, handler::FRIEND_LIST};
 
 #[derive(Debug)]
 pub struct LoginPageModel {
@@ -53,7 +53,7 @@ pub enum LoginPageMsg {
 }
 
 async fn login(account: i64, password: String, sender: ComponentSender<LoginPageModel>) {
-    use LoginPageMsg::{LoginFailed, LoginSuccessful};
+    use LoginPageMsg::LoginFailed;
     // Initialize device and client
     let device = Device::random_with_rng(&mut StdRng::seed_from_u64(account as u64));
     let client = Arc::new(Client::new(
@@ -88,14 +88,14 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
     // Handle login response
     match res {
         LoginResponse::Success(_) => {
-            sender.input(LoginSuccessful);
+            finish_login(client, handle, sender).await;
         }
         LoginResponse::NeedCaptcha(_) => println!("NeedCaptcha"),
         LoginResponse::AccountFrozen => println!("AccountFrozen"),
         LoginResponse::DeviceLocked(LoginDeviceLocked {
-            ref sms_phone,
-            ref verify_url,
-            ref message,
+            sms_phone,
+            verify_url,
+            message,
             ..
         }) => {
             sender.input(LoginFailed(
@@ -113,14 +113,33 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
                 sender.input(LoginFailed(err.to_string()));
                 return;
             } else {
-                sender.input(LoginSuccessful);
+                finish_login(client, handle, sender).await;
             }
         }
         LoginResponse::UnknownStatus(LoginUnknownStatus { ref message, .. }) => {
-            sender.input(LoginFailed(message.to_string()))
+            sender.input(LoginFailed(message.to_string()));
+            return;
         }
     }
+}
+
+async fn finish_login(
+    client: Arc<Client>,
+    handle: JoinHandle<()>,
+    sender: ComponentSender<LoginPageModel>,
+) {
+    use LoginPageMsg::{LoginFailed, LoginSuccessful};
     after_login(&client).await;
+    match client.get_friend_list().await {
+        Ok(friend_list) => {
+            FRIEND_LIST.set(friend_list).unwrap();
+            sender.input(LoginSuccessful);
+        }
+        Err(err) => {
+            sender.input(LoginFailed(err.to_string()));
+            return;
+        }
+    };
     handle.await.unwrap();
 }
 
@@ -221,7 +240,9 @@ impl SimpleComponent for LoginPageModel {
                 self.is_login_button_enabled = false;
                 task::spawn(login(account, password, sender.clone()));
             }
-            LoginSuccessful => sender.output(AppMessage::LoginSuccessful),
+            LoginSuccessful => {
+                sender.output(AppMessage::LoginSuccessful);
+            }
             LoginFailed(msg) => {
                 sender.input(PushToast(msg));
                 self.is_login_button_enabled = true;
