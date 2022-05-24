@@ -7,11 +7,12 @@ use std::collections::VecDeque;
 use once_cell::sync::OnceCell;
 use relm4::factory::FactoryVecDeque;
 use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
-use ricq::msg::elem::RQElem;
-use ricq::structs::FriendMessage;
 
 use adw::{prelude::*, HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
 use gtk::{Align, Box, Label, ListBox, MenuButton, Orientation, ScrolledWindow, Separator, Stack};
+
+use ricq::msg::elem::RQElem;
+use ricq::structs::FriendMessage;
 
 use self::{chatroom::Chatroom, sidebar::UserItem};
 use crate::app::AppMessage;
@@ -170,6 +171,8 @@ impl SimpleComponent for MainPageModel {
                     }
                 }
                 // Check if the sender is already in the chat list
+                // if yes, just push the message into it and put it at the first place
+                // if not, push the new sender to the list and create a new chatroom
                 let mut has_sender_already_in_list = false;
                 let mut chats_list = self.chats_list.borrow_mut();
                 let mut chatrooms = self.chatrooms.borrow_mut();
@@ -187,7 +190,6 @@ impl SimpleComponent for MainPageModel {
                         break;
                     }
                 }
-
                 if !has_sender_already_in_list {
                     chats_list.push_front(UserItem {
                         account,

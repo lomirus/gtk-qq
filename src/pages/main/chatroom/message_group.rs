@@ -52,33 +52,45 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
         input: &Sender<Self::Input>,
         output: &Sender<Self::Output>,
     ) -> Self::Widgets {
-        let avatar = Avatar::new(32, Some(self.author.as_str()), true);
-        let avatar_box = Box::new(Orientation::Vertical, 0);
-        let main_box = Box::new(Orientation::Vertical, 4);
-        let username_box = Box::default();
-
-        let username = Label::new(Some(self.author.as_str()));
-        username.add_css_class("caption");
-
-        let messages_box = ListBox::new();
-        messages_box.add_css_class("boxed-list");
-
-        for content in self.messages.iter() {
-            let message_box = Box::default();
-            message_box.add_css_class("header");
-            message_box.add_css_class("message-box");
-
-            let message = Label::new(Some(content.as_str()));
-            message.set_selectable(true);
-
-            message_box.append(&message);
-            messages_box.append(&message_box);
+        relm4::view! {
+            avatar_box = Box {
+                set_orientation: Orientation::Vertical,
+                Avatar {
+                    set_size: 32,
+                    set_text: Some(self.author.as_str()),
+                    set_show_initials: true
+                }
+            }
         }
 
-        username_box.append(&username);
-        avatar_box.append(&avatar);
-        main_box.append(&username_box);
-        main_box.append(&messages_box);
+        relm4::view! {
+            main_box = Box {
+                set_orientation: Orientation::Vertical,
+                set_spacing: 4,
+                append: username_box = &Box {
+                    Label {
+                        set_label: self.author.as_str(),
+                        set_css_classes: &["caption"]
+                    }
+                },
+                append: messages_box = &ListBox {
+                    set_css_classes: &["boxed-list"]
+                }
+            }
+        }
+
+        for content in self.messages.iter() {
+            relm4::view! {
+                message_box = Box {
+                    set_css_classes: &["header", "message-box"],
+                    Label {
+                        set_label: content.as_str(),
+                        set_selectable: true
+                    }
+                }
+            }
+            messages_box.append(&message_box);
+        }
 
         if self.author == "You" {
             username_box.set_halign(Align::End);
