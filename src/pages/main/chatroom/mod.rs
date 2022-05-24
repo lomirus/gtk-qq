@@ -7,6 +7,10 @@ use relm4::{adw, gtk, Sender, WidgetPlus};
 
 use adw::prelude::*;
 use gtk::{Box, Button, Entry, Orientation, ScrolledWindow, Stack, StackPage};
+use ricq::msg::{elem, MessageChain};
+use tokio::task;
+
+use crate::handler::{ACCOUNT, CLIENT};
 
 use super::{MainMsg, Message};
 use message_group::MessageGroup;
@@ -22,24 +26,40 @@ impl Chatroom {
     pub fn add_message(&mut self, message: Message) {
         if !self.messages.is_empty() {
             let mut last_message_group = self.messages.pop_back().unwrap();
-            if last_message_group.author == message.author {
+            if last_message_group.account == message.account {
                 last_message_group.messages.push(message.message);
                 self.messages.push_back(last_message_group);
             } else {
                 self.messages.push_back(last_message_group);
                 self.messages.push_back(MessageGroup {
-                    author: message.author,
+                    account: message.account,
                     messages: vec![message.message],
                 });
             }
         } else {
             self.messages.push_back(MessageGroup {
-                author: message.author,
+                account: message.account,
                 messages: vec![message.message],
             });
         }
 
         self.messages.render_changes();
+    }
+}
+
+async fn send_message(message: Message, target: i64, sender: Sender<ChatroomMsg>) {
+    let client = CLIENT.get().unwrap();
+    let res = client
+        .send_friend_message(
+            target,
+            MessageChain::new(elem::Text::new(message.message.clone())),
+        )
+        .await;
+    match res {
+        Ok(_) => sender.send(ChatroomMsg::AddMessage(message)),
+        Err(err) => {
+            panic!("err: {:?}", err);
+        }
     }
 }
 
@@ -131,7 +151,7 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
                     set_icon_name: "send-symbolic",
                     connect_clicked[input] => move |_| {
                         input.send(ChatroomMsg::SendMessage(Message {
-                            author: "You".to_string(),
+                            account: *ACCOUNT.get().unwrap(),
                             message: entry_buffer.text()
                         }));
                         entry_buffer.set_text("");
@@ -156,7 +176,7 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
         match relm_msg {
             ChatroomMsg::AddMessage(message) => self.add_message(message),
             ChatroomMsg::SendMessage(message) => {
-                input.send(ChatroomMsg::AddMessage(message));
+                task::spawn(send_message(message, self.account, input.clone()));
             }
         }
         None

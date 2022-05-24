@@ -4,11 +4,13 @@ use relm4::{adw, gtk, Sender};
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, Orientation, Widget};
 
+use crate::handler::ACCOUNT;
+
 use super::ChatroomMsg;
 
 #[derive(Debug, Clone)]
 pub struct MessageGroup {
-    pub author: String,
+    pub account: i64,
     pub messages: Vec<String>,
 }
 
@@ -37,7 +39,7 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
             .margin_bottom(8)
             .build();
 
-        if self.author == "You" {
+        if &self.account == ACCOUNT.get().unwrap() {
             root_box.set_halign(Align::End)
         }
 
@@ -57,7 +59,7 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
                 set_orientation: Orientation::Vertical,
                 Avatar {
                     set_size: 32,
-                    set_text: Some(self.author.as_str()),
+                    set_text: Some(self.account.to_string().as_str()),
                     set_show_initials: true
                 }
             }
@@ -69,7 +71,7 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
                 set_spacing: 4,
                 append: username_box = &Box {
                     Label {
-                        set_label: self.author.as_str(),
+                        set_label: self.account.to_string().as_str(),
                         set_css_classes: &["caption"]
                     }
                 },
@@ -92,7 +94,7 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
             messages_box.append(&message_box);
         }
 
-        if self.author == "You" {
+        if &self.account == ACCOUNT.get().unwrap() {
             username_box.set_halign(Align::End);
             root.append(&main_box);
             root.append(&avatar_box);

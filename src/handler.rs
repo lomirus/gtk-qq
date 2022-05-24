@@ -1,10 +1,17 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
+use once_cell::sync::OnceCell;
 use ricq::client::event::*;
 use ricq::handler::{Handler, QEvent::*};
+use ricq::Client;
 
 use crate::pages::main::{MainMsg, MAIN_SENDER};
 
 pub struct AppHandler;
+
+pub static CLIENT: OnceCell<Arc<Client>> = OnceCell::new();
+pub static ACCOUNT: OnceCell<i64> = OnceCell::new();
 
 #[async_trait]
 impl Handler for AppHandler {

@@ -15,9 +15,12 @@ use ricq::{
 };
 use tokio::{net::TcpStream, task};
 
-use crate::actions::{AboutAction, ShortcutsAction};
 use crate::app::AppMessage;
 use crate::handler::AppHandler;
+use crate::{
+    actions::{AboutAction, ShortcutsAction},
+    handler::{ACCOUNT, CLIENT},
+};
 
 #[derive(Debug)]
 pub struct LoginPageModel {
@@ -58,6 +61,12 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
         get_version(Protocol::MacOS),
         AppHandler,
     ));
+    if CLIENT.set(client.clone()).is_err() {
+        panic!("falied to store client");
+    };
+    if ACCOUNT.set(account).is_err() {
+        panic!("falied to store account");
+    };
     // Connect to server
     let stream = match TcpStream::connect(client.get_address()).await {
         Ok(stream) => stream,

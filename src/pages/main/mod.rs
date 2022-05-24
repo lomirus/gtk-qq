@@ -29,7 +29,7 @@ pub struct MainPageModel {
 
 #[derive(Clone, Debug)]
 pub struct Message {
-    author: String,
+    account: i64,
     message: String,
 }
 
@@ -184,7 +184,7 @@ impl SimpleComponent for MainPageModel {
                         chats_list.front_mut().unwrap().last_message = content.clone();
                         chatrooms.swap(0, i);
                         chatrooms.front_mut().unwrap().add_message(Message {
-                            author: account.to_string(),
+                            account,
                             message: content.to_string(),
                         });
                         break;
@@ -198,7 +198,7 @@ impl SimpleComponent for MainPageModel {
                     });
                     let mut messages = VecDeque::new();
                     messages.push_back(Message {
-                        author: account.to_string(),
+                        account,
                         message: content,
                     });
                     chatrooms.push_front(ChatroomInitParams { account, messages });
