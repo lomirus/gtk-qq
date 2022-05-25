@@ -73,7 +73,7 @@ impl SimpleComponent for AppModel {
                 .forward(&sender.input, |message| message),
             main: MainPageModel::builder()
                 .launch(())
-                .forward(&sender.input, |message| message),
+                .detach(),
         };
         let widgets = view_output!();
 

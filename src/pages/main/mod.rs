@@ -6,25 +6,28 @@ use std::collections::VecDeque;
 
 use once_cell::sync::OnceCell;
 use relm4::factory::FactoryVecDeque;
-use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
+use relm4::{
+    adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller,
+    SimpleComponent,
+};
 
-use adw::{prelude::*, HeaderBar, Leaflet, ViewStack, ViewSwitcherTitle};
-use gtk::{Align, Box, Label, ListBox, MenuButton, Orientation, ScrolledWindow, Separator, Stack};
+use adw::{prelude::*, HeaderBar, Leaflet};
+use gtk::{Box, Label, MenuButton, Orientation, Separator, Stack};
 
 use ricq::msg::elem::RQElem;
 use ricq::structs::FriendMessage;
 
-use self::{chatroom::Chatroom, sidebar::UserItem};
-use crate::app::AppMessage;
-use crate::handler::FRIEND_LIST;
+use self::chatroom::Chatroom;
+use self::sidebar::SidebarModel;
 use crate::pages::main::chatroom::ChatroomInitParams;
+use crate::pages::main::sidebar::SidebarMsg;
 
 pub static MAIN_SENDER: OnceCell<ComponentSender<MainPageModel>> = OnceCell::new();
 
 #[derive(Debug)]
 pub struct MainPageModel {
     message: Option<ViewMsg>,
-    chats_list: RefCell<FactoryVecDeque<ListBox, UserItem, MainMsg>>,
+    sidebar: Controller<SidebarModel>,
     chatrooms: RefCell<FactoryVecDeque<Stack, Chatroom, MainMsg>>,
 }
 
@@ -38,7 +41,7 @@ pub struct Message {
 pub enum MainMsg {
     WindowFolded,
     UpdateChatItem(FriendMessage),
-    SelectChatroom(i32),
+    SelectChatroom(i64),
 }
 
 #[derive(Debug)]
@@ -54,29 +57,14 @@ relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
 #[relm4::component(pub)]
 impl SimpleComponent for MainPageModel {
     type Input = MainMsg;
-    type Output = AppMessage;
+    type Output = MainMsg;
     type Widgets = MainPageWidgets;
     type InitParams = ();
 
     view! {
         #[root]
         main_page = &Leaflet {
-            append: sidebar = &Box {
-                set_vexpand: true,
-                set_width_request: 360,
-                set_orientation: Orientation::Vertical,
-                append = &HeaderBar {
-                    set_show_start_title_buttons: false,
-                    set_show_end_title_buttons: false,
-                    set_title_widget = Some(&ViewSwitcherTitle) {
-                        set_title: "Sidebar",
-                        set_stack: Some(&stack)
-                    }
-                },
-                append: stack = &ViewStack {
-                    set_vexpand: true,
-                }
-            },
+            append: sidebar_controller.widget(),
             append = &Separator::new(Orientation::Horizontal) {
             },
             append: chatroom = &Box {
@@ -99,19 +87,6 @@ impl SimpleComponent for MainPageModel {
                     sender.input(MainMsg::WindowFolded);
                 }
             },
-        },
-        chats_stack = ScrolledWindow {
-            set_child: sidebar_chats = Some(&ListBox) {
-                set_css_classes: &["navigation-sidebar"],
-                connect_row_activated[sender] => move |_, selected_row| {
-                    let index = selected_row.index();
-                    sender.input(MainMsg::SelectChatroom(index));
-                },
-            }
-        },
-        contact_stack = &Box {
-            set_halign: Align::Center,
-            append: &Label::new(Some("Contact"))
         }
     }
 
@@ -130,23 +105,20 @@ impl SimpleComponent for MainPageModel {
         MAIN_SENDER
             .set(sender.clone())
             .expect("failed to initialize main sender");
+            
+        let sidebar_controller = SidebarModel::builder()
+            .launch(())
+            .forward(&sender.input, |message| message);
+
         let widgets = view_output!();
 
-        let stack: &ViewStack = &widgets.stack;
-        let chats_stack = stack.add_titled(&widgets.chats_stack, None, "Chats");
-        let contact_stack = stack.add_titled(&widgets.contact_stack, None, "Contact");
-        chats_stack.set_icon_name(Some("chat-symbolic"));
-        contact_stack.set_icon_name(Some("address-book-symbolic"));
-
-        let chats_list: FactoryVecDeque<ListBox, UserItem, MainMsg> =
-            FactoryVecDeque::new(widgets.sidebar_chats.clone(), &sender.input);
         let chatrooms: FactoryVecDeque<Stack, Chatroom, MainMsg> =
             FactoryVecDeque::new(widgets.chatroom_stack.clone(), &sender.input);
 
         ComponentParts {
             model: MainPageModel {
                 message: None,
-                chats_list: RefCell::new(chats_list),
+                sidebar: sidebar_controller,
                 chatrooms: RefCell::new(chatrooms),
             },
             widgets,
@@ -157,8 +129,7 @@ impl SimpleComponent for MainPageModel {
         use MainMsg::*;
         match msg {
             WindowFolded => self.message = Some(ViewMsg::WindowFolded),
-            SelectChatroom(index) => {
-                let account = self.chats_list.borrow().get(index as usize).account;
+            SelectChatroom(account) => {
                 self.message = Some(ViewMsg::SelectChatroom(account));
             }
             UpdateChatItem(message) => {
@@ -166,7 +137,7 @@ impl SimpleComponent for MainPageModel {
                 let account = message.from_uin;
                 // Get message content
                 let mut content = String::new();
-                for elem in message.elements {
+                for elem in message.elements.clone() {
                     if let RQElem::Text(text) = elem {
                         content = text.content;
                     }
@@ -174,17 +145,17 @@ impl SimpleComponent for MainPageModel {
                 // Check if the sender is already in the chat list
                 // if yes, just push the message into it and put it at the first place
                 // if not, push the new sender to the list and create a new chatroom
+                self.sidebar
+                    .sender()
+                    .send(SidebarMsg::UpdateChatItem(message));
                 let mut has_sender_already_in_list = false;
-                let mut chats_list = self.chats_list.borrow_mut();
                 let mut chatrooms = self.chatrooms.borrow_mut();
-                for i in 0..chats_list.len() {
-                    let this_account = chats_list.get(i).account;
-                    if this_account == account {
+
+                for i in 0..chatrooms.len() {
+                    let mut chatroom = chatrooms.get_mut(i);
+                    if chatroom.account == account {
                         has_sender_already_in_list = true;
-                        chats_list.swap(0, i);
-                        chats_list.front_mut().unwrap().last_message = content.clone();
-                        chatrooms.swap(0, i);
-                        chatrooms.front_mut().unwrap().add_message(Message {
+                        chatroom.add_message(Message {
                             account,
                             message: content.to_string(),
                         });
@@ -192,17 +163,6 @@ impl SimpleComponent for MainPageModel {
                     }
                 }
                 if !has_sender_already_in_list {
-                    let user = FRIEND_LIST
-                        .get()
-                        .unwrap()
-                        .iter()
-                        .find(|user| user.uin == account)
-                        .unwrap();
-                    chats_list.push_front(UserItem {
-                        account,
-                        username: user.remark.clone(),
-                        last_message: content.to_string(),
-                    });
                     let mut messages = VecDeque::new();
                     messages.push_back(Message {
                         account,
@@ -212,7 +172,6 @@ impl SimpleComponent for MainPageModel {
                 }
             }
         }
-        self.chats_list.borrow().render_changes();
         self.chatrooms.borrow().render_changes();
     }
 

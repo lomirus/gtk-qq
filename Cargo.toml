@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies.relm4]
 git = "https://github.com/Relm4/Relm4.git"
-# branch = "next", May 22, 2022
-rev = "def8be677fe3b8609dc09e5f7ed008d2c9745255"
+# next, 2022/05/24
+rev = "74659719607331a591dfabf90dd33b7c590bc2fd"
 features = [
     "macros",
     "libadwaita",

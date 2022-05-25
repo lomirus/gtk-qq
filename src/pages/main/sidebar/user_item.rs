@@ -4,7 +4,7 @@ use relm4::{adw, gtk, Sender, WidgetPlus};
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation};
 
-use crate::pages::main::MainMsg;
+use super::SidebarMsg;
 
 #[derive(Debug)]
 pub struct UserItem {
@@ -13,7 +13,7 @@ pub struct UserItem {
     pub last_message: String,
 }
 
-impl FactoryComponent<ListBox, MainMsg> for UserItem {
+impl FactoryComponent<ListBox, SidebarMsg> for UserItem {
     type InitParams = UserItem;
     type Widgets = ();
     type Input = ();
