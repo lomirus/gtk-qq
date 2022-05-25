@@ -1,5 +1,3 @@
-// Delete this after migration
-#![allow(unused_variables)]
 #![feature(async_closure)]
 
 mod actions;

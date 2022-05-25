@@ -1,3 +1,5 @@
+#![allow(unused_variables)]
+
 mod user_item;
 
 pub use user_item::UserItem;
@@ -13,8 +15,8 @@ use gtk::{Align, Box, Label, ListBox, Orientation, ScrolledWindow};
 use ricq::msg::elem::RQElem;
 use ricq::structs::FriendMessage;
 
-use crate::pages::main::MainMsg;
 use crate::handler::FRIEND_LIST;
+use crate::pages::main::MainMsg;
 
 #[derive(Debug)]
 pub struct SidebarModel {
@@ -132,7 +134,7 @@ impl SimpleComponent for SidebarModel {
                     chats_list.push_front(UserItem {
                         account,
                         username: user.remark.clone(),
-                        last_message: content.to_string(),
+                        last_message: content,
                     });
                 }
             }

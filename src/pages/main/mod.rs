@@ -105,7 +105,7 @@ impl SimpleComponent for MainPageModel {
         MAIN_SENDER
             .set(sender.clone())
             .expect("failed to initialize main sender");
-            
+
         let sidebar_controller = SidebarModel::builder()
             .launch(())
             .forward(&sender.input, |message| message);

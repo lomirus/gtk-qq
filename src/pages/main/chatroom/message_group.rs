@@ -48,11 +48,11 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
 
     fn init_widgets(
         &mut self,
-        index: &DynamicIndex,
+        _index: &DynamicIndex,
         root: &Self::Root,
         _returned_widget: &Widget,
-        input: &Sender<Self::Input>,
-        output: &Sender<Self::Output>,
+        _input: &Sender<Self::Input>,
+        _output: &Sender<Self::Output>,
     ) -> Self::Widgets {
         relm4::view! {
             avatar_box = Box {

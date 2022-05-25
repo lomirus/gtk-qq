@@ -101,14 +101,12 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
 
     fn init_widgets(
         &mut self,
-        index: &DynamicIndex,
+        _index: &DynamicIndex,
         _root: &Self::Root,
         returned_widget: &StackPage,
         _input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
     ) -> Self::Widgets {
-        let index = index.current_index().to_string();
-        let index = index.as_str();
         returned_widget.set_name(&self.account.to_string());
         returned_widget.set_title(&self.account.to_string());
     }
@@ -117,7 +115,7 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
         init_params: Self::InitParams,
         _index: &DynamicIndex,
         input: &Sender<Self::Input>,
-        output: &Sender<Self::Output>,
+        _output: &Sender<Self::Output>,
     ) -> Self {
         let ChatroomInitParams {
             account,

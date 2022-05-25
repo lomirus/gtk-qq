@@ -57,6 +57,7 @@ pub fn init_friends_list(
 
 #[async_trait]
 impl Handler for AppHandler {
+    #[allow(unused_variables)]
     async fn handle(&self, event: ricq::handler::QEvent) {
         match event {
             Login(_) => {}

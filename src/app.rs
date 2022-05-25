@@ -71,9 +71,7 @@ impl SimpleComponent for AppModel {
             login: LoginPageModel::builder()
                 .launch(())
                 .forward(&sender.input, |message| message),
-            main: MainPageModel::builder()
-                .launch(())
-                .detach(),
+            main: MainPageModel::builder().launch(()).detach(),
         };
         let widgets = view_output!();
 
