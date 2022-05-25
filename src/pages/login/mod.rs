@@ -15,12 +15,9 @@ use ricq::{
 };
 use tokio::{net::TcpStream, task};
 
-use crate::handler::AppHandler;
-use crate::{
-    actions::{AboutAction, ShortcutsAction},
-    handler::{ACCOUNT, CLIENT},
-};
-use crate::{app::AppMessage, handler::FRIEND_LIST};
+use crate::actions::{AboutAction, ShortcutsAction};
+use crate::app::AppMessage;
+use crate::handler::{init_friends_list, AppHandler, ACCOUNT, CLIENT};
 
 #[derive(Debug)]
 pub struct LoginPageModel {
@@ -131,8 +128,8 @@ async fn finish_login(
     use LoginPageMsg::{LoginFailed, LoginSuccessful};
     after_login(&client).await;
     match client.get_friend_list().await {
-        Ok(friend_list) => {
-            FRIEND_LIST.set(friend_list).unwrap();
+        Ok(res) => {
+            init_friends_list(res.friends, res.friend_groups);
             sender.input(LoginSuccessful);
         }
         Err(err) => {

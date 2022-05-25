@@ -1,19 +1,56 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
 use once_cell::sync::OnceCell;
 use ricq::client::event::*;
 use ricq::handler::{Handler, QEvent::*};
-use ricq::structs::FriendInfo;
+use ricq::structs::{FriendGroupInfo, FriendInfo};
 use ricq::Client;
 
 use crate::pages::main::{MainMsg, MAIN_SENDER};
 
+#[derive(Debug)]
+pub struct FriendGroup {
+    pub id: u8,
+    pub name: String,
+    pub friends: Vec<FriendInfo>,
+}
 pub struct AppHandler;
 
 pub static CLIENT: OnceCell<Arc<Client>> = OnceCell::new();
 pub static ACCOUNT: OnceCell<i64> = OnceCell::new();
 pub static FRIEND_LIST: OnceCell<Vec<FriendInfo>> = OnceCell::new();
+pub static FRIEND_GROUP_LIST: OnceCell<Vec<FriendGroup>> = OnceCell::new();
+
+pub fn init_friends_list(friends_list: Vec<FriendInfo>, friend_groups: HashMap<u8, FriendGroupInfo>) {
+    let mut friend_groups = friend_groups
+        .iter()
+        .map(|(_, v)| v.clone())
+        .collect::<Vec<FriendGroupInfo>>();
+    friend_groups.sort_by(|a, b| a.seq_id.cmp(&b.seq_id));
+    let friends_group_list: Vec<FriendGroup> = friend_groups
+        .iter()
+        .map(
+            |FriendGroupInfo {
+                 group_name,
+                 group_id,
+                 ..
+             }| FriendGroup {
+                id: *group_id,
+                name: group_name.to_string(),
+                friends: friends_list
+                    .iter()
+                    .filter(|friend| friend.group_id == *group_id)
+                    .map(|friend| friend.clone())
+                    .collect(),
+            },
+        )
+        .collect::<Vec<FriendGroup>>();
+
+    FRIEND_LIST.set(friends_list).unwrap();
+    FRIEND_GROUP_LIST.set(friends_group_list).unwrap();
+}
 
 #[async_trait]
 impl Handler for AppHandler {
