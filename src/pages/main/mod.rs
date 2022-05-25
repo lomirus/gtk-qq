@@ -192,7 +192,12 @@ impl SimpleComponent for MainPageModel {
                     }
                 }
                 if !has_sender_already_in_list {
-                    let user = FRIEND_LIST.get().unwrap().iter().find(|user| user.uin == account).unwrap();
+                    let user = FRIEND_LIST
+                        .get()
+                        .unwrap()
+                        .iter()
+                        .find(|user| user.uin == account)
+                        .unwrap();
                     chats_list.push_front(UserItem {
                         account,
                         username: user.remark.clone(),

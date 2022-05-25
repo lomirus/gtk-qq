@@ -102,20 +102,17 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
             println!("message: {:?}", message);
             println!("sms_phone: {:?}", sms_phone);
             println!("verify_url: {:?}", verify_url);
-            return;
         }
         LoginResponse::TooManySMSRequest => println!("TooManySMSRequest"),
         LoginResponse::DeviceLockLogin(_) => {
             if let Err(err) = client.device_lock_login().await {
                 sender.input(LoginFailed(err.to_string()));
-                return;
             } else {
                 finish_login(client, handle, sender).await;
             }
         }
         LoginResponse::UnknownStatus(LoginUnknownStatus { ref message, .. }) => {
             sender.input(LoginFailed(message.to_string()));
-            return;
         }
     }
 }

@@ -23,7 +23,10 @@ pub static ACCOUNT: OnceCell<i64> = OnceCell::new();
 pub static FRIEND_LIST: OnceCell<Vec<FriendInfo>> = OnceCell::new();
 pub static FRIEND_GROUP_LIST: OnceCell<Vec<FriendGroup>> = OnceCell::new();
 
-pub fn init_friends_list(friends_list: Vec<FriendInfo>, friend_groups: HashMap<u8, FriendGroupInfo>) {
+pub fn init_friends_list(
+    friends_list: Vec<FriendInfo>,
+    friend_groups: HashMap<u8, FriendGroupInfo>,
+) {
     let mut friend_groups = friend_groups
         .iter()
         .map(|(_, v)| v.clone())
@@ -41,8 +44,8 @@ pub fn init_friends_list(friends_list: Vec<FriendInfo>, friend_groups: HashMap<u
                 name: group_name.to_string(),
                 friends: friends_list
                     .iter()
+                    .cloned()
                     .filter(|friend| friend.group_id == *group_id)
-                    .map(|friend| friend.clone())
                     .collect(),
             },
         )
