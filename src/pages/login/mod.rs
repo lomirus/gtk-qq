@@ -18,6 +18,7 @@ use tokio::{net::TcpStream, task};
 use crate::actions::{AboutAction, ShortcutsAction};
 use crate::app::AppMessage;
 use crate::handler::{init_friends_list, AppHandler, ACCOUNT, CLIENT};
+use crate::pages::main::{MainMsg, MAIN_SENDER};
 
 #[derive(Debug)]
 pub struct LoginPageModel {
@@ -235,6 +236,7 @@ impl SimpleComponent for LoginPageModel {
                 task::spawn(login(account, password, sender.clone()));
             }
             LoginSuccessful => {
+                MAIN_SENDER.get().unwrap().input(MainMsg::InitSidebar);
                 sender.output(AppMessage::LoginSuccessful);
             }
             LoginFailed(msg) => {

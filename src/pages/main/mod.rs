@@ -21,6 +21,7 @@ use self::chatroom::Chatroom;
 use self::sidebar::SidebarModel;
 use crate::pages::main::chatroom::ChatroomInitParams;
 use crate::pages::main::sidebar::SidebarMsg;
+pub use sidebar::ContactGroup;
 
 pub static MAIN_SENDER: OnceCell<ComponentSender<MainPageModel>> = OnceCell::new();
 
@@ -42,6 +43,7 @@ pub enum MainMsg {
     WindowFolded,
     UpdateChatItem(FriendMessage),
     SelectChatroom(i64),
+    InitSidebar,
 }
 
 #[derive(Debug)]
@@ -142,9 +144,9 @@ impl SimpleComponent for MainPageModel {
                         content = text.content;
                     }
                 }
-                // Check if the sender is already in the chat list
-                // if yes, just push the message into it and put it at the first place
-                // if not, push the new sender to the list and create a new chatroom
+                // Check if the chatroom with sender is already in the chatrooms' stack.
+                // if yes, just push the message into it.
+                // if not, push the new chatroom to the stack.
                 self.sidebar
                     .sender()
                     .send(SidebarMsg::UpdateChatItem(message));
@@ -170,6 +172,9 @@ impl SimpleComponent for MainPageModel {
                     });
                     chatrooms.push_front(ChatroomInitParams { account, messages });
                 }
+            }
+            InitSidebar => {
+                self.sidebar.sender().send(SidebarMsg::RefreshContact);
             }
         }
         self.chatrooms.borrow().render_changes();

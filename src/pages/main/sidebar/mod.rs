@@ -1,8 +1,7 @@
 #![allow(unused_variables)]
 
-mod user_item;
-
-pub use user_item::UserItem;
+mod chat_item;
+mod contact_group;
 
 use std::cell::RefCell;
 
@@ -10,23 +9,28 @@ use relm4::factory::FactoryVecDeque;
 use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
 
 use adw::{prelude::*, HeaderBar, ViewStack, ViewSwitcherTitle};
-use gtk::{Align, Box, Label, ListBox, Orientation, ScrolledWindow};
+use gtk::{Box, ListBox, Orientation, ScrolledWindow};
 
 use ricq::msg::elem::RQElem;
 use ricq::structs::FriendMessage;
 
-use crate::handler::FRIEND_LIST;
+use crate::handler::{FRIEND_GROUP_LIST, FRIEND_LIST};
 use crate::pages::main::MainMsg;
+use chat_item::ChatItem;
+
+pub use self::contact_group::ContactGroup;
 
 #[derive(Debug)]
 pub struct SidebarModel {
-    chats_list: RefCell<FactoryVecDeque<ListBox, UserItem, SidebarMsg>>,
+    chats_list: RefCell<FactoryVecDeque<ListBox, ChatItem, SidebarMsg>>,
+    contact_list: RefCell<FactoryVecDeque<Box, ContactGroup, SidebarMsg>>,
 }
 
 #[derive(Debug)]
 pub enum SidebarMsg {
     SelectChatroom(i32),
     UpdateChatItem(FriendMessage),
+    RefreshContact,
 }
 
 #[relm4::component(pub)]
@@ -63,9 +67,11 @@ impl SimpleComponent for SidebarModel {
                 },
             }
         },
-        contact_stack = &Box {
-            set_halign: Align::Center,
-            append: &Label::new(Some("Contact"))
+        contact_stack = ScrolledWindow {
+            set_child: sidebar_contact = Some(&Box) {
+                set_orientation: Orientation::Vertical,
+                // set_css_classes: &["navigation-sidebar"]
+            }
         }
     }
 
@@ -82,12 +88,15 @@ impl SimpleComponent for SidebarModel {
         chats_stack.set_icon_name(Some("chat-symbolic"));
         contact_stack.set_icon_name(Some("address-book-symbolic"));
 
-        let chats_list: FactoryVecDeque<ListBox, UserItem, SidebarMsg> =
+        let chats_list: FactoryVecDeque<ListBox, ChatItem, SidebarMsg> =
             FactoryVecDeque::new(widgets.sidebar_chats.clone(), &sender.input);
+        let contact_list: FactoryVecDeque<Box, ContactGroup, SidebarMsg> =
+            FactoryVecDeque::new(widgets.sidebar_contact.clone(), &sender.input);
 
         ComponentParts {
             model: SidebarModel {
                 chats_list: RefCell::new(chats_list),
+                contact_list: RefCell::new(contact_list),
             },
             widgets,
         }
@@ -110,9 +119,9 @@ impl SimpleComponent for SidebarModel {
                         content = text.content;
                     }
                 }
-                // Check if the sender is already in the chat list
-                // if yes, just push the message into it and put it at the first place
-                // if not, push the new sender to the list
+                // Check if the sender is already in the chat list.
+                // if yes, just push the message into it and put it at the first place.
+                // if not, push the new sender to the list.
                 let mut has_sender_already_in_list = false;
                 let mut chats_list = self.chats_list.borrow_mut();
                 for i in 0..chats_list.len() {
@@ -131,12 +140,20 @@ impl SimpleComponent for SidebarModel {
                         .iter()
                         .find(|user| user.uin == account)
                         .unwrap();
-                    chats_list.push_front(UserItem {
+                    chats_list.push_front(ChatItem {
                         account,
                         username: user.remark.clone(),
                         last_message: content,
                     });
                 }
+            }
+            RefreshContact => {
+                let mut contact_list = self.contact_list.borrow_mut();
+                let friend_group_list = FRIEND_GROUP_LIST.get().unwrap();
+                for group in friend_group_list.iter() {
+                    contact_list.push_back(group.clone());
+                }
+                contact_list.render_changes();
             }
         }
         self.chats_list.borrow().render_changes();

@@ -7,14 +7,14 @@ use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation};
 use super::SidebarMsg;
 
 #[derive(Debug)]
-pub struct UserItem {
+pub struct ChatItem {
     pub account: i64,
     pub username: String,
     pub last_message: String,
 }
 
-impl FactoryComponent<ListBox, SidebarMsg> for UserItem {
-    type InitParams = UserItem;
+impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
+    type InitParams = ChatItem;
     type Widgets = ();
     type Input = ();
     type Output = ();
