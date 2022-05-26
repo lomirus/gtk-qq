@@ -1,11 +1,16 @@
 use relm4::factory::{DynamicIndex, FactoryComponent};
-use relm4::{adw, gtk, Sender};
+use relm4::{adw, gtk, Sender, WidgetPlus};
 
-use adw::{prelude::*, ExpanderRow};
-use gtk::{Box, Label, Widget};
+use adw::{prelude::*, Avatar, ExpanderRow};
+use gtk::{glib::clone, Align, Box, GestureClick, Label, Orientation, Widget};
+
 use ricq::structs::FriendInfo;
 
 use super::SidebarMsg;
+
+pub enum ContactGroupMessage {
+    SelectUser(i64),
+}
 
 #[derive(Debug, Clone)]
 pub struct ContactGroup {
@@ -17,7 +22,7 @@ pub struct ContactGroup {
 impl FactoryComponent<Box, SidebarMsg> for ContactGroup {
     type InitParams = ContactGroup;
     type Widgets = ();
-    type Input = ();
+    type Input = ContactGroupMessage;
     type Output = ();
     type Command = ();
     type CommandOutput = ();
@@ -58,10 +63,60 @@ impl FactoryComponent<Box, SidebarMsg> for ContactGroup {
     fn init_widgets(
         &mut self,
         _index: &DynamicIndex,
-        root: &Self::Root,
+        group: &Self::Root,
         _returned_widget: &Widget,
-        _input: &Sender<Self::Input>,
+        input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
     ) -> Self::Widgets {
+        let friends = self.friends.clone();
+        for friend in friends.into_iter() {
+            // Create user item click event
+            let gesture = GestureClick::new();
+            gesture.connect_released(clone!(@strong input => move |gesture, _, _, _| {
+                input.send(ContactGroupMessage::SelectUser(friend.uin));
+            }));
+
+            relm4::view! {
+                child = Box {
+                    set_margin_all: 8,
+                    Avatar {
+                        set_text: Some(&friend.nick),
+                        set_show_initials: true,
+                        set_size: 48,
+                        set_margin_end: 8
+                    },
+                    Box {
+                        set_orientation: Orientation::Vertical,
+                        set_halign: Align::Center,
+                        set_spacing: 8,
+                        append = &Label {
+                            set_text:  &friend.remark,
+                            add_css_class: "heading"
+                        },
+                        append = &Label {
+                            set_text: &friend.nick,
+                            add_css_class: "caption",
+                            set_xalign: 0.0,
+                        },
+                    },
+                    add_controller: &gesture,
+                }
+            }
+            group.add_row(&child);
+        }
+    }
+
+    fn update(
+        &mut self,
+        relm_msg: Self::Input,
+        input: &Sender<Self::Input>,
+        _output: &Sender<Self::Output>,
+    ) -> Option<Self::Command> {
+        match relm_msg {
+            ContactGroupMessage::SelectUser(account) => {
+                println!("{}", account);
+            }
+        }
+        None
     }
 }
