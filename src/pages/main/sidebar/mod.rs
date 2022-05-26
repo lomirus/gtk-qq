@@ -44,7 +44,7 @@ impl SimpleComponent for SidebarModel {
         #[root]
         sidebar = &Box {
             set_vexpand: true,
-            set_width_request: 360,
+            set_width_request: 320,
             set_orientation: Orientation::Vertical,
             append = &HeaderBar {
                 set_show_start_title_buttons: false,

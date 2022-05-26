@@ -1,5 +1,5 @@
 use relm4::factory::{DynamicIndex, FactoryComponent};
-use relm4::{adw, gtk, Sender, WidgetPlus};
+use relm4::{adw, gtk, Sender};
 
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation};
@@ -45,13 +45,15 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
     ) -> Self::Widgets {
         relm4::view! {
             item = Box {
+                set_margin_top: 8,
+                set_margin_bottom: 8,
                 append = &Avatar {
                     set_text: Some(&self.username),
                     set_show_initials: true,
-                    set_size: 56
+                    set_size: 48,
+                    set_margin_end: 8
                 },
                 append = &Box {
-                    set_margin_all: 8,
                     set_orientation: Orientation::Vertical,
                     set_halign: Align::Center,
                     set_spacing: 8,

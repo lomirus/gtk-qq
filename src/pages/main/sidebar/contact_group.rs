@@ -49,7 +49,7 @@ impl FactoryComponent<Box, SidebarMsg> for ContactGroup {
         );
         relm4::view! {
             group = ExpanderRow {
-                set_width_request: 360,
+                set_width_request: 320,
                 add_prefix = &Label {
                     set_label: self.name.as_str()
                 },
