@@ -21,7 +21,7 @@ jobs:
           components: clippy, rustfmt
           default: true
       - run: sudo apt-get update
-      - run: sudo apt-get install meson ninja-build
+      - run: sudo apt-get install meson ninja-build libgtk-4-dev libadwaita-1-dev
       - run: meson setup builddir
       - run: meson compile -C builddir
       - run: cargo fmt --check
