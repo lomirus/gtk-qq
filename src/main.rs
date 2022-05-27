@@ -6,15 +6,15 @@ mod config;
 mod handler;
 mod pages;
 
-use gtk::gio;
+use gtk::{gio, glib::Bytes};
 use relm4::{gtk, RelmApp};
 
 use app::AppModel;
 
 #[tokio::main]
 async fn main() {
-    let res = gio::Resource::load(config::PKGDATA_DIR.to_owned() + "/resources.gresource")
-        .expect("Could not load resources");
+    let bytes = Bytes::from(include_bytes!("../builddir/assets/resources.gresource"));
+    let res = gio::Resource::from_data(&bytes).unwrap();
     gio::resources_register(&res);
 
     let app: RelmApp<AppModel> = RelmApp::new(config::APPLICATION_ID);
