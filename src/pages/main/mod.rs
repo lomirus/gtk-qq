@@ -12,11 +12,11 @@ use relm4::{
 };
 
 use adw::{prelude::*, HeaderBar, Leaflet};
-use gtk::{Box, Label, MenuButton, Orientation, Separator, Stack};
+use gtk::{Align, Box, Label, MenuButton, Orientation, Separator, Stack};
 
 use self::chatroom::Chatroom;
 use self::sidebar::SidebarModel;
-use crate::handler::ACCOUNT;
+use crate::handler::{ACCOUNT, FRIEND_LIST};
 use crate::pages::main::chatroom::ChatroomInitParams;
 use crate::pages::main::sidebar::SidebarMsg;
 pub use sidebar::ContactGroup;
@@ -121,15 +121,22 @@ impl SimpleComponent for MainPageModel {
         #[root]
         main_page = &Leaflet {
             append: sidebar_controller.widget(),
-            append = &Separator::new(Orientation::Horizontal) {
-            },
+            append = &Separator::new(Orientation::Horizontal),
             append: chatroom = &Box {
                 set_vexpand: true,
                 set_hexpand: true,
                 set_orientation: Orientation::Vertical,
                 append = &HeaderBar {
-                    set_title_widget = Some(&Label) {
-                        set_label: "Chatroom"
+                    set_title_widget = Some(&Box) {
+                        set_orientation: Orientation::Vertical,
+                        set_valign: Align::Center,
+                        append: chatroom_title = &Label {
+                            set_label: "Chatroom"
+                        },
+                        append: chatroom_subtitle = &Label {
+                            set_css_classes: &["subtitle"],
+                            set_label: "Chatroom"
+                        },
                     },
                     pack_end = &MenuButton {
                         set_icon_name: "menu-symbolic",
@@ -208,6 +215,11 @@ impl SimpleComponent for MainPageModel {
                         .sender()
                         .send(InsertChatItem(sender, content.clone()));
                     self.insert_chatroom(sender);
+                    // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
+                    // 以触发自动更新 chatroom 的标题与副标题。
+                    if self.chatrooms.borrow().len() == 1 {
+                        self.message = Some(ViewMsg::SelectChatroom(sender));
+                    }
                 }
 
                 self.push_others_message(sender, content);
@@ -236,7 +248,17 @@ impl SimpleComponent for MainPageModel {
             match message {
                 WindowFolded => widgets.main_page.set_visible_child(&widgets.chatroom),
                 SelectChatroom(account) => {
-                    chatroom_stack.set_visible_child_name(&account.to_string())
+                    chatroom_stack.set_visible_child_name(&account.to_string());
+                    let user = FRIEND_LIST
+                        .get()
+                        .unwrap()
+                        .iter()
+                        .find(|user| user.uin == *account)
+                        .unwrap();
+                    let title = &user.remark;
+                    let subtitle = format!("{} ({})", user.nick, account);
+                    chatroom_title.set_label(title);
+                    chatroom_subtitle.set_label(&subtitle);
                 }
             }
         }
