@@ -1,4 +1,4 @@
-name: check
+name: fmt
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - '**.md'
 
 jobs:
-  check:
+  fmt:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/gtk-rs/gtk4-rs/gtk4:latest
@@ -21,4 +21,5 @@ jobs:
         with:
           toolchain: nightly
       - run: meson setup builddir
-      - run: cargo check
+      - run: cargo fmt --check
+      - run: cargo clippy
