@@ -3,6 +3,7 @@
 [![check-badge]][check-link]
 [![fmt-badge]][fmt-link]
 [![clippy-badge]][clippy-link]
+[![build-badge]][build-link]
 [![dependency-badge]][dependency-link]
 
 [check-badge]: https://github.com/lomirus/gtk-qq/workflows/check/badge.svg
@@ -11,6 +12,8 @@
 [fmt-link]: https://github.com/lomirus/gtk-qq/actions/workflows/fmt.yaml
 [clippy-badge]: https://github.com/lomirus/gtk-qq/workflows/clippy/badge.svg
 [clippy-link]: https://github.com/lomirus/gtk-qq/actions/workflows/clippy.yaml
+[build-badge]: https://github.com/lomirus/gtk-qq/workflows/build/badge.svg
+[build-link]: https://github.com/lomirus/gtk-qq/actions/workflows/build.yaml
 [dependency-badge]: https://deps.rs/repo/github/lomirus/gtk-qq/status.svg
 [dependency-link]: https://deps.rs/repo/github/lomirus/gtk-qq
 

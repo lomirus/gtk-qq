@@ -1,0 +1,26 @@
+name: build
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/gtk-rs/gtk4-rs/gtk4:latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+      - run: meson setup builddir
+      - run: cargo build --release
+      - uses: actions/upload-artifact@v3
+        with:
+          name: gtk-qq
+          path: target/release/gtk-qq
