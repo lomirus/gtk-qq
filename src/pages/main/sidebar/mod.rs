@@ -1,5 +1,3 @@
-#![allow(unused_variables)]
-
 mod chat_item;
 mod contact_group;
 
@@ -11,10 +9,7 @@ use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
 use adw::{prelude::*, HeaderBar, ViewStack, ViewSwitcherTitle};
 use gtk::{Box, ListBox, Orientation, ScrolledWindow};
 
-use ricq::msg::elem::RQElem;
-use ricq::structs::FriendMessage;
-
-use crate::handler::{FRIEND_GROUP_LIST, FRIEND_LIST};
+use crate::handler::FRIEND_GROUP_LIST;
 use crate::pages::main::MainMsg;
 use chat_item::ChatItem;
 
@@ -26,10 +21,32 @@ pub struct SidebarModel {
     contact_list: RefCell<FactoryVecDeque<Box, ContactGroup, SidebarMsg>>,
 }
 
+impl SidebarModel {
+    fn update_chat_item(&self, account: i64, last_message: String) {
+        let mut chats_list = self.chats_list.borrow_mut();
+        for i in 0..chats_list.len() {
+            let this_account = chats_list.get(i).account;
+            if this_account == account {
+                chats_list.swap(0, i);
+                chats_list.front_mut().unwrap().last_message = last_message;
+                break;
+            }
+        }
+        chats_list.render_changes();
+    }
+
+    fn insert_chat_item(&self, account: i64, last_message: String) {
+        let mut chats_list = self.chats_list.borrow_mut();
+        chats_list.push_front((account, last_message));
+        chats_list.render_changes();
+    }
+}
+
 #[derive(Debug)]
 pub enum SidebarMsg {
     SelectChatroom(i32),
-    UpdateChatItem(FriendMessage),
+    UpdateChatItem(i64, String),
+    InsertChatItem(i64, String),
     RefreshContact,
 }
 
@@ -58,7 +75,7 @@ impl SimpleComponent for SidebarModel {
                 set_vexpand: true,
             }
         },
-        chats_stack = ScrolledWindow {
+        _chats_stack = ScrolledWindow {
             set_child: sidebar_chats = Some(&ListBox) {
                 set_css_classes: &["navigation-sidebar"],
                 connect_row_activated[sender] => move |_, selected_row| {
@@ -67,7 +84,7 @@ impl SimpleComponent for SidebarModel {
                 },
             }
         },
-        contact_stack = ScrolledWindow {
+        _contact_stack = ScrolledWindow {
             set_child: sidebar_contact = Some(&Box) {
                 set_orientation: Orientation::Vertical,
                 // set_css_classes: &["navigation-sidebar"]
@@ -83,8 +100,8 @@ impl SimpleComponent for SidebarModel {
         let widgets = view_output!();
 
         let stack: &ViewStack = &widgets.stack;
-        let chats_stack = stack.add_titled(&widgets.chats_stack, None, "Chats");
-        let contact_stack = stack.add_titled(&widgets.contact_stack, None, "Contact");
+        let chats_stack = stack.add_titled(&widgets._chats_stack, None, "Chats");
+        let contact_stack = stack.add_titled(&widgets._contact_stack, None, "Contact");
         chats_stack.set_icon_name(Some("chat-symbolic"));
         contact_stack.set_icon_name(Some("address-book-symbolic"));
 
@@ -109,44 +126,8 @@ impl SimpleComponent for SidebarModel {
                 let account = self.chats_list.borrow().get(index as usize).account;
                 sender.output(MainMsg::SelectChatroom(account));
             }
-            UpdateChatItem(message) => {
-                // Get sender account
-                let account = message.from_uin;
-                // Get message content
-                let mut content = String::new();
-                for elem in message.elements {
-                    if let RQElem::Text(text) = elem {
-                        content = text.content;
-                    }
-                }
-                // Check if the sender is already in the chat list.
-                // if yes, just push the message into it and put it at the first place.
-                // if not, push the new sender to the list.
-                let mut has_sender_already_in_list = false;
-                let mut chats_list = self.chats_list.borrow_mut();
-                for i in 0..chats_list.len() {
-                    let this_account = chats_list.get(i).account;
-                    if this_account == account {
-                        has_sender_already_in_list = true;
-                        chats_list.swap(0, i);
-                        chats_list.front_mut().unwrap().last_message = content.clone();
-                        break;
-                    }
-                }
-                if !has_sender_already_in_list {
-                    let user = FRIEND_LIST
-                        .get()
-                        .unwrap()
-                        .iter()
-                        .find(|user| user.uin == account)
-                        .unwrap();
-                    chats_list.push_front(ChatItem {
-                        account,
-                        username: user.remark.clone(),
-                        last_message: content,
-                    });
-                }
-            }
+            UpdateChatItem(account, last_message) => self.update_chat_item(account, last_message),
+            InsertChatItem(account, last_message) => self.insert_chat_item(account, last_message),
             RefreshContact => {
                 let mut contact_list = self.contact_list.borrow_mut();
                 let friend_group_list = FRIEND_GROUP_LIST.get().unwrap();

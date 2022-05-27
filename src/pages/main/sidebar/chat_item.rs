@@ -4,6 +4,8 @@ use relm4::{adw, gtk, Sender};
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation};
 
+use crate::handler::FRIEND_LIST;
+
 use super::SidebarMsg;
 
 #[derive(Debug)]
@@ -14,7 +16,8 @@ pub struct ChatItem {
 }
 
 impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
-    type InitParams = ChatItem;
+    /// (account, last_message)
+    type InitParams = (i64, String);
     type Widgets = ();
     type Input = ();
     type Output = ();
@@ -28,7 +31,18 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
         _input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
     ) -> Self {
-        init_params
+        let (account, last_message) = init_params;
+        let user = FRIEND_LIST
+            .get()
+            .unwrap()
+            .iter()
+            .find(|user| user.uin == account)
+            .unwrap();
+        ChatItem {
+            account,
+            username: user.remark.clone(),
+            last_message,
+        }
     }
 
     fn init_root(&self) -> Self::Root {

@@ -14,11 +14,9 @@ use relm4::{
 use adw::{prelude::*, HeaderBar, Leaflet};
 use gtk::{Box, Label, MenuButton, Orientation, Separator, Stack};
 
-use ricq::msg::elem::RQElem;
-use ricq::structs::FriendMessage;
-
 use self::chatroom::Chatroom;
 use self::sidebar::SidebarModel;
+use crate::handler::ACCOUNT;
 use crate::pages::main::chatroom::ChatroomInitParams;
 use crate::pages::main::sidebar::SidebarMsg;
 pub use sidebar::ContactGroup;
@@ -32,16 +30,72 @@ pub struct MainPageModel {
     chatrooms: RefCell<FactoryVecDeque<Stack, Chatroom, MainMsg>>,
 }
 
+impl MainPageModel {
+    fn is_user_in_list(&self, account: i64) -> bool {
+        let chatrooms = self.chatrooms.borrow();
+
+        for i in 0..chatrooms.len() {
+            let chatroom = chatrooms.get(i);
+            if chatroom.account == account {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    fn insert_chatroom(&self, account: i64) {
+        // TODO: Get history messages
+        let messages = VecDeque::new();
+        let mut chatrooms = self.chatrooms.borrow_mut();
+        chatrooms.push_front(ChatroomInitParams { account, messages });
+    }
+
+    fn push_own_message(&self, target: i64, content: String) {
+        let self_account = *ACCOUNT.get().unwrap();
+        let mut chatrooms = self.chatrooms.borrow_mut();
+        for i in 0..chatrooms.len() {
+            let mut chatroom = chatrooms.get_mut(i);
+            if chatroom.account == target {
+                chatroom.push_message(Message {
+                    sender: self_account,
+                    target,
+                    content,
+                });
+                break;
+            }
+        }
+    }
+
+    fn push_others_message(&self, sender: i64, content: String) {
+        let self_account = *ACCOUNT.get().unwrap();
+        let mut chatrooms = self.chatrooms.borrow_mut();
+        for i in 0..chatrooms.len() {
+            let mut chatroom = chatrooms.get_mut(i);
+            if chatroom.account == sender {
+                chatroom.push_message(Message {
+                    sender,
+                    target: self_account,
+                    content,
+                });
+                break;
+            }
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Message {
-    account: i64,
-    message: String,
+    pub sender: i64,
+    pub target: i64,
+    pub content: String,
 }
 
 #[derive(Debug)]
 pub enum MainMsg {
     WindowFolded,
-    UpdateChatItem(FriendMessage),
+    ReceiveMessage(i64, String),
+    SendMessage(i64, String),
     SelectChatroom(i64),
     InitSidebar,
 }
@@ -59,7 +113,7 @@ relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
 #[relm4::component(pub)]
 impl SimpleComponent for MainPageModel {
     type Input = MainMsg;
-    type Output = MainMsg;
+    type Output = ();
     type Widgets = MainPageWidgets;
     type InitParams = ();
 
@@ -132,46 +186,42 @@ impl SimpleComponent for MainPageModel {
         match msg {
             WindowFolded => self.message = Some(ViewMsg::WindowFolded),
             SelectChatroom(account) => {
+                if !self.is_user_in_list(account) {
+                    // TODO: Get last_message from history or some other places
+                    self.sidebar
+                        .sender()
+                        .send(SidebarMsg::InsertChatItem(account, String::new()));
+                    self.insert_chatroom(account)
+                }
+
                 self.message = Some(ViewMsg::SelectChatroom(account));
             }
-            UpdateChatItem(message) => {
-                // Get sender account
-                let account = message.from_uin;
-                // Get message content
-                let mut content = String::new();
-                for elem in message.elements.clone() {
-                    if let RQElem::Text(text) = elem {
-                        content = text.content;
-                    }
+            ReceiveMessage(sender, content) => {
+                // Update components
+                use SidebarMsg::*;
+                if self.is_user_in_list(sender) {
+                    self.sidebar
+                        .sender()
+                        .send(UpdateChatItem(sender, content.clone()));
+                } else {
+                    self.sidebar
+                        .sender()
+                        .send(InsertChatItem(sender, content.clone()));
+                    self.insert_chatroom(sender);
                 }
-                // Check if the chatroom with sender is already in the chatrooms' stack.
-                // if yes, just push the message into it.
-                // if not, push the new chatroom to the stack.
+
+                self.push_others_message(sender, content);
+            }
+            SendMessage(target, content) => {
+                // Get self account
+                let self_account = *ACCOUNT.get().unwrap();
+
+                // Update components
+                use SidebarMsg::UpdateChatItem;
                 self.sidebar
                     .sender()
-                    .send(SidebarMsg::UpdateChatItem(message));
-                let mut has_sender_already_in_list = false;
-                let mut chatrooms = self.chatrooms.borrow_mut();
-
-                for i in 0..chatrooms.len() {
-                    let mut chatroom = chatrooms.get_mut(i);
-                    if chatroom.account == account {
-                        has_sender_already_in_list = true;
-                        chatroom.add_message(Message {
-                            account,
-                            message: content.to_string(),
-                        });
-                        break;
-                    }
-                }
-                if !has_sender_already_in_list {
-                    let mut messages = VecDeque::new();
-                    messages.push_back(Message {
-                        account,
-                        message: content,
-                    });
-                    chatrooms.push_front(ChatroomInitParams { account, messages });
-                }
+                    .send(UpdateChatItem(self_account, content.clone()));
+                self.push_own_message(target, content);
             }
             InitSidebar => {
                 self.sidebar.sender().send(SidebarMsg::RefreshContact);
@@ -185,12 +235,10 @@ impl SimpleComponent for MainPageModel {
             use ViewMsg::*;
             match message {
                 WindowFolded => widgets.main_page.set_visible_child(&widgets.chatroom),
-                SelectChatroom(id) => widgets
-                    .chatroom_stack
-                    .set_visible_child_name(id.to_string().as_str()),
+                SelectChatroom(account) => {
+                    chatroom_stack.set_visible_child_name(&account.to_string())
+                }
             }
         }
-
-        self.chatrooms.borrow().render_changes();
     }
 }

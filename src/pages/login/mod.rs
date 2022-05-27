@@ -59,12 +59,6 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
         get_version(Protocol::MacOS),
         AppHandler,
     ));
-    if CLIENT.set(client.clone()).is_err() {
-        panic!("falied to store client");
-    };
-    if ACCOUNT.set(account).is_err() {
-        panic!("falied to store account");
-    };
     // Connect to server
     let stream = match TcpStream::connect(client.get_address()).await {
         Ok(stream) => stream,
@@ -86,7 +80,7 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
     // Handle login response
     match res {
         LoginResponse::Success(_) => {
-            finish_login(client, handle, sender).await;
+            finish_login(account, client, handle, sender).await;
         }
         LoginResponse::NeedCaptcha(_) => println!("NeedCaptcha"),
         LoginResponse::AccountFrozen => println!("AccountFrozen"),
@@ -109,7 +103,7 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
             if let Err(err) = client.device_lock_login().await {
                 sender.input(LoginFailed(err.to_string()));
             } else {
-                finish_login(client, handle, sender).await;
+                finish_login(account, client, handle, sender).await;
             }
         }
         LoginResponse::UnknownStatus(LoginUnknownStatus { ref message, .. }) => {
@@ -119,11 +113,18 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
 }
 
 async fn finish_login(
+    account: i64,
     client: Arc<Client>,
     handle: JoinHandle<()>,
     sender: ComponentSender<LoginPageModel>,
 ) {
     use LoginPageMsg::{LoginFailed, LoginSuccessful};
+    if CLIENT.set(client.clone()).is_err() {
+        panic!("falied to store client");
+    };
+    if ACCOUNT.set(account).is_err() {
+        panic!("falied to store account");
+    };
     after_login(&client).await;
     match client.get_friend_list().await {
         Ok(res) => {

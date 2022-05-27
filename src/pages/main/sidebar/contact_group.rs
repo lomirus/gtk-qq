@@ -7,6 +7,7 @@ use gtk::{glib::clone, Align, Box, GestureClick, Label, Orientation, Widget};
 use ricq::structs::FriendInfo;
 
 use super::SidebarMsg;
+use crate::pages::main::{MainMsg, MAIN_SENDER};
 
 pub enum ContactGroupMessage {
     SelectUser(i64),
@@ -72,7 +73,7 @@ impl FactoryComponent<Box, SidebarMsg> for ContactGroup {
         for friend in friends.into_iter() {
             // Create user item click event
             let gesture = GestureClick::new();
-            gesture.connect_released(clone!(@strong input => move |gesture, _, _, _| {
+            gesture.connect_released(clone!(@strong input => move |_, _, _, _| {
                 input.send(ContactGroupMessage::SelectUser(friend.uin));
             }));
 
@@ -109,12 +110,14 @@ impl FactoryComponent<Box, SidebarMsg> for ContactGroup {
     fn update(
         &mut self,
         relm_msg: Self::Input,
-        input: &Sender<Self::Input>,
+        _input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
     ) -> Option<Self::Command> {
+        use ContactGroupMessage::*;
         match relm_msg {
-            ContactGroupMessage::SelectUser(account) => {
-                println!("{}", account);
+            SelectUser(account) => {
+                let main_sender = MAIN_SENDER.get().unwrap();
+                main_sender.input(MainMsg::SelectChatroom(account));
             }
         }
         None

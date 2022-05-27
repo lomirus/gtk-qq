@@ -10,7 +10,7 @@ use gtk::{Box, Button, Entry, Orientation, ScrolledWindow, Stack, StackPage};
 use ricq::msg::{elem, MessageChain};
 use tokio::task;
 
-use crate::handler::{ACCOUNT, CLIENT};
+use crate::handler::CLIENT;
 
 use super::{MainMsg, Message};
 use message_group::MessageGroup;
@@ -23,40 +23,38 @@ pub struct Chatroom {
 }
 
 impl Chatroom {
-    pub fn add_message(&mut self, message: Message) {
-        if !self.messages.is_empty() {
+    pub fn push_message(&mut self, message: Message) {
+        if self.messages.is_empty() {
+            self.messages.push_back(MessageGroup {
+                account: message.sender,
+                messages: vec![message.content],
+            });
+        } else {
             let mut last_message_group = self.messages.pop_back().unwrap();
-            if last_message_group.account == message.account {
-                last_message_group.messages.push(message.message);
+            if last_message_group.account == message.sender {
+                last_message_group.messages.push(message.content);
                 self.messages.push_back(last_message_group);
             } else {
                 self.messages.push_back(last_message_group);
                 self.messages.push_back(MessageGroup {
-                    account: message.account,
-                    messages: vec![message.message],
+                    account: message.sender,
+                    messages: vec![message.content],
                 });
             }
-        } else {
-            self.messages.push_back(MessageGroup {
-                account: message.account,
-                messages: vec![message.message],
-            });
         }
 
         self.messages.render_changes();
     }
 }
 
-async fn send_message(message: Message, target: i64, sender: Sender<ChatroomMsg>) {
+async fn send_message(content: String, target: i64, output: Sender<MainMsg>) {
     let client = CLIENT.get().unwrap();
-    let res = client
-        .send_friend_message(
-            target,
-            MessageChain::new(elem::Text::new(message.message.clone())),
-        )
-        .await;
+    let message = MessageChain::new(elem::Text::new(content.clone()));
+    let res = client.send_friend_message(target, message).await;
     match res {
-        Ok(_) => sender.send(ChatroomMsg::AddMessage(message)),
+        Ok(_) => {
+            output.send(MainMsg::SendMessage(target, content));
+        }
         Err(err) => {
             panic!("err: {:?}", err);
         }
@@ -66,7 +64,7 @@ async fn send_message(message: Message, target: i64, sender: Sender<ChatroomMsg>
 #[derive(Debug)]
 pub enum ChatroomMsg {
     AddMessage(Message),
-    SendMessage(Message),
+    SendMessage(i64, String),
 }
 
 pub struct ChatroomInitParams {
@@ -148,10 +146,10 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
                 append = &Button {
                     set_icon_name: "send-symbolic",
                     connect_clicked[input] => move |_| {
-                        input.send(ChatroomMsg::SendMessage(Message {
-                            account: *ACCOUNT.get().unwrap(),
-                            message: entry_buffer.text()
-                        }));
+                        input.send(ChatroomMsg::SendMessage(
+                            account,
+                            entry_buffer.text()
+                        ));
                         entry_buffer.set_text("");
                     }
                 },
@@ -168,15 +166,19 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
     fn update(
         &mut self,
         relm_msg: Self::Input,
-        input: &Sender<Self::Input>,
-        _output: &Sender<Self::Output>,
+        _input: &Sender<Self::Input>,
+        output: &Sender<Self::Output>,
     ) -> Option<Self::Command> {
         match relm_msg {
-            ChatroomMsg::AddMessage(message) => self.add_message(message),
-            ChatroomMsg::SendMessage(message) => {
-                task::spawn(send_message(message, self.account, input.clone()));
+            ChatroomMsg::AddMessage(message) => self.push_message(message),
+            ChatroomMsg::SendMessage(target, content) => {
+                task::spawn(send_message(content, target, output.clone()));
             }
         }
         None
+    }
+
+    fn output_to_parent_msg(output: Self::Output) -> Option<MainMsg> {
+        Some(output)
     }
 }

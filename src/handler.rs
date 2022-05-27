@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use once_cell::sync::OnceCell;
 use ricq::client::event::*;
 use ricq::handler::{Handler, QEvent::*};
+use ricq::msg::elem::RQElem;
 use ricq::structs::{FriendGroupInfo, FriendInfo};
 use ricq::Client;
 
@@ -66,8 +67,14 @@ impl Handler for AppHandler {
                 println!("SelfGroupMessage");
             }
             FriendMessage(FriendMessageEvent { client, message }) => {
+                let mut content = String::new();
+                for elem in message.elements.clone() {
+                    if let RQElem::Text(text) = elem {
+                        content = text.content;
+                    }
+                }
                 let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
-                main_sender.input(MainMsg::UpdateChatItem(message))
+                main_sender.input(MainMsg::ReceiveMessage(message.from_uin, content));
             }
             FriendAudioMessage(FriendAudioMessageEvent { client, message }) => {
                 println!("FriendAudioMessage");
