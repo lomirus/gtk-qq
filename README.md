@@ -31,6 +31,7 @@ If you want join the development or just to build this project from source, you 
 
 ```bash
 meson setup builddir
+meson compile -C builddir
 ```
 
 Then as usual, just run:

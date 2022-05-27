@@ -19,6 +19,7 @@ jobs:
         with:
           toolchain: nightly
       - run: meson setup builddir
+      - run: meson compile -C builddir
       - run: cargo build --release
       - uses: actions/upload-artifact@v3
         with:
