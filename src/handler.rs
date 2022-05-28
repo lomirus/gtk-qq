@@ -5,7 +5,8 @@ use async_trait::async_trait;
 use once_cell::sync::OnceCell;
 use ricq::client::event::*;
 use ricq::handler::{Handler, QEvent::*};
-use ricq::msg::elem::RQElem;
+use ricq::msg::elem::{FingerGuessing, RQElem};
+use ricq::msg::MessageChain;
 use ricq::structs::{FriendGroupInfo, FriendInfo};
 use ricq::Client;
 
@@ -51,6 +52,60 @@ pub fn init_friends_list(
     FRIEND_GROUP_LIST.set(friends_group_list).unwrap();
 }
 
+fn get_text_from(message_chain: &MessageChain) -> String {
+    let mut content = Vec::<String>::new();
+    for elem in message_chain.clone() {
+        match elem {
+            RQElem::At(at) => {
+                content.push(format!("[@{}({})]", at.display, at.target));
+            }
+            RQElem::Text(ref text) => {
+                content.push(text.content.clone());
+            }
+            RQElem::Face(face) => {
+                content.push(format!("[{}]", face.name));
+            }
+            RQElem::MarketFace(face) => {
+                content.push(format!("[{}]", face.name));
+            }
+            RQElem::Dice(dice) => {
+                content.push(format!("[🎲({})]", dice.value));
+            }
+            RQElem::FingerGuessing(finger_guessing) => {
+                content.push(
+                    match finger_guessing {
+                        FingerGuessing::Rock => "[✊]",
+                        FingerGuessing::Scissors => "[✌]",
+                        FingerGuessing::Paper => "[✋]",
+                    }
+                    .to_string(),
+                );
+            }
+            RQElem::LightApp(light_app) => {
+                content.push(format!("[{:#?}]", light_app.content));
+            }
+            RQElem::RichMsg(rich_msg) => {
+                content.push("[RICH MESSAGE]".to_string());
+                println!("RichMsg: {:#?}", rich_msg);
+            }
+            RQElem::FriendImage(_) => {
+                content.push("[图片]".to_string());
+            }
+            RQElem::GroupImage(_) => {
+                content.push("[图片]".to_string());
+            }
+            RQElem::FlashImage(_) => {
+                content.push("[闪照]".to_string());
+            }
+            RQElem::VideoFile(_) => {
+                content.push("[视频文件]".to_string());
+            }
+            RQElem::Other(_) => {}
+        }
+    }
+    content.join(" ")
+}
+
 #[async_trait]
 impl Handler for AppHandler {
     #[allow(unused_variables)]
@@ -67,24 +122,18 @@ impl Handler for AppHandler {
                 println!("SelfGroupMessage");
             }
             FriendMessage(FriendMessageEvent { client, message }) => {
-                let mut content = String::new();
-                for elem in message.elements.clone() {
-                    if let RQElem::Text(text) = elem {
-                        content = text.content;
-                    }
-                }
                 let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
-                main_sender.input(MainMsg::ReceiveMessage(message.from_uin, content));
+                main_sender.input(MainMsg::ReceiveMessage(
+                    message.from_uin,
+                    get_text_from(&message.elements),
+                ));
             }
-            SelfFriendMessage(FriendMessageEvent {client, message }) => {
-                let mut content = String::new();
-                for elem in message.elements.clone() {
-                    if let RQElem::Text(text) = elem {
-                        content = text.content;
-                    }
-                }
+            SelfFriendMessage(FriendMessageEvent { client, message }) => {
                 let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
-                main_sender.input(MainMsg::SendMessage(message.target, content));
+                main_sender.input(MainMsg::SendMessage(
+                    message.target,
+                    get_text_from(&message.elements),
+                ));
             }
             FriendAudioMessage(FriendAudioMessageEvent { client, message }) => {
                 println!("FriendAudioMessage");
