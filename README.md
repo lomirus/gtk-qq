@@ -25,38 +25,41 @@ Unofficial Linux [QQ](https://im.qq.com/) client, based on GTK4 and libadwaita, 
 
 ## Run & Build
 
-### Linux
+### Requirements
 
-If you want join the development or just to build this project from source, you need first to setup the environment by [meson](https://mesonbuild.com/Quick-guide.html) in the root directory of this project:
+Make you have installed [`meson`](https://mesonbuild.com/Quick-guide.html), `ninja-build`, `libgtk-4-dev` and `libadwaita-1-dev` before building.
 
-```bash
-meson setup builddir
-meson compile -C builddir
-```
-
-Then as usual, just run:
+#### Ubuntu
 
 ```bash
-cargo run
+sudo apt-get install meson ninja-build libgtk-4-dev libadwaita-1-dev
 ```
 
-or
-
-```bash
-cargo build --release
-```
-
-up to your purpose.
-
-### Windows & MacOS
+#### Windows & MacOS
 
 Gtk4 based projects would be more complex to compile on Windows/MacOS platform. Nevertheless, considering some special reasons that you know, we shall not offer the Windows/MacOS release or even build scripts. 
 
 > **Warning**
 > 
 > You can try to build it still if you are just for personal use. At the same time, you should also promise that you will not distribute the Windows/MacOS build to the public in order to ensure the maintenance of this project.
->
+> 
 > The user builds, uses or distributes this project at the user's own risk. This project and its contributors assume no responsibility.
+
+### Setup
+
+You only need to run the commands below once unless you change the related codes.
+
+```bash
+# In the root directory of project
+meson setup builddir
+meson compile -C builddir
+```
+
+### Build
+
+```bash
+cargo build --release
+```
 
 ## Contributing
 
