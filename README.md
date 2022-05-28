@@ -27,12 +27,18 @@ Unofficial Linux [QQ](https://im.qq.com/) client, based on GTK4 and libadwaita, 
 
 ### Requirements
 
-Make sure you have installed [`meson`](https://mesonbuild.com/Quick-guide.html), `ninja-build`, `libgtk-4-dev` and `libadwaita-1-dev` before building.
+Make sure you have installed [`meson`](https://mesonbuild.com/Quick-guide.html), and dev libs of gtk4 and libadwaita before building.
 
 #### Ubuntu
 
 ```bash
 sudo apt-get install meson ninja-build libgtk-4-dev libadwaita-1-dev
+```
+
+#### Fedora
+
+```bash
+sudo dnf install meson gtk4-devel libadwaita-devel
 ```
 
 #### Windows & MacOS
@@ -57,7 +63,7 @@ meson compile -C builddir
 
 ### Build
 
-Switch to nightly toolchain when building.
+Switch to nightly toolchain before building.
 
 ```bash
 # In the root directory of project
