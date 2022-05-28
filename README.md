@@ -57,7 +57,11 @@ meson compile -C builddir
 
 ### Build
 
+Switch to nightly toolchain when building.
+
 ```bash
+# In the root directory of project
+rustup override set nightly
 cargo build --release
 ```
 
