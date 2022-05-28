@@ -11,7 +11,7 @@ use ricq::{
     device::Device,
     ext::common::after_login,
     version::{get_version, Protocol},
-    Client, LoginDeviceLocked, LoginResponse, LoginUnknownStatus,
+    Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse, LoginUnknownStatus,
 };
 use tokio::{net::TcpStream, task};
 
@@ -82,8 +82,21 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
         LoginResponse::Success(_) => {
             finish_login(account, client, handle, sender).await;
         }
-        LoginResponse::NeedCaptcha(_) => println!("NeedCaptcha"),
-        LoginResponse::AccountFrozen => println!("AccountFrozen"),
+        LoginResponse::NeedCaptcha(LoginNeedCaptcha {
+            verify_url,
+            image_captcha,
+            ..
+        }) => {
+            sender.input(LoginFailed(
+                "Need Captcha. See more in the console.".to_string(),
+            ));
+            println!("------[TODO: Add GUI for this]");
+            println!("verify_url: {:?}", verify_url);
+            println!("image_captcha: {:?}", image_captcha);
+        }
+        LoginResponse::AccountFrozen => {
+            sender.input(LoginFailed("Account Frozen".to_string()));
+        }
         LoginResponse::DeviceLocked(LoginDeviceLocked {
             sms_phone,
             verify_url,
@@ -98,7 +111,9 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
             println!("sms_phone: {:?}", sms_phone);
             println!("verify_url: {:?}", verify_url);
         }
-        LoginResponse::TooManySMSRequest => println!("TooManySMSRequest"),
+        LoginResponse::TooManySMSRequest => {
+            sender.input(LoginFailed("Too Many SMS Request".to_string()));
+        }
         LoginResponse::DeviceLockLogin(_) => {
             if let Err(err) = client.device_lock_login().await {
                 sender.input(LoginFailed(err.to_string()));
@@ -106,8 +121,8 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
                 finish_login(account, client, handle, sender).await;
             }
         }
-        LoginResponse::UnknownStatus(LoginUnknownStatus { ref message, .. }) => {
-            sender.input(LoginFailed(message.to_string()));
+        LoginResponse::UnknownStatus(LoginUnknownStatus { message, .. }) => {
+            sender.input(LoginFailed(message));
         }
     }
 }
