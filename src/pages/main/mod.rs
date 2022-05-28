@@ -225,14 +225,22 @@ impl SimpleComponent for MainPageModel {
                 self.push_others_message(sender, content);
             }
             SendMessage(target, content) => {
-                // Get self account
-                let self_account = *ACCOUNT.get().unwrap();
-
-                // Update components
-                use SidebarMsg::UpdateChatItem;
-                self.sidebar
-                    .sender()
-                    .send(UpdateChatItem(self_account, content.clone()));
+                use SidebarMsg::*;
+                if self.is_user_in_list(target) {
+                    self.sidebar
+                        .sender()
+                        .send(UpdateChatItem(target, content.clone()));
+                } else {
+                    self.sidebar
+                        .sender()
+                        .send(InsertChatItem(target, content.clone()));
+                    self.insert_chatroom(target);
+                    // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
+                    // 以触发自动更新 chatroom 的标题与副标题。
+                    if self.chatrooms.borrow().len() == 1 {
+                        self.message = Some(ViewMsg::SelectChatroom(target));
+                    }
+                }
                 self.push_own_message(target, content);
             }
             InitSidebar => {

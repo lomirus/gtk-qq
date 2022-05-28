@@ -76,6 +76,16 @@ impl Handler for AppHandler {
                 let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
                 main_sender.input(MainMsg::ReceiveMessage(message.from_uin, content));
             }
+            SelfFriendMessage(FriendMessageEvent {client, message }) => {
+                let mut content = String::new();
+                for elem in message.elements.clone() {
+                    if let RQElem::Text(text) = elem {
+                        content = text.content;
+                    }
+                }
+                let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
+                main_sender.input(MainMsg::SendMessage(message.target, content));
+            }
             FriendAudioMessage(FriendAudioMessageEvent { client, message }) => {
                 println!("FriendAudioMessage");
             }
