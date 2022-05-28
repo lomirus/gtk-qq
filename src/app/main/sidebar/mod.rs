@@ -10,7 +10,7 @@ use adw::{prelude::*, HeaderBar, ViewStack, ViewSwitcherTitle};
 use gtk::{Box, ListBox, Orientation, ScrolledWindow};
 
 use crate::handler::FRIEND_GROUP_LIST;
-use crate::pages::main::MainMsg;
+use super::MainMsg;
 use chat_item::ChatItem;
 
 pub use self::contact_group::ContactGroup;

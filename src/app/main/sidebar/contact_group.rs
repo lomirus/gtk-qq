@@ -7,7 +7,7 @@ use gtk::{glib::clone, Align, Box, GestureClick, Label, Orientation, Widget};
 use ricq::structs::FriendInfo;
 
 use super::SidebarMsg;
-use crate::pages::main::{MainMsg, MAIN_SENDER};
+use crate::app::main::{MainMsg, MAIN_SENDER};
 
 pub enum ContactGroupMessage {
     SelectUser(i64),

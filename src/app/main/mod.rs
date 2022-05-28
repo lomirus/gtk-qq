@@ -14,12 +14,10 @@ use relm4::{
 use adw::{prelude::*, HeaderBar, Leaflet};
 use gtk::{Align, Box, Label, MenuButton, Orientation, Separator, Stack};
 
-use self::chatroom::Chatroom;
-use self::sidebar::SidebarModel;
 use crate::handler::{ACCOUNT, FRIEND_LIST};
-use crate::pages::main::chatroom::ChatroomInitParams;
-use crate::pages::main::sidebar::SidebarMsg;
+use chatroom::{Chatroom, ChatroomInitParams};
 pub use sidebar::ContactGroup;
+use sidebar::{SidebarModel, SidebarMsg};
 
 pub static MAIN_SENDER: OnceCell<ComponentSender<MainPageModel>> = OnceCell::new();
 

@@ -9,8 +9,8 @@ use ricq::msg::elem::RQElem;
 use ricq::structs::{FriendGroupInfo, FriendInfo};
 use ricq::Client;
 
-use crate::pages::main::ContactGroup;
-use crate::pages::main::{MainMsg, MAIN_SENDER};
+use crate::app::main::ContactGroup;
+use crate::app::main::{MainMsg, MAIN_SENDER};
 
 pub struct AppHandler;
 

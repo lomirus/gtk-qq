@@ -1,3 +1,6 @@
+pub mod login;
+pub mod main;
+
 use relm4::{
     adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller,
     SimpleComponent,
@@ -6,10 +9,9 @@ use relm4::{
 use adw::{prelude::*, ApplicationWindow};
 use gtk::{Box, Stack, StackTransitionType};
 
-use crate::{
-    actions::create_gactions,
-    pages::{login::LoginPageModel, main::MainPageModel},
-};
+use crate::actions::create_gactions;
+use login::LoginPageModel;
+use main::MainPageModel;
 
 pub struct AppModel {
     page: Page,

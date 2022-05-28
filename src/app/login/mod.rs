@@ -16,9 +16,9 @@ use ricq::{
 use tokio::{net::TcpStream, task};
 
 use crate::actions::{AboutAction, ShortcutsAction};
+use crate::app::main::{MainMsg, MAIN_SENDER};
 use crate::app::AppMessage;
 use crate::handler::{init_friends_list, AppHandler, ACCOUNT, CLIENT};
-use crate::pages::main::{MainMsg, MAIN_SENDER};
 
 #[derive(Debug)]
 pub struct LoginPageModel {
