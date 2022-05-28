@@ -2,7 +2,7 @@ use relm4::actions::{RelmAction, RelmActionGroup};
 use relm4::{adw, gtk};
 
 use adw::ApplicationWindow;
-use gtk::{gio::SimpleActionGroup, prelude::*};
+use gtk::{gio::SimpleActionGroup, prelude::*, License};
 
 use crate::config::{APPLICATION_ID, VERSION};
 
@@ -25,6 +25,7 @@ fn show_about(window: &ApplicationWindow) {
         .website_label("Github")
         .website("https://github.com/lomirus/gtk-qq")
         .authors(vec!["Lomirus".into()])
+        .license_type(License::Agpl30)
         .build();
 
     dialog.present();
