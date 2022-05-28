@@ -9,8 +9,8 @@ use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
 use adw::{prelude::*, HeaderBar, ViewStack, ViewSwitcherTitle};
 use gtk::{Box, ListBox, Orientation, ScrolledWindow};
 
-use crate::handler::FRIEND_GROUP_LIST;
 use super::MainMsg;
+use crate::handler::FRIEND_GROUP_LIST;
 use chat_item::ChatItem;
 
 pub use self::contact_group::ContactGroup;
@@ -22,11 +22,12 @@ pub struct SidebarModel {
 }
 
 impl SidebarModel {
-    fn update_chat_item(&self, account: i64, last_message: String) {
+    fn update_chat_item(&self, account: i64, is_group: bool, last_message: String) {
         let mut chats_list = self.chats_list.borrow_mut();
         for i in 0..chats_list.len() {
             let this_account = chats_list.get(i).account;
-            if this_account == account {
+            let is_this_group = chats_list.get(i).is_group;
+            if this_account == account && is_this_group == is_group {
                 chats_list.swap(0, i);
                 chats_list.front_mut().unwrap().last_message = last_message;
                 break;
@@ -35,18 +36,20 @@ impl SidebarModel {
         chats_list.render_changes();
     }
 
-    fn insert_chat_item(&self, account: i64, last_message: String) {
+    fn insert_chat_item(&self, account: i64, is_group: bool, last_message: String) {
         let mut chats_list = self.chats_list.borrow_mut();
-        chats_list.push_front((account, last_message));
+        chats_list.push_front((account, is_group, last_message));
         chats_list.render_changes();
     }
 }
 
 #[derive(Debug)]
 pub enum SidebarMsg {
+    // ID
+    // 是否为群组
     SelectChatroom(i32),
-    UpdateChatItem(i64, String),
-    InsertChatItem(i64, String),
+    UpdateChatItem(i64, bool, String),
+    InsertChatItem(i64, bool, String),
     RefreshContact,
 }
 
@@ -123,11 +126,18 @@ impl SimpleComponent for SidebarModel {
         use SidebarMsg::*;
         match msg {
             SelectChatroom(index) => {
-                let account = self.chats_list.borrow().get(index as usize).account;
-                sender.output(MainMsg::SelectChatroom(account));
+                let chat_item = self.chats_list.borrow();
+                let chat_item = chat_item.get(index as usize);
+                let account = chat_item.account;
+                let is_group = chat_item.is_group;
+                sender.output(MainMsg::SelectChatroom(account, is_group));
             }
-            UpdateChatItem(account, last_message) => self.update_chat_item(account, last_message),
-            InsertChatItem(account, last_message) => self.insert_chat_item(account, last_message),
+            UpdateChatItem(account, is_group, last_message) => {
+                self.update_chat_item(account, is_group, last_message)
+            }
+            InsertChatItem(account, is_group, last_message) => {
+                self.insert_chat_item(account, is_group, last_message)
+            }
             RefreshContact => {
                 let mut contact_list = self.contact_list.borrow_mut();
                 let friend_group_list = FRIEND_GROUP_LIST.get().unwrap();

@@ -11,13 +11,14 @@ use super::SidebarMsg;
 #[derive(Debug)]
 pub struct ChatItem {
     pub account: i64,
-    pub username: String,
+    pub name: String,
+    pub is_group: bool,
     pub last_message: String,
 }
 
 impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
     /// (account, last_message)
-    type InitParams = (i64, String);
+    type InitParams = (i64, bool, String);
     type Widgets = ();
     type Input = ();
     type Output = ();
@@ -31,16 +32,23 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
         _input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
     ) -> Self {
-        let (account, last_message) = init_params;
-        let user = FRIEND_LIST
-            .get()
-            .unwrap()
-            .iter()
-            .find(|user| user.uin == account)
-            .unwrap();
+        let (account, is_group, last_message) = init_params;
+        let name = if is_group {
+            account.to_string()
+        } else {
+            FRIEND_LIST
+                .get()
+                .unwrap()
+                .iter()
+                .find(|user| user.uin == account)
+                .unwrap()
+                .remark
+                .clone()
+        };
         ChatItem {
             account,
-            username: user.remark.clone(),
+            is_group,
+            name,
             last_message,
         }
     }
@@ -62,7 +70,7 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
                 set_margin_top: 8,
                 set_margin_bottom: 8,
                 append = &Avatar {
-                    set_text: Some(&self.username),
+                    set_text: Some(&self.name),
                     set_show_initials: true,
                     set_size: 48,
                     set_margin_end: 8
@@ -72,7 +80,7 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
                     set_halign: Align::Center,
                     set_spacing: 8,
                     append = &Label {
-                        set_text: self.username.as_str(),
+                        set_text: self.name.as_str(),
                         add_css_class: "heading"
                     },
                     append = &Label {

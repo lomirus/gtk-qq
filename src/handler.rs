@@ -113,24 +113,32 @@ impl Handler for AppHandler {
         match event {
             Login(_) => {}
             GroupMessage(GroupMessageEvent { client, message }) => {
-                println!("GroupMessage");
+                let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
+                main_sender.input(MainMsg::ReceiveMessage(
+                    message.group_code,
+                    true,
+                    message.from_uin,
+                    get_text_from(&message.elements),
+                ));
             }
             GroupAudioMessage(GroupAudioMessageEvent { client, message }) => {
                 println!("GroupAudioMessage");
             }
             SelfGroupMessage(GroupMessageEvent { client, message }) => {
-                println!("SelfGroupMessage");
+                println!("SelfGroupMessage: {:#?}", message);
             }
             FriendMessage(FriendMessageEvent { client, message }) => {
                 let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
                 main_sender.input(MainMsg::ReceiveMessage(
+                    message.from_uin,
+                    false,
                     message.from_uin,
                     get_text_from(&message.elements),
                 ));
             }
             SelfFriendMessage(FriendMessageEvent { client, message }) => {
                 let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
-                main_sender.input(MainMsg::SendMessage(
+                main_sender.input(MainMsg::SendFriendMessage(
                     message.target,
                     get_text_from(&message.elements),
                 ));

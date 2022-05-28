@@ -1,9 +1,9 @@
 #![feature(async_closure)]
 
 mod actions;
+mod app;
 mod config;
 mod handler;
-mod app;
 
 use gtk::{gio, glib::Bytes};
 use relm4::{gtk, RelmApp};

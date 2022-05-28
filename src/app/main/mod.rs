@@ -29,12 +29,12 @@ pub struct MainPageModel {
 }
 
 impl MainPageModel {
-    fn is_user_in_list(&self, account: i64) -> bool {
+    fn is_item_in_list(&self, account: i64, is_group: bool) -> bool {
         let chatrooms = self.chatrooms.borrow();
 
         for i in 0..chatrooms.len() {
             let chatroom = chatrooms.get(i);
-            if chatroom.account == account {
+            if chatroom.account == account && chatroom.is_group == is_group {
                 return true;
             }
         }
@@ -42,19 +42,23 @@ impl MainPageModel {
         false
     }
 
-    fn insert_chatroom(&self, account: i64) {
+    fn insert_chatroom(&self, account: i64, is_group: bool) {
         // TODO: Get history messages
         let messages = VecDeque::new();
         let mut chatrooms = self.chatrooms.borrow_mut();
-        chatrooms.push_front(ChatroomInitParams { account, messages });
+        chatrooms.push_front(ChatroomInitParams {
+            account,
+            is_group,
+            messages,
+        });
     }
 
-    fn push_own_message(&self, target: i64, content: String) {
+    fn push_own_friend_message(&self, target: i64, content: String) {
         let self_account = *ACCOUNT.get().unwrap();
         let mut chatrooms = self.chatrooms.borrow_mut();
         for i in 0..chatrooms.len() {
             let mut chatroom = chatrooms.get_mut(i);
-            if chatroom.account == target {
+            if chatroom.account == target && !chatroom.is_group {
                 chatroom.push_message(Message {
                     sender: self_account,
                     target,
@@ -65,12 +69,12 @@ impl MainPageModel {
         }
     }
 
-    fn push_others_message(&self, sender: i64, content: String) {
+    fn push_others_message(&self, group: i64, is_group: bool, sender: i64, content: String) {
         let self_account = *ACCOUNT.get().unwrap();
         let mut chatrooms = self.chatrooms.borrow_mut();
         for i in 0..chatrooms.len() {
             let mut chatroom = chatrooms.get_mut(i);
-            if chatroom.account == sender {
+            if chatroom.account == group && chatroom.is_group == is_group {
                 chatroom.push_message(Message {
                     sender,
                     target: self_account,
@@ -92,16 +96,20 @@ pub struct Message {
 #[derive(Debug)]
 pub enum MainMsg {
     WindowFolded,
-    ReceiveMessage(i64, String),
-    SendMessage(i64, String),
-    SelectChatroom(i64),
+    /// 对应侧边栏中的条目ID（群号/QQ号）,
+    /// 是否为群组消息,
+    /// sender_id,
+    /// content
+    ReceiveMessage(i64, bool, i64, String),
+    SendFriendMessage(i64, String),
+    SelectChatroom(i64, bool),
     InitSidebar,
 }
 
 #[derive(Debug)]
 enum ViewMsg {
     WindowFolded,
-    SelectChatroom(i64),
+    SelectChatroom(i64, bool),
 }
 
 relm4::new_action_group!(WindowActionGroup, "menu");
@@ -190,56 +198,61 @@ impl SimpleComponent for MainPageModel {
         use MainMsg::*;
         match msg {
             WindowFolded => self.message = Some(ViewMsg::WindowFolded),
-            SelectChatroom(account) => {
-                if !self.is_user_in_list(account) {
+            SelectChatroom(account, is_group) => {
+                if !self.is_item_in_list(account, is_group) {
                     // TODO: Get last_message from history or some other places
-                    self.sidebar
-                        .sender()
-                        .send(SidebarMsg::InsertChatItem(account, String::new()));
-                    self.insert_chatroom(account)
+                    self.sidebar.sender().send(SidebarMsg::InsertChatItem(
+                        account,
+                        false,
+                        String::new(),
+                    ));
+                    self.insert_chatroom(account, is_group)
                 }
 
-                self.message = Some(ViewMsg::SelectChatroom(account));
+                self.message = Some(ViewMsg::SelectChatroom(account, is_group));
             }
-            ReceiveMessage(sender, content) => {
-                // Update components
+            SendFriendMessage(target, content) => {
                 use SidebarMsg::*;
-                if self.is_user_in_list(sender) {
+                if self.is_item_in_list(target, false) {
                     self.sidebar
                         .sender()
-                        .send(UpdateChatItem(sender, content.clone()));
+                        .send(UpdateChatItem(target, false, content.clone()));
                 } else {
                     self.sidebar
                         .sender()
-                        .send(InsertChatItem(sender, content.clone()));
-                    self.insert_chatroom(sender);
+                        .send(InsertChatItem(target, false, content.clone()));
+                    self.insert_chatroom(target, false);
                     // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
                     // 以触发自动更新 chatroom 的标题与副标题。
                     if self.chatrooms.borrow().len() == 1 {
-                        self.message = Some(ViewMsg::SelectChatroom(sender));
+                        self.message = Some(ViewMsg::SelectChatroom(target, false));
+                    }
+                }
+                self.push_own_friend_message(target, content);
+            }
+            ReceiveMessage(chat_item, is_group, sender, content) => {
+                use SidebarMsg::*;
+                if self.is_item_in_list(chat_item, is_group) {
+                    self.sidebar.sender().send(UpdateChatItem(
+                        chat_item,
+                        is_group,
+                        content.clone(),
+                    ));
+                } else {
+                    self.sidebar.sender().send(InsertChatItem(
+                        chat_item,
+                        is_group,
+                        content.clone(),
+                    ));
+                    self.insert_chatroom(chat_item, is_group);
+                    // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
+                    // 以触发自动更新 chatroom 的标题与副标题。
+                    if self.chatrooms.borrow().len() == 1 {
+                        self.message = Some(ViewMsg::SelectChatroom(chat_item, is_group));
                     }
                 }
 
-                self.push_others_message(sender, content);
-            }
-            SendMessage(target, content) => {
-                use SidebarMsg::*;
-                if self.is_user_in_list(target) {
-                    self.sidebar
-                        .sender()
-                        .send(UpdateChatItem(target, content.clone()));
-                } else {
-                    self.sidebar
-                        .sender()
-                        .send(InsertChatItem(target, content.clone()));
-                    self.insert_chatroom(target);
-                    // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
-                    // 以触发自动更新 chatroom 的标题与副标题。
-                    if self.chatrooms.borrow().len() == 1 {
-                        self.message = Some(ViewMsg::SelectChatroom(target));
-                    }
-                }
-                self.push_own_message(target, content);
+                self.push_others_message(chat_item, is_group, sender, content);
             }
             InitSidebar => {
                 self.sidebar.sender().send(SidebarMsg::RefreshContact);
@@ -253,18 +266,27 @@ impl SimpleComponent for MainPageModel {
             use ViewMsg::*;
             match message {
                 WindowFolded => widgets.main_page.set_visible_child(&widgets.chatroom),
-                SelectChatroom(account) => {
-                    chatroom_stack.set_visible_child_name(&account.to_string());
-                    let user = FRIEND_LIST
-                        .get()
-                        .unwrap()
-                        .iter()
-                        .find(|user| user.uin == *account)
-                        .unwrap();
-                    let title = &user.remark;
-                    let subtitle = format!("{} ({})", user.nick, account);
-                    chatroom_title.set_label(title);
-                    chatroom_subtitle.set_label(&subtitle);
+                SelectChatroom(account, is_group) => {
+                    let child_name =
+                        &format!("{} {}", account, if *is_group { "group" } else { "friend" });
+                    chatroom_stack.set_visible_child_name(child_name);
+                    if *is_group {
+                        let title = format!("{}", account);
+                        let subtitle = format!("{}", account);
+                        chatroom_title.set_label(&title);
+                        chatroom_subtitle.set_label(&subtitle);
+                    } else {
+                        let user = FRIEND_LIST
+                            .get()
+                            .unwrap()
+                            .iter()
+                            .find(|user| user.uin == *account)
+                            .unwrap();
+                        let title = &user.remark;
+                        let subtitle = format!("{} ({})", user.nick, account);
+                        chatroom_title.set_label(title);
+                        chatroom_subtitle.set_label(&subtitle);
+                    }
                 }
             }
         }

@@ -18,6 +18,8 @@ use message_group::MessageGroup;
 #[derive(Debug)]
 pub struct Chatroom {
     pub account: i64,
+    /// 群组/好友
+    pub is_group: bool,
     pub messages: FactoryVecDeque<Box, MessageGroup, ChatroomMsg>,
     input_box: Box,
 }
@@ -53,7 +55,7 @@ async fn send_message(content: String, target: i64, output: Sender<MainMsg>) {
     let res = client.send_friend_message(target, message).await;
     match res {
         Ok(_) => {
-            output.send(MainMsg::SendMessage(target, content));
+            output.send(MainMsg::SendFriendMessage(target, content));
         }
         Err(err) => {
             panic!("err: {:?}", err);
@@ -69,6 +71,7 @@ pub enum ChatroomMsg {
 
 pub struct ChatroomInitParams {
     pub account: i64,
+    pub is_group: bool,
     pub messages: VecDeque<Message>,
 }
 
@@ -105,8 +108,13 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
         _input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
     ) -> Self::Widgets {
-        returned_widget.set_name(&self.account.to_string());
-        returned_widget.set_title(&self.account.to_string());
+        let title = &format!(
+            "{} {}",
+            self.account,
+            if self.is_group { "group" } else { "friend" }
+        );
+        returned_widget.set_name(title);
+        returned_widget.set_title(title);
     }
 
     fn init_model(
@@ -117,6 +125,7 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
     ) -> Self {
         let ChatroomInitParams {
             account,
+            is_group,
             messages: messages_src,
         } = init_params;
         let messages_box = Box::new(Orientation::Vertical, 2);
@@ -158,6 +167,7 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
 
         Chatroom {
             account,
+            is_group,
             messages,
             input_box,
         }

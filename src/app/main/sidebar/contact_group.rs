@@ -117,7 +117,7 @@ impl FactoryComponent<Box, SidebarMsg> for ContactGroup {
         match relm_msg {
             SelectUser(account) => {
                 let main_sender = MAIN_SENDER.get().unwrap();
-                main_sender.input(MainMsg::SelectChatroom(account));
+                main_sender.input(MainMsg::SelectChatroom(account, false));
             }
         }
         None
