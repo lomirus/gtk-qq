@@ -20,8 +20,8 @@ Unofficial Linux [QQ](https://im.qq.com/) client, based on GTK4 and libadwaita, 
 | ![Light Mode Screenshot](./docs/light.png) | ![Dark Mode Screenshot](./docs/dark.png) |
 
 > **Note**
-> - These screenshots do not represent the final UI.
-> - The chatting function is not implemented yet.
+> 
+> The two screenshots have been a little outdated. The UI now has been adjusted and improved compared to them.
 
 ## Run & Build
 
