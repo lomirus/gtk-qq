@@ -7,7 +7,7 @@ use ricq::client::event::*;
 use ricq::handler::{Handler, QEvent::*};
 use ricq::msg::elem::{FingerGuessing, RQElem};
 use ricq::msg::MessageChain;
-use ricq::structs::{FriendGroupInfo, FriendInfo};
+use ricq::structs::{FriendGroupInfo, FriendInfo, GroupInfo};
 use ricq::Client;
 
 use crate::app::main::ContactGroup;
@@ -19,6 +19,7 @@ pub static CLIENT: OnceCell<Arc<Client>> = OnceCell::new();
 pub static ACCOUNT: OnceCell<i64> = OnceCell::new();
 pub static FRIEND_LIST: OnceCell<Vec<FriendInfo>> = OnceCell::new();
 pub static FRIEND_GROUP_LIST: OnceCell<Vec<ContactGroup>> = OnceCell::new();
+pub static GROUP_LIST: OnceCell<Vec<GroupInfo>> = OnceCell::new();
 
 pub fn init_friends_list(
     friends_list: Vec<FriendInfo>,

@@ -14,7 +14,7 @@ use relm4::{
 use adw::{prelude::*, HeaderBar, Leaflet};
 use gtk::{Align, Box, Label, MenuButton, Orientation, Separator, Stack};
 
-use crate::handler::FRIEND_LIST;
+use crate::handler::{FRIEND_LIST, GROUP_LIST};
 use chatroom::{Chatroom, ChatroomInitParams};
 pub use sidebar::ContactGroup;
 use sidebar::{SidebarModel, SidebarMsg};
@@ -275,8 +275,14 @@ impl SimpleComponent for MainPageModel {
                         &format!("{} {}", account, if *is_group { "group" } else { "friend" });
                     chatroom_stack.set_visible_child_name(child_name);
                     if *is_group {
-                        let title = format!("{}", account);
-                        let subtitle = format!("{}", account);
+                        let group = GROUP_LIST
+                            .get()
+                            .unwrap()
+                            .iter()
+                            .find(|group| group.uin == *account)
+                            .unwrap();
+                        let title = group.name.to_string();
+                        let subtitle = account.to_string();
                         chatroom_title.set_label(&title);
                         chatroom_subtitle.set_label(&subtitle);
                     } else {

@@ -45,8 +45,6 @@ impl SidebarModel {
 
 #[derive(Debug)]
 pub enum SidebarMsg {
-    // ID
-    // 是否为群组
     SelectChatroom(i32),
     UpdateChatItem(i64, bool, String),
     InsertChatItem(i64, bool, String),

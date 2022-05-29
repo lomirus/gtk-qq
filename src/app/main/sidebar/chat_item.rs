@@ -4,7 +4,7 @@ use relm4::{adw, gtk, Sender};
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation};
 
-use crate::handler::FRIEND_LIST;
+use crate::handler::{FRIEND_LIST, GROUP_LIST};
 
 use super::SidebarMsg;
 
@@ -34,7 +34,14 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
     ) -> Self {
         let (account, is_group, last_message) = init_params;
         let name = if is_group {
-            account.to_string()
+            GROUP_LIST
+                .get()
+                .unwrap()
+                .iter()
+                .find(|group| group.uin == account)
+                .unwrap()
+                .name
+                .clone()
         } else {
             FRIEND_LIST
                 .get()
