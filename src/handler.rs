@@ -57,7 +57,7 @@ fn get_text_from(message_chain: &MessageChain) -> String {
     for elem in message_chain.clone() {
         match elem {
             RQElem::At(at) => {
-                content.push(format!("[@{}({})]", at.display, at.target));
+                content.push(format!("[{}({})]", at.display, at.target));
             }
             RQElem::Text(ref text) => {
                 content.push(text.content.clone());
@@ -114,34 +114,29 @@ impl Handler for AppHandler {
             Login(_) => {}
             GroupMessage(GroupMessageEvent { client, message }) => {
                 let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
-                main_sender.input(MainMsg::ReceiveMessage(
-                    message.group_code,
-                    true,
-                    message.from_uin,
-                    get_text_from(&message.elements),
-                ));
+                main_sender.input(MainMsg::GroupMessage {
+                    group_id: message.group_code,
+                    sender_id: message.from_uin,
+                    content: get_text_from(&message.elements),
+                });
             }
             GroupAudioMessage(GroupAudioMessageEvent { client, message }) => {
                 println!("GroupAudioMessage");
             }
-            SelfGroupMessage(GroupMessageEvent { client, message }) => {
-                println!("SelfGroupMessage: {:#?}", message);
-            }
             FriendMessage(FriendMessageEvent { client, message }) => {
                 let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
-                main_sender.input(MainMsg::ReceiveMessage(
-                    message.from_uin,
-                    false,
-                    message.from_uin,
-                    get_text_from(&message.elements),
-                ));
-            }
-            SelfFriendMessage(FriendMessageEvent { client, message }) => {
-                let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
-                main_sender.input(MainMsg::SendFriendMessage(
-                    message.target,
-                    get_text_from(&message.elements),
-                ));
+                let self_account = ACCOUNT.get().unwrap();
+                let friend_id = if message.from_uin == *self_account {
+                    message.target
+                } else {
+                    message.from_uin
+                };
+
+                main_sender.input(MainMsg::FriendMessage {
+                    friend_id,
+                    sender_id: message.from_uin,
+                    content: get_text_from(&message.elements),
+                });
             }
             FriendAudioMessage(FriendAudioMessageEvent { client, message }) => {
                 println!("FriendAudioMessage");

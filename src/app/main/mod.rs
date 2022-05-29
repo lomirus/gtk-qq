@@ -14,7 +14,7 @@ use relm4::{
 use adw::{prelude::*, HeaderBar, Leaflet};
 use gtk::{Align, Box, Label, MenuButton, Orientation, Separator, Stack};
 
-use crate::handler::{ACCOUNT, FRIEND_LIST};
+use crate::handler::FRIEND_LIST;
 use chatroom::{Chatroom, ChatroomInitParams};
 pub use sidebar::ContactGroup;
 use sidebar::{SidebarModel, SidebarMsg};
@@ -53,15 +53,13 @@ impl MainPageModel {
         });
     }
 
-    fn push_own_friend_message(&self, target: i64, content: String) {
-        let self_account = *ACCOUNT.get().unwrap();
+    fn push_friend_message(&self, friend_id: i64, sender_id: i64, content: String) {
         let mut chatrooms = self.chatrooms.borrow_mut();
         for i in 0..chatrooms.len() {
             let mut chatroom = chatrooms.get_mut(i);
-            if chatroom.account == target && !chatroom.is_group {
+            if chatroom.account == friend_id && !chatroom.is_group {
                 chatroom.push_message(Message {
-                    sender: self_account,
-                    target,
+                    sender: sender_id,
                     content,
                 });
                 break;
@@ -69,15 +67,13 @@ impl MainPageModel {
         }
     }
 
-    fn push_others_message(&self, group: i64, is_group: bool, sender: i64, content: String) {
-        let self_account = *ACCOUNT.get().unwrap();
+    fn push_group_message(&self, group_id: i64, sender_id: i64, content: String) {
         let mut chatrooms = self.chatrooms.borrow_mut();
         for i in 0..chatrooms.len() {
             let mut chatroom = chatrooms.get_mut(i);
-            if chatroom.account == group && chatroom.is_group == is_group {
+            if chatroom.account == group_id && chatroom.is_group {
                 chatroom.push_message(Message {
-                    sender,
-                    target: self_account,
+                    sender: sender_id,
                     content,
                 });
                 break;
@@ -89,19 +85,22 @@ impl MainPageModel {
 #[derive(Clone, Debug)]
 pub struct Message {
     pub sender: i64,
-    pub target: i64,
     pub content: String,
 }
 
 #[derive(Debug)]
 pub enum MainMsg {
     WindowFolded,
-    /// 对应侧边栏中的条目ID（群号/QQ号）,
-    /// 是否为群组消息,
-    /// sender_id,
-    /// content
-    ReceiveMessage(i64, bool, i64, String),
-    SendFriendMessage(i64, String),
+    GroupMessage {
+        group_id: i64,
+        sender_id: i64,
+        content: String,
+    },
+    FriendMessage {
+        friend_id: i64,
+        sender_id: i64,
+        content: String,
+    },
     SelectChatroom(i64, bool),
     InitSidebar,
 }
@@ -211,48 +210,53 @@ impl SimpleComponent for MainPageModel {
 
                 self.message = Some(ViewMsg::SelectChatroom(account, is_group));
             }
-            SendFriendMessage(target, content) => {
+            FriendMessage {
+                friend_id,
+                sender_id,
+                content,
+            } => {
                 use SidebarMsg::*;
-                if self.is_item_in_list(target, false) {
+                if self.is_item_in_list(friend_id, false) {
                     self.sidebar
                         .sender()
-                        .send(UpdateChatItem(target, false, content.clone()));
+                        .send(UpdateChatItem(friend_id, false, content.clone()));
                 } else {
                     self.sidebar
                         .sender()
-                        .send(InsertChatItem(target, false, content.clone()));
-                    self.insert_chatroom(target, false);
+                        .send(InsertChatItem(friend_id, false, content.clone()));
+                    self.insert_chatroom(friend_id, false);
                     // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
                     // 以触发自动更新 chatroom 的标题与副标题。
                     if self.chatrooms.borrow().len() == 1 {
-                        self.message = Some(ViewMsg::SelectChatroom(target, false));
-                    }
-                }
-                self.push_own_friend_message(target, content);
-            }
-            ReceiveMessage(chat_item, is_group, sender, content) => {
-                use SidebarMsg::*;
-                if self.is_item_in_list(chat_item, is_group) {
-                    self.sidebar.sender().send(UpdateChatItem(
-                        chat_item,
-                        is_group,
-                        content.clone(),
-                    ));
-                } else {
-                    self.sidebar.sender().send(InsertChatItem(
-                        chat_item,
-                        is_group,
-                        content.clone(),
-                    ));
-                    self.insert_chatroom(chat_item, is_group);
-                    // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
-                    // 以触发自动更新 chatroom 的标题与副标题。
-                    if self.chatrooms.borrow().len() == 1 {
-                        self.message = Some(ViewMsg::SelectChatroom(chat_item, is_group));
+                        self.message = Some(ViewMsg::SelectChatroom(friend_id, false));
                     }
                 }
 
-                self.push_others_message(chat_item, is_group, sender, content);
+                self.push_friend_message(friend_id, sender_id, content);
+            }
+            GroupMessage {
+                group_id,
+                sender_id,
+                content,
+            } => {
+                use SidebarMsg::*;
+                if self.is_item_in_list(group_id, true) {
+                    self.sidebar
+                        .sender()
+                        .send(UpdateChatItem(group_id, true, content.clone()));
+                } else {
+                    self.sidebar
+                        .sender()
+                        .send(InsertChatItem(group_id, true, content.clone()));
+                    self.insert_chatroom(group_id, true);
+                    // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
+                    // 以触发自动更新 chatroom 的标题与副标题。
+                    if self.chatrooms.borrow().len() == 1 {
+                        self.message = Some(ViewMsg::SelectChatroom(group_id, true));
+                    }
+                }
+
+                self.push_group_message(group_id, sender_id, content);
             }
             InitSidebar => {
                 self.sidebar.sender().send(SidebarMsg::RefreshContact);

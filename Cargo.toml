@@ -14,8 +14,8 @@ features = [
 
 [dependencies.ricq]
 git = "https://github.com/lz1998/ricq.git"
-# v0.1.7, master, 2022/05/28
-rev = "0698b994b0dfdb6944a76c27d194c5c470124c87"
+# v0.1.7, master, 2022/05/29
+rev = "98061b2d58ff7aeec48c92eeb07bd5b2492de60c"
 
 [dependencies]
 tokio = "1.18.2"

@@ -10,7 +10,7 @@ use gtk::{Box, Button, Entry, Orientation, ScrolledWindow, Stack, StackPage};
 use ricq::msg::{elem, MessageChain};
 use tokio::task;
 
-use crate::handler::CLIENT;
+use crate::handler::{ACCOUNT, CLIENT};
 
 use super::{MainMsg, Message};
 use message_group::MessageGroup;
@@ -49,24 +49,35 @@ impl Chatroom {
     }
 }
 
-async fn send_message(content: String, target: i64, output: Sender<MainMsg>) {
+async fn send_message(target: i64, is_group: bool, content: String, output: Sender<MainMsg>) {
     let client = CLIENT.get().unwrap();
     let message = MessageChain::new(elem::Text::new(content.clone()));
-    let res = client.send_friend_message(target, message).await;
-    match res {
-        Ok(_) => {
-            output.send(MainMsg::SendFriendMessage(target, content));
+    let self_account = *ACCOUNT.get().unwrap();
+    if is_group {
+        match client.send_group_message(target, message).await {
+            Ok(_) => output.send(MainMsg::GroupMessage {
+                group_id: target,
+                sender_id: self_account,
+                content,
+            }),
+            Err(err) => panic!("err: {:?}", err),
         }
-        Err(err) => {
-            panic!("err: {:?}", err);
+    } else {
+        match client.send_friend_message(target, message).await {
+            Ok(_) => output.send(MainMsg::FriendMessage {
+                friend_id: target,
+                sender_id: self_account,
+                content,
+            }),
+            Err(err) => panic!("err: {:?}", err),
         }
-    }
+    };
 }
 
 #[derive(Debug)]
 pub enum ChatroomMsg {
     AddMessage(Message),
-    SendMessage(i64, String),
+    SendMessage(String),
 }
 
 pub struct ChatroomInitParams {
@@ -156,7 +167,6 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
                     set_icon_name: "send-symbolic",
                     connect_clicked[input] => move |_| {
                         input.send(ChatroomMsg::SendMessage(
-                            account,
                             entry_buffer.text()
                         ));
                         entry_buffer.set_text("");
@@ -181,8 +191,13 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
     ) -> Option<Self::Command> {
         match relm_msg {
             ChatroomMsg::AddMessage(message) => self.push_message(message),
-            ChatroomMsg::SendMessage(target, content) => {
-                task::spawn(send_message(content, target, output.clone()));
+            ChatroomMsg::SendMessage(content) => {
+                task::spawn(send_message(
+                    self.account,
+                    self.is_group,
+                    content,
+                    output.clone(),
+                ));
             }
         }
         None
