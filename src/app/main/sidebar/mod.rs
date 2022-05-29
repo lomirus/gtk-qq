@@ -108,8 +108,8 @@ impl SimpleComponent for SidebarModel {
                 set_css_classes: &["navigation-sidebar"],
                 connect_row_activated[sender] => move |_, selected_row| {
                     let index = selected_row.index();
-                    // sender.input(SidebarMsg::SelectChatroom(index));
-                    println!("{}", index);
+                    let group = GROUP_LIST.get().unwrap().get(index as usize).unwrap();
+                    sender.output(MainMsg::SelectChatroom(group.uin, true));
                 },
             }
         }

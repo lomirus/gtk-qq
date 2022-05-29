@@ -202,10 +202,10 @@ impl SimpleComponent for MainPageModel {
                     // TODO: Get last_message from history or some other places
                     self.sidebar.sender().send(SidebarMsg::InsertChatItem(
                         account,
-                        false,
+                        is_group,
                         String::new(),
                     ));
-                    self.insert_chatroom(account, is_group)
+                    self.insert_chatroom(account, is_group);
                 }
 
                 self.message = Some(ViewMsg::SelectChatroom(account, is_group));

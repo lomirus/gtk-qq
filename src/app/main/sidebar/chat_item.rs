@@ -39,7 +39,7 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
                 .unwrap()
                 .iter()
                 .find(|group| group.uin == account)
-                .unwrap()
+                .unwrap_or_else(|| panic!("cannot find account {} in group list", account))
                 .name
                 .clone()
         } else {
@@ -48,7 +48,7 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
                 .unwrap()
                 .iter()
                 .find(|user| user.uin == account)
-                .unwrap()
+                .unwrap_or_else(|| panic!("cannot find account {} in friend list", account))
                 .remark
                 .clone()
         };
