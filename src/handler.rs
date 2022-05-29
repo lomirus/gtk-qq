@@ -10,7 +10,7 @@ use ricq::msg::MessageChain;
 use ricq::structs::{FriendGroupInfo, FriendInfo, GroupInfo};
 use ricq::Client;
 
-use crate::app::main::ContactGroup;
+use crate::app::main::FriendsGroup;
 use crate::app::main::{MainMsg, MAIN_SENDER};
 
 pub struct AppHandler;
@@ -18,7 +18,7 @@ pub struct AppHandler;
 pub static CLIENT: OnceCell<Arc<Client>> = OnceCell::new();
 pub static ACCOUNT: OnceCell<i64> = OnceCell::new();
 pub static FRIEND_LIST: OnceCell<Vec<FriendInfo>> = OnceCell::new();
-pub static FRIEND_GROUP_LIST: OnceCell<Vec<ContactGroup>> = OnceCell::new();
+pub static FRIEND_GROUP_LIST: OnceCell<Vec<FriendsGroup>> = OnceCell::new();
 pub static GROUP_LIST: OnceCell<Vec<GroupInfo>> = OnceCell::new();
 
 pub fn init_friends_list(
@@ -30,14 +30,14 @@ pub fn init_friends_list(
         .map(|(_, v)| v.clone())
         .collect::<Vec<FriendGroupInfo>>();
     friend_groups.sort_by(|a, b| a.seq_id.cmp(&b.seq_id));
-    let friends_group_list: Vec<ContactGroup> = friend_groups
+    let friends_group_list: Vec<FriendsGroup> = friend_groups
         .iter()
         .map(
             |FriendGroupInfo {
                  group_name,
                  group_id,
                  ..
-             }| ContactGroup {
+             }| FriendsGroup {
                 id: *group_id,
                 name: group_name.to_string(),
                 friends: friends_list
@@ -47,7 +47,7 @@ pub fn init_friends_list(
                     .collect(),
             },
         )
-        .collect::<Vec<ContactGroup>>();
+        .collect::<Vec<FriendsGroup>>();
 
     FRIEND_LIST.set(friends_list).unwrap();
     FRIEND_GROUP_LIST.set(friends_group_list).unwrap();

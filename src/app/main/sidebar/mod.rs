@@ -1,5 +1,6 @@
 mod chat_item;
-mod contact_group;
+mod friends_group;
+mod group_item;
 
 use std::cell::RefCell;
 
@@ -10,15 +11,17 @@ use adw::{prelude::*, HeaderBar, ViewStack, ViewSwitcherBar, ViewSwitcherTitle};
 use gtk::{Box, ListBox, Orientation, ScrolledWindow};
 
 use super::MainMsg;
-use crate::handler::FRIEND_GROUP_LIST;
+use crate::handler::{FRIEND_GROUP_LIST, GROUP_LIST};
 use chat_item::ChatItem;
 
-pub use self::contact_group::ContactGroup;
+pub use self::friends_group::FriendsGroup;
+use self::group_item::GroupItem;
 
 #[derive(Debug)]
 pub struct SidebarModel {
     chats_list: RefCell<FactoryVecDeque<ListBox, ChatItem, SidebarMsg>>,
-    friends_list: RefCell<FactoryVecDeque<Box, ContactGroup, SidebarMsg>>,
+    friends_list: RefCell<FactoryVecDeque<Box, FriendsGroup, SidebarMsg>>,
+    groups_list: RefCell<FactoryVecDeque<ListBox, GroupItem, SidebarMsg>>,
 }
 
 impl SidebarModel {
@@ -101,8 +104,13 @@ impl SimpleComponent for SidebarModel {
             }
         },
         _contact_groups = ScrolledWindow {
-            set_child: contact_groups = Some(&Box) {
-                set_orientation: Orientation::Vertical,
+            set_child: contact_groups = Some(&ListBox) {
+                set_css_classes: &["navigation-sidebar"],
+                connect_row_activated[sender] => move |_, selected_row| {
+                    let index = selected_row.index();
+                    // sender.input(SidebarMsg::SelectChatroom(index));
+                    println!("{}", index);
+                },
             }
         }
     }
@@ -121,6 +129,7 @@ impl SimpleComponent for SidebarModel {
         let contact = stack.add_titled(&widgets._contact, None, "Contact");
         let friends = contact_stack.add_titled(&widgets._contact_friends, None, "Friends");
         let groups = contact_stack.add_titled(&widgets._contact_groups, None, "Groups");
+
         chats.set_icon_name(Some("chat-symbolic"));
         contact.set_icon_name(Some("address-book-symbolic"));
         friends.set_icon_name(Some("person2-symbolic"));
@@ -128,13 +137,16 @@ impl SimpleComponent for SidebarModel {
 
         let chats_list: FactoryVecDeque<ListBox, ChatItem, SidebarMsg> =
             FactoryVecDeque::new(widgets.sidebar_chats.clone(), &sender.input);
-        let friends_list: FactoryVecDeque<Box, ContactGroup, SidebarMsg> =
+        let friends_list: FactoryVecDeque<Box, FriendsGroup, SidebarMsg> =
             FactoryVecDeque::new(widgets.contact_friends.clone(), &sender.input);
+        let groups_list: FactoryVecDeque<ListBox, GroupItem, SidebarMsg> =
+            FactoryVecDeque::new(widgets.contact_groups.clone(), &sender.input);
 
         ComponentParts {
             model: SidebarModel {
                 chats_list: RefCell::new(chats_list),
                 friends_list: RefCell::new(friends_list),
+                groups_list: RefCell::new(groups_list),
             },
             widgets,
         }
@@ -157,12 +169,22 @@ impl SimpleComponent for SidebarModel {
                 self.insert_chat_item(account, is_group, last_message)
             }
             RefreshContact => {
-                let mut contact_list = self.friends_list.borrow_mut();
-                let friend_group_list = FRIEND_GROUP_LIST.get().unwrap();
-                for group in friend_group_list.iter() {
-                    contact_list.push_back(group.clone());
+                // Refresh friends list
+                let mut friends_list = self.friends_list.borrow_mut();
+                let friends_group_list = FRIEND_GROUP_LIST.get().unwrap();
+                for friends_group in friends_group_list.iter() {
+                    friends_list.push_back(friends_group.clone());
                 }
-                contact_list.render_changes();
+                friends_list.render_changes();
+                // Refresh groups list
+                let mut groups_list = self.groups_list.borrow_mut();
+                for group in GROUP_LIST.get().unwrap() {
+                    groups_list.push_back(GroupItem {
+                        account: group.uin,
+                        name: group.name.clone(),
+                    });
+                }
+                groups_list.render_changes();
             }
         }
         self.chats_list.borrow().render_changes();

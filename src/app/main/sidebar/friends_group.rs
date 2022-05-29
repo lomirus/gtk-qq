@@ -14,14 +14,14 @@ pub enum ContactGroupMessage {
 }
 
 #[derive(Debug, Clone)]
-pub struct ContactGroup {
+pub struct FriendsGroup {
     pub id: u8,
     pub name: String,
     pub friends: Vec<FriendInfo>,
 }
 
-impl FactoryComponent<Box, SidebarMsg> for ContactGroup {
-    type InitParams = ContactGroup;
+impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
+    type InitParams = FriendsGroup;
     type Widgets = ();
     type Input = ContactGroupMessage;
     type Output = ();

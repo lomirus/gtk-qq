@@ -16,7 +16,7 @@ use gtk::{Align, Box, Label, MenuButton, Orientation, Separator, Stack};
 
 use crate::handler::{FRIEND_LIST, GROUP_LIST};
 use chatroom::{Chatroom, ChatroomInitParams};
-pub use sidebar::ContactGroup;
+pub use sidebar::FriendsGroup;
 use sidebar::{SidebarModel, SidebarMsg};
 
 pub static MAIN_SENDER: OnceCell<ComponentSender<MainPageModel>> = OnceCell::new();

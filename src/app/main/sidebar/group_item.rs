@@ -4,21 +4,16 @@ use relm4::{adw, gtk, Sender};
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation};
 
-use crate::handler::{FRIEND_LIST, GROUP_LIST};
-
 use super::SidebarMsg;
 
 #[derive(Debug)]
-pub struct ChatItem {
+pub struct GroupItem {
     pub account: i64,
     pub name: String,
-    pub is_group: bool,
-    pub last_message: String,
 }
 
-impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
-    /// (account, is_group, last_message)
-    type InitParams = (i64, bool, String);
+impl FactoryComponent<ListBox, SidebarMsg> for GroupItem {
+    type InitParams = GroupItem;
     type Widgets = ();
     type Input = ();
     type Output = ();
@@ -32,32 +27,7 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
         _input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
     ) -> Self {
-        let (account, is_group, last_message) = init_params;
-        let name = if is_group {
-            GROUP_LIST
-                .get()
-                .unwrap()
-                .iter()
-                .find(|group| group.uin == account)
-                .unwrap()
-                .name
-                .clone()
-        } else {
-            FRIEND_LIST
-                .get()
-                .unwrap()
-                .iter()
-                .find(|user| user.uin == account)
-                .unwrap()
-                .remark
-                .clone()
-        };
-        ChatItem {
-            account,
-            is_group,
-            name,
-            last_message,
-        }
+        init_params
     }
 
     fn init_root(&self) -> Self::Root {
@@ -91,7 +61,7 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
                         add_css_class: "heading"
                     },
                     append = &Label {
-                        set_text: self.last_message.as_str(),
+                        set_text: self.account.to_string().as_str(),
                         add_css_class: "caption",
                         set_xalign: 0.0,
                     },

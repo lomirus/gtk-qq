@@ -142,25 +142,20 @@ async fn finish_login(
     };
     after_login(&client).await;
     match client.get_friend_list().await {
-        Ok(res) => {
-            init_friends_list(res.friends, res.friend_groups);
-            sender.input(LoginSuccessful);
-        }
+        Ok(res) => init_friends_list(res.friends, res.friend_groups),
         Err(err) => {
             sender.input(LoginFailed(err.to_string()));
             return;
         }
     };
     match client.get_group_list().await {
-        Ok(res) => {
-            GROUP_LIST.set(res).unwrap();
-            sender.input(LoginSuccessful);
-        }
+        Ok(res) => GROUP_LIST.set(res).unwrap(),
         Err(err) => {
             sender.input(LoginFailed(err.to_string()));
             return;
         }
     };
+    sender.input(LoginSuccessful);
     handle.await.unwrap();
 }
 
