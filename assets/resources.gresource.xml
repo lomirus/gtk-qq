@@ -5,5 +5,7 @@
     <file preprocess="xml-stripblanks" alias="address-book-symbolic.svg">icons/address-book-symbolic.svg</file>
     <file preprocess="xml-stripblanks" alias="send-symbolic.svg">icons/send-symbolic.svg</file>
     <file preprocess="xml-stripblanks" alias="menu-symbolic.svg">icons/menu-symbolic.svg</file>
+    <file preprocess="xml-stripblanks" alias="people-symbolic.svg">icons/people-symbolic.svg</file>
+    <file preprocess="xml-stripblanks" alias="person2-symbolic.svg">icons/person2-symbolic.svg</file>
   </gresource>
 </gresources>

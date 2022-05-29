@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use relm4::factory::FactoryVecDeque;
 use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
 
-use adw::{prelude::*, HeaderBar, ViewStack, ViewSwitcherTitle};
+use adw::{prelude::*, HeaderBar, ViewStack, ViewSwitcherBar, ViewSwitcherTitle};
 use gtk::{Box, ListBox, Orientation, ScrolledWindow};
 
 use super::MainMsg;
@@ -18,7 +18,7 @@ pub use self::contact_group::ContactGroup;
 #[derive(Debug)]
 pub struct SidebarModel {
     chats_list: RefCell<FactoryVecDeque<ListBox, ChatItem, SidebarMsg>>,
-    contact_list: RefCell<FactoryVecDeque<Box, ContactGroup, SidebarMsg>>,
+    friends_list: RefCell<FactoryVecDeque<Box, ContactGroup, SidebarMsg>>,
 }
 
 impl SidebarModel {
@@ -78,7 +78,7 @@ impl SimpleComponent for SidebarModel {
                 set_vexpand: true,
             }
         },
-        _chats_stack = ScrolledWindow {
+        _chats = ScrolledWindow {
             set_child: sidebar_chats = Some(&ListBox) {
                 set_css_classes: &["navigation-sidebar"],
                 connect_row_activated[sender] => move |_, selected_row| {
@@ -87,10 +87,24 @@ impl SimpleComponent for SidebarModel {
                 },
             }
         },
-        _contact_stack = ScrolledWindow {
-            set_child: sidebar_contact = Some(&Box) {
+        _contact = Box {
+            set_orientation: Orientation::Vertical,
+            append: contact_stack = &ViewStack {
+                set_vexpand: true,
+            },
+            append = &ViewSwitcherBar {
+                set_stack: Some(&contact_stack),
+                set_reveal: true
+            }
+        },
+        _contact_friends = ScrolledWindow {
+            set_child: contact_friends = Some(&Box) {
                 set_orientation: Orientation::Vertical,
-                // set_css_classes: &["navigation-sidebar"]
+            }
+        },
+        _contact_groups = ScrolledWindow {
+            set_child: contact_groups = Some(&Box) {
+                set_orientation: Orientation::Vertical,
             }
         }
     }
@@ -103,20 +117,26 @@ impl SimpleComponent for SidebarModel {
         let widgets = view_output!();
 
         let stack: &ViewStack = &widgets.stack;
-        let chats_stack = stack.add_titled(&widgets._chats_stack, None, "Chats");
-        let contact_stack = stack.add_titled(&widgets._contact_stack, None, "Contact");
-        chats_stack.set_icon_name(Some("chat-symbolic"));
-        contact_stack.set_icon_name(Some("address-book-symbolic"));
+        let contact_stack: &ViewStack = &widgets.contact_stack;
+
+        let chats = stack.add_titled(&widgets._chats, None, "Chats");
+        let contact = stack.add_titled(&widgets._contact, None, "Contact");
+        let friends = contact_stack.add_titled(&widgets._contact_friends, None, "Friends");
+        let groups = contact_stack.add_titled(&widgets._contact_groups, None, "Groups");
+        chats.set_icon_name(Some("chat-symbolic"));
+        contact.set_icon_name(Some("address-book-symbolic"));
+        friends.set_icon_name(Some("person2-symbolic"));
+        groups.set_icon_name(Some("people-symbolic"));
 
         let chats_list: FactoryVecDeque<ListBox, ChatItem, SidebarMsg> =
             FactoryVecDeque::new(widgets.sidebar_chats.clone(), &sender.input);
-        let contact_list: FactoryVecDeque<Box, ContactGroup, SidebarMsg> =
-            FactoryVecDeque::new(widgets.sidebar_contact.clone(), &sender.input);
+        let friends_list: FactoryVecDeque<Box, ContactGroup, SidebarMsg> =
+            FactoryVecDeque::new(widgets.contact_friends.clone(), &sender.input);
 
         ComponentParts {
             model: SidebarModel {
                 chats_list: RefCell::new(chats_list),
-                contact_list: RefCell::new(contact_list),
+                friends_list: RefCell::new(friends_list),
             },
             widgets,
         }
@@ -139,7 +159,7 @@ impl SimpleComponent for SidebarModel {
                 self.insert_chat_item(account, is_group, last_message)
             }
             RefreshContact => {
-                let mut contact_list = self.contact_list.borrow_mut();
+                let mut contact_list = self.friends_list.borrow_mut();
                 let friend_group_list = FRIEND_GROUP_LIST.get().unwrap();
                 for group in friend_group_list.iter() {
                     contact_list.push_back(group.clone());
