@@ -36,13 +36,11 @@ impl SidebarModel {
                 break;
             }
         }
-        chats_list.render_changes();
     }
 
     fn insert_chat_item(&self, account: i64, is_group: bool, last_message: String) {
         let mut chats_list = self.chats_list.borrow_mut();
         chats_list.push_front((account, is_group, last_message));
-        chats_list.render_changes();
     }
 }
 
