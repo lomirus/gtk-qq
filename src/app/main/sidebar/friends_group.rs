@@ -88,9 +88,10 @@ impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
                     },
                     Box {
                         set_orientation: Orientation::Vertical,
-                        set_halign: Align::Center,
+                        set_halign: Align::Start,
                         set_spacing: 8,
                         append = &Label {
+                            set_xalign: 0.0,
                             set_text:  &friend.remark,
                             add_css_class: "heading"
                         },

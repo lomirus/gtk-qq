@@ -54,9 +54,10 @@ impl FactoryComponent<ListBox, SidebarMsg> for GroupItem {
                 },
                 append = &Box {
                     set_orientation: Orientation::Vertical,
-                    set_halign: Align::Center,
+                    set_halign: Align::Start,
                     set_spacing: 8,
                     append = &Label {
+                        set_xalign: 0.0,
                         set_text: self.name.as_str(),
                         add_css_class: "heading"
                     },
