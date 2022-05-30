@@ -74,8 +74,8 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
             .find(|user| user.uin == self.account)
             .unwrap_or(&FriendInfo {
                 uin: self.account,
-                nick: "String".to_string(),
-                remark: "String".to_string(),
+                nick: self.account.to_string(),
+                remark: self.account.to_string(),
                 face_id: 0,
                 group_id: 0,
             })
