@@ -3,6 +3,8 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use once_cell::sync::OnceCell;
+use relm4::gtk::gio::Notification;
+use relm4::gtk::prelude::ApplicationExt;
 use ricq::client::event::*;
 use ricq::handler::{Handler, QEvent::*};
 use ricq::msg::elem::{FingerGuessing, RQElem};
@@ -12,6 +14,7 @@ use ricq::Client;
 
 use crate::app::main::FriendsGroup;
 use crate::app::main::{MainMsg, MAIN_SENDER};
+use crate::APP;
 
 pub struct AppHandler;
 
@@ -115,11 +118,24 @@ impl Handler for AppHandler {
             Login(_) => {}
             GroupMessage(GroupMessageEvent { client, message }) => {
                 let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
+                let content = get_text_from(&message.elements);
                 main_sender.input(MainMsg::GroupMessage {
                     group_id: message.group_code,
                     sender_id: message.from_uin,
-                    content: get_text_from(&message.elements),
+                    content: content.clone(),
                 });
+
+                // Send notification
+                let app = APP.get().unwrap();
+                let group = GROUP_LIST
+                    .get()
+                    .unwrap()
+                    .iter()
+                    .find(|group| group.code == message.group_code)
+                    .unwrap();
+                let notification = Notification::new(&group.name);
+                notification.set_body(Some(&content));
+                app.app.send_notification(None, &notification);
             }
             GroupAudioMessage(GroupAudioMessageEvent { client, message }) => {
                 println!("GroupAudioMessage");
@@ -132,12 +148,24 @@ impl Handler for AppHandler {
                 } else {
                     message.from_uin
                 };
-
+                let content = get_text_from(&message.elements);
                 main_sender.input(MainMsg::FriendMessage {
                     friend_id,
                     sender_id: message.from_uin,
-                    content: get_text_from(&message.elements),
+                    content: content.clone(),
                 });
+
+                // Send notification
+                let app = APP.get().unwrap();
+                let user = FRIEND_LIST
+                    .get()
+                    .unwrap()
+                    .iter()
+                    .find(|user| user.uin == friend_id)
+                    .unwrap();
+                let notification = Notification::new(&user.remark);
+                notification.set_body(Some(&content));
+                app.app.send_notification(None, &notification);
             }
             FriendAudioMessage(FriendAudioMessageEvent { client, message }) => {
                 println!("FriendAudioMessage");
