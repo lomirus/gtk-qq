@@ -41,6 +41,12 @@ sudo apt-get install meson ninja-build libgtk-4-dev libadwaita-1-dev
 sudo dnf install meson gtk4-devel libadwaita-devel
 ```
 
+#### Arch
+
+```bash
+sudo pacman -S meson pkgconf gtk4 libadwaita
+```
+
 #### Windows & MacOS
 
 Gtk4 based projects would be more complex to compile on Windows/MacOS platform. Nevertheless, considering some special reasons that you know, we shall not offer the Windows/MacOS release or even build scripts. 
