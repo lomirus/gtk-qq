@@ -37,6 +37,7 @@ impl SimpleComponent for AppModel {
     type Output = ();
     view! {
         ApplicationWindow {
+            add_css_class: "devel",
             set_default_size: (960, 540),
             set_content: stack = Some(&Stack) {
                 set_transition_type: StackTransitionType::SlideLeft,
