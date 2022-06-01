@@ -1,4 +1,4 @@
-# GTK QQ (WIP)
+# GTK QQ
 
 [![check-badge]][check-link]
 [![build-badge]][build-link]
