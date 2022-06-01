@@ -3,28 +3,18 @@
 mod actions;
 mod app;
 mod config;
+mod global;
 mod handler;
 
-use adw::Application;
+use global::{SharedApplication, APP};
 use gtk::{
     gio::{self, Cancellable},
     glib::Bytes,
     prelude::ApplicationExt,
 };
-use once_cell::sync::OnceCell;
-use relm4::{adw, gtk, RelmApp};
+use relm4::{gtk, RelmApp};
 
 use app::AppModel;
-
-#[derive(Debug)]
-struct SharedApplication {
-    app: Application,
-}
-
-unsafe impl Sync for SharedApplication {}
-unsafe impl Send for SharedApplication {}
-
-static APP: OnceCell<SharedApplication> = OnceCell::new();
 
 #[tokio::main]
 async fn main() {
@@ -36,9 +26,7 @@ async fn main() {
     app.app.register(Option::<&Cancellable>::None).unwrap();
     relm4::set_global_css(include_bytes!("styles/style.css"));
 
-    let shared_app = SharedApplication {
-        app: app.app.clone(),
-    };
+    let shared_app = SharedApplication::new(app.app.clone());
     APP.set(shared_app).unwrap();
 
     app.run(());

@@ -3,8 +3,6 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use once_cell::sync::OnceCell;
-use relm4::gtk::gio::Notification;
-use relm4::gtk::prelude::ApplicationExt;
 use ricq::client::event::*;
 use ricq::handler::{Handler, QEvent::*};
 use ricq::msg::elem::{FingerGuessing, RQElem};
@@ -133,9 +131,7 @@ impl Handler for AppHandler {
                     .iter()
                     .find(|group| group.code == message.group_code)
                     .unwrap();
-                let notification = Notification::new(&group.name);
-                notification.set_body(Some(&content));
-                app.app.send_notification(None, &notification);
+                app.send_notification(&group.name, &content);
             }
             GroupAudioMessage(GroupAudioMessageEvent { client, message }) => {
                 println!("GroupAudioMessage");
@@ -163,9 +159,7 @@ impl Handler for AppHandler {
                     .iter()
                     .find(|user| user.uin == friend_id)
                     .unwrap();
-                let notification = Notification::new(&user.remark);
-                notification.set_body(Some(&content));
-                app.app.send_notification(None, &notification);
+                app.send_notification(&user.remark, &content);
             }
             FriendAudioMessage(FriendAudioMessageEvent { client, message }) => {
                 println!("FriendAudioMessage");
