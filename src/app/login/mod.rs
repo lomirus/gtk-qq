@@ -1,4 +1,3 @@
-use std::collections::VecDeque;
 use std::sync::Arc;
 
 use relm4::{adw, gtk, ComponentParts, ComponentSender, JoinHandle, SimpleComponent};
@@ -29,7 +28,7 @@ pub struct LoginPageModel {
     account: String,
     password: String,
     is_login_button_enabled: bool,
-    toast_stack: VecDeque<String>,
+    toast: Option<String>,
 }
 
 #[derive(Debug)]
@@ -39,8 +38,6 @@ pub enum LoginPageMsg {
     LoginFailed(String),
     AccountChange(String),
     PasswordChange(String),
-    PushToast(String),
-    ShiftToast,
 }
 
 async fn login(account: i64, password: String, sender: ComponentSender<LoginPageModel>) {
@@ -271,13 +268,13 @@ impl SimpleComponent for LoginPageModel {
                 let account: i64 = match self.account.parse::<i64>() {
                     Ok(account) => account,
                     Err(_) => {
-                        sender.input(PushToast("Account is invalid".to_string()));
+                        self.toast = Some("Account is invalid".to_string());
                         return;
                     }
                 };
                 // Get the password
                 let password = if self.password.is_empty() {
-                    sender.input(PushToast("Password cannot be empty".to_string()));
+                    self.toast = Some("Password cannot be empty".to_string());
                     return;
                 } else {
                     self.password.to_string()
@@ -291,17 +288,11 @@ impl SimpleComponent for LoginPageModel {
                 sender.output(AppMessage::LoginSuccessful);
             }
             LoginFailed(msg) => {
-                sender.input(PushToast(msg));
+                self.toast = Some(msg);
                 self.is_login_button_enabled = true;
             }
             AccountChange(new_account) => self.account = new_account,
             PasswordChange(new_password) => self.password = new_password,
-            PushToast(message) => self.toast_stack.push_back(message),
-            ShiftToast => {
-                self.toast_stack
-                    .pop_front()
-                    .expect("failed to pop from toast stack");
-            }
         }
     }
 
@@ -322,17 +313,15 @@ impl SimpleComponent for LoginPageModel {
             account,
             password,
             is_login_button_enabled: true,
-            toast_stack: VecDeque::new(),
+            toast: None,
         };
 
         ComponentParts { model, widgets }
     }
 
     fn pre_view(&self, widgets: &mut Self::Widgets, sender: &ComponentSender<Self>) {
-        if !self.toast_stack.is_empty() {
-            let toast_message = self.toast_stack[0].as_str();
-            sender.input(LoginPageMsg::ShiftToast);
-            widgets.toast_overlay.add_toast(&Toast::new(toast_message));
+        if let Some(content) = &self.toast {
+            widgets.toast_overlay.add_toast(&Toast::new(content));
         }
         widgets
             .go_next_button
