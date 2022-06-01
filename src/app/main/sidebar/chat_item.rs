@@ -61,6 +61,7 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
         _output: &Sender<Self::Output>,
     ) -> Self {
         let (account, is_group, last_message) = init_params;
+        let last_message = last_message.replace("\n", " ");
         let name = if is_group {
             GROUP_LIST
                 .get()
