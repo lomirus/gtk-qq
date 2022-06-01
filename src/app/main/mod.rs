@@ -11,7 +11,7 @@ use relm4::{
     SimpleComponent,
 };
 
-use adw::{prelude::*, HeaderBar, Leaflet};
+use adw::{prelude::*, HeaderBar, Leaflet, ToastOverlay, Toast};
 use gtk::{Align, Box, Label, MenuButton, Orientation, Separator, Stack};
 
 use crate::handler::{FRIEND_LIST, GROUP_LIST};
@@ -103,12 +103,14 @@ pub enum MainMsg {
     },
     SelectChatroom(i64, bool),
     InitSidebar,
+    PushToast(String)
 }
 
 #[derive(Debug)]
 enum ViewMsg {
     WindowFolded,
     SelectChatroom(i64, bool),
+    PushToast(String)
 }
 
 relm4::new_action_group!(WindowActionGroup, "menu");
@@ -124,37 +126,39 @@ impl SimpleComponent for MainPageModel {
 
     view! {
         #[root]
-        main_page = &Leaflet {
-            append: sidebar_controller.widget(),
-            append = &Separator::new(Orientation::Horizontal),
-            append: chatroom = &Box {
-                set_vexpand: true,
-                set_hexpand: true,
-                set_orientation: Orientation::Vertical,
-                append = &HeaderBar {
-                    set_title_widget = Some(&Box) {
-                        set_orientation: Orientation::Vertical,
-                        set_valign: Align::Center,
-                        append: chatroom_title = &Label {
-                            set_label: "Chatroom"
+        toast_overlay = ToastOverlay {
+            set_child: main_page = Some(&Leaflet) {
+                append: sidebar_controller.widget(),
+                append = &Separator::new(Orientation::Horizontal),
+                append: chatroom = &Box {
+                    set_vexpand: true,
+                    set_hexpand: true,
+                    set_orientation: Orientation::Vertical,
+                    append = &HeaderBar {
+                        set_title_widget = Some(&Box) {
+                            set_orientation: Orientation::Vertical,
+                            set_valign: Align::Center,
+                            append: chatroom_title = &Label {
+                                set_label: "Chatroom"
+                            },
+                            append: chatroom_subtitle = &Label {
+                                set_css_classes: &["subtitle"],
+                                set_label: "Chatroom"
+                            },
                         },
-                        append: chatroom_subtitle = &Label {
-                            set_css_classes: &["subtitle"],
-                            set_label: "Chatroom"
-                        },
+                        pack_end = &MenuButton {
+                            set_icon_name: "menu-symbolic",
+                            set_menu_model: Some(&main_menu),
+                        }
                     },
-                    pack_end = &MenuButton {
-                        set_icon_name: "menu-symbolic",
-                        set_menu_model: Some(&main_menu),
+                    append: chatroom_stack = &Stack {},
+                },
+                connect_folded_notify[sender] => move |leaflet| {
+                    if leaflet.is_folded() {
+                        sender.input(MainMsg::WindowFolded);
                     }
                 },
-                append: chatroom_stack = &Stack {},
-            },
-            connect_folded_notify[sender] => move |leaflet| {
-                if leaflet.is_folded() {
-                    sender.input(MainMsg::WindowFolded);
-                }
-            },
+            }
         }
     }
 
@@ -261,6 +265,9 @@ impl SimpleComponent for MainPageModel {
             InitSidebar => {
                 self.sidebar.sender().send(SidebarMsg::RefreshContact);
             }
+            PushToast(content) => {
+                self.message = Some(ViewMsg::PushToast(content));
+            }
         }
         self.chatrooms.borrow().render_changes();
     }
@@ -297,6 +304,9 @@ impl SimpleComponent for MainPageModel {
                         chatroom_title.set_label(title);
                         chatroom_subtitle.set_label(&subtitle);
                     }
+                },
+                PushToast(content) => {
+                    widgets.toast_overlay.add_toast(&Toast::new(content));
                 }
             }
         }
