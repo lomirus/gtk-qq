@@ -34,12 +34,18 @@ pub fn init_sqlite() {
     .unwrap();
 
     conn.execute(
-        "
-        Create table if not exists config (
+        "Create table if not exists configs (
             key     TEXT PRIMARY KEY,
             value   TEXT NOT NULL
         )",
         [],
     )
     .unwrap();
+}
+
+pub fn get_db() -> Connection {
+    let mut db_path = dirs::home_dir().unwrap();
+    db_path.push(".gtk-qq");
+    db_path.push("data.db");
+    return Connection::open(db_path).unwrap();
 }

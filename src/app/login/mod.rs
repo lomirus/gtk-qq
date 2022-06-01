@@ -4,7 +4,7 @@ use std::sync::Arc;
 use relm4::{adw, gtk, ComponentParts, ComponentSender, JoinHandle, SimpleComponent};
 
 use adw::{prelude::*, ActionRow, Avatar, HeaderBar, PreferencesGroup, Toast, ToastOverlay};
-use gtk::{Align, Box, Button, Entry, Label, MenuButton, Orientation};
+use gtk::{Align, Box, Button, Entry, EntryBuffer, Label, MenuButton, Orientation};
 
 use rand::prelude::*;
 use ricq::{
@@ -13,12 +13,16 @@ use ricq::{
     version::{get_version, Protocol},
     Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse, LoginUnknownStatus,
 };
+use rusqlite::params;
 use tokio::{net::TcpStream, task};
 
-use crate::actions::{AboutAction, ShortcutsAction};
 use crate::app::main::{MainMsg, MAIN_SENDER};
 use crate::app::AppMessage;
 use crate::handler::{init_friends_list, AppHandler, ACCOUNT, CLIENT, GROUP_LIST};
+use crate::{
+    actions::{AboutAction, ShortcutsAction},
+    db::get_db,
+};
 
 #[derive(Debug)]
 pub struct LoginPageModel {
@@ -26,17 +30,6 @@ pub struct LoginPageModel {
     password: String,
     is_login_button_enabled: bool,
     toast_stack: VecDeque<String>,
-}
-
-impl Default for LoginPageModel {
-    fn default() -> Self {
-        LoginPageModel {
-            account: String::new(),
-            password: String::new(),
-            is_login_button_enabled: true,
-            toast_stack: VecDeque::<String>::new(),
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -80,7 +73,7 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
     // Handle login response
     match res {
         LoginResponse::Success(_) => {
-            finish_login(account, client, handle, sender).await;
+            finish_login(account, password, client, handle, sender).await;
         }
         LoginResponse::NeedCaptcha(LoginNeedCaptcha {
             verify_url,
@@ -118,7 +111,7 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
             if let Err(err) = client.device_lock_login().await {
                 sender.input(LoginFailed(err.to_string()));
             } else {
-                finish_login(account, client, handle, sender).await;
+                finish_login(account, password, client, handle, sender).await;
             }
         }
         LoginResponse::UnknownStatus(LoginUnknownStatus { message, .. }) => {
@@ -129,6 +122,7 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
 
 async fn finish_login(
     account: i64,
+    password: String,
     client: Arc<Client>,
     handle: JoinHandle<()>,
     sender: ComponentSender<LoginPageModel>,
@@ -140,6 +134,19 @@ async fn finish_login(
     if ACCOUNT.set(account).is_err() {
         panic!("falied to store account");
     };
+    // Store user account and password in local database
+    let db = get_db();
+    db.execute(
+        "REPLACE INTO configs (key, value) VALUES (?1, ?2)",
+        params!["account", account],
+    )
+    .unwrap();
+    db.execute(
+        "REPLACE INTO configs (key, value) VALUES (?1, ?2)",
+        params!["password", password],
+    )
+    .unwrap();
+    // Execute Ricq `after_login()`
     after_login(&client).await;
     match client.get_friend_list().await {
         Ok(res) => init_friends_list(res.friends, res.friend_groups),
@@ -157,6 +164,29 @@ async fn finish_login(
     };
     sender.input(LoginSuccessful);
     handle.await.unwrap();
+}
+
+fn get_login_info() -> (String, String) {
+    let conn = get_db();
+    let mut stmt = conn
+        .prepare("SELECT value FROM configs where key='account'")
+        .unwrap();
+    let mut rows = stmt.query([]).unwrap();
+    let account = match rows.next().unwrap() {
+        Some(row) => row.get(0).unwrap(),
+        None => String::new(),
+    };
+
+    let mut stmt = conn
+        .prepare("SELECT value FROM configs where key='password'")
+        .unwrap();
+    let mut rows = stmt.query([]).unwrap();
+    let password = match rows.next().unwrap() {
+        Some(row) => row.get(0).unwrap(),
+        None => String::new(),
+    };
+
+    (account, password)
 }
 
 #[relm4::component(pub)]
@@ -207,7 +237,7 @@ impl SimpleComponent for LoginPageModel {
                         add = &ActionRow {
                             set_title: "Account",
                             set_focusable: false,
-                            add_suffix = &Entry {
+                            add_suffix: account_entry = &Entry {
                                 set_valign: Align::Center,
                                 set_placeholder_text: Some("Please input your QQ account "),
                                 connect_changed[sender] => move |e| {
@@ -218,7 +248,7 @@ impl SimpleComponent for LoginPageModel {
                         add = &ActionRow {
                             set_title: "Password",
                             set_focusable: false,
-                            add_suffix = &Entry {
+                            add_suffix: password_entry = &Entry {
                                 set_valign: Align::Center,
                                 set_placeholder_text: Some("Please input your QQ password"),
                                 set_visibility: false,
@@ -281,7 +311,20 @@ impl SimpleComponent for LoginPageModel {
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let widgets = view_output!();
-        let model = LoginPageModel::default();
+
+        let (account, password) = get_login_info();
+        let account_buffer = EntryBuffer::new(Some(&account));
+        let password_buffer = EntryBuffer::new(Some(&password));
+        widgets.account_entry.set_buffer(&account_buffer);
+        widgets.password_entry.set_buffer(&password_buffer);
+
+        let model = LoginPageModel {
+            account,
+            password,
+            is_login_button_enabled: true,
+            toast_stack: VecDeque::new(),
+        };
+
         ComponentParts { model, widgets }
     }
 
