@@ -16,9 +16,9 @@ impl SharedApplication {
         SharedApplication { app }
     }
 
-    pub fn send_notification(&self, title: &String, body: &String) {
-        let notification = Notification::new(&title);
-        notification.set_body(Some(&body));
+    pub fn send_notification(&self, title: &str, body: &String) {
+        let notification = Notification::new(title);
+        notification.set_body(Some(body));
         self.app.send_notification(None, &notification);
     }
 }
