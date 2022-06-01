@@ -5,10 +5,10 @@ mod group_item;
 use std::cell::RefCell;
 
 use relm4::factory::FactoryVecDeque;
-use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
+use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent, WidgetPlus};
 
 use adw::{prelude::*, HeaderBar, ViewStack, ViewSwitcherBar, ViewSwitcherTitle};
-use gtk::{Box, ListBox, Orientation, ScrolledWindow};
+use gtk::{Box, Button, Entry, EntryIconPosition, ListBox, Orientation, ScrolledWindow};
 
 use super::MainMsg;
 use crate::handler::{FRIEND_GROUP_LIST, GROUP_LIST};
@@ -96,19 +96,51 @@ impl SimpleComponent for SidebarModel {
                 set_reveal: true
             }
         },
-        _contact_friends = ScrolledWindow {
-            set_child: contact_friends = Some(&Box) {
-                set_orientation: Orientation::Vertical,
+        _contact_friends = Box {
+            set_orientation: Orientation::Vertical,
+            Box {
+                set_margin_all: 8,
+                Button {
+                    set_icon_name: "view-refresh-symbolic",
+                    set_margin_end: 8
+                },
+                append: search_friends_entry = &Entry {
+                    set_icon_from_icon_name: (EntryIconPosition::Secondary, Some("system-search-symbolic")),
+                    set_placeholder_text: Some("Search in friends..."),
+                    set_width_request: 320 - 3 * 8 - 32
+                },
+            },
+            ScrolledWindow {
+                set_child: contact_friends = Some(&Box) {
+                    set_vexpand: true,
+                    set_orientation: Orientation::Vertical,
+                }
             }
         },
-        _contact_groups = ScrolledWindow {
-            set_child: contact_groups = Some(&ListBox) {
-                set_css_classes: &["navigation-sidebar"],
-                connect_row_activated[sender] => move |_, selected_row| {
-                    let index = selected_row.index();
-                    let group = GROUP_LIST.get().unwrap().get(index as usize).unwrap();
-                    sender.output(MainMsg::SelectChatroom(group.uin, true));
+        _contact_groups = Box {
+            set_orientation: Orientation::Vertical,
+            Box {
+                set_margin_all: 8,
+                Button {
+                    set_icon_name: "view-refresh-symbolic",
+                    set_margin_end: 8
                 },
+                append: search_groups_entry = &Entry {
+                    set_icon_from_icon_name: (EntryIconPosition::Secondary, Some("system-search-symbolic")),
+                    set_placeholder_text: Some("Search in groups..."),
+                    set_width_request: 320 - 3 * 8 - 32
+                },
+            },
+            ScrolledWindow {
+                set_child: contact_groups = Some(&ListBox) {
+                    set_css_classes: &["navigation-sidebar"],
+                    set_vexpand: true,
+                    connect_row_activated[sender] => move |_, selected_row| {
+                        let index = selected_row.index();
+                        let group = GROUP_LIST.get().unwrap().get(index as usize).unwrap();
+                        sender.output(MainMsg::SelectChatroom(group.uin, true));
+                    },
+                }
             }
         }
     }
