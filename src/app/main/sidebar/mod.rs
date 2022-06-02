@@ -19,14 +19,16 @@ pub use self::friends_group::FriendsGroup;
 
 #[derive(Debug)]
 pub struct SidebarModel {
-    chats_list: RefCell<FactoryVecDeque<ListBox, ChatItem, SidebarMsg>>,
-    friends_list: RefCell<FactoryVecDeque<Box, FriendsGroup, SidebarMsg>>,
-    groups_list: RefCell<FactoryVecDeque<ListBox, Group, SidebarMsg>>,
+    chats_list: Option<RefCell<FactoryVecDeque<ListBox, ChatItem, SidebarMsg>>>,
+    friends_list: Option<RefCell<FactoryVecDeque<Box, FriendsGroup, SidebarMsg>>>,
+    groups_list: Option<RefCell<FactoryVecDeque<ListBox, Group, SidebarMsg>>>,
+    is_refresh_friends_button_enabled: bool,
+    is_refresh_groups_button_enabled: bool,
 }
 
 impl SidebarModel {
     fn update_chat_item(&self, account: i64, is_group: bool, last_message: String) {
-        let mut chats_list = self.chats_list.borrow_mut();
+        let mut chats_list = self.chats_list.as_ref().unwrap().borrow_mut();
         for i in 0..chats_list.len() {
             let this_account = chats_list.get(i).account;
             let is_this_group = chats_list.get(i).is_group;
@@ -39,12 +41,12 @@ impl SidebarModel {
     }
 
     fn insert_chat_item(&self, account: i64, is_group: bool, last_message: String) {
-        let mut chats_list = self.chats_list.borrow_mut();
+        let mut chats_list = self.chats_list.as_ref().unwrap().borrow_mut();
         chats_list.push_front((account, is_group, last_message));
     }
 
     fn render_friends(&self) -> rusqlite::Result<()> {
-        let mut friends_list = self.friends_list.borrow_mut();
+        let mut friends_list = self.friends_list.as_ref().unwrap().borrow_mut();
         friends_list.clear();
 
         let conn = get_db();
@@ -88,7 +90,7 @@ impl SidebarModel {
     }
 
     fn render_groups(&self) -> rusqlite::Result<()> {
-        let mut groups_list = self.groups_list.borrow_mut();
+        let mut groups_list = self.groups_list.as_ref().unwrap().borrow_mut();
         groups_list.clear();
 
         let conn = get_db();
@@ -187,11 +189,13 @@ impl SimpleComponent for SidebarModel {
                 set_reveal: true
             }
         },
-        _contact_friends = Box {
+        contact_friends = Box {
             set_orientation: Orientation::Vertical,
             Box {
                 set_margin_all: 8,
                 Button {
+                    #[watch]
+                    set_sensitive: model.is_refresh_friends_button_enabled,
                     set_icon_name: "view-refresh-symbolic",
                     set_margin_end: 8,
                     connect_clicked[sender] => move |_| {
@@ -205,17 +209,19 @@ impl SimpleComponent for SidebarModel {
                 },
             },
             ScrolledWindow {
-                set_child: contact_friends = Some(&Box) {
+                set_child: contact_friends_list = Some(&Box) {
                     set_vexpand: true,
                     set_orientation: Orientation::Vertical,
                 }
             }
         },
-        _contact_groups = Box {
+        contact_groups = Box {
             set_orientation: Orientation::Vertical,
             Box {
                 set_margin_all: 8,
                 Button {
+                    #[watch]
+                    set_sensitive: model.is_refresh_groups_button_enabled,
                     set_icon_name: "view-refresh-symbolic",
                     set_margin_end: 8,
                     connect_clicked[sender] => move |_| {
@@ -229,7 +235,7 @@ impl SimpleComponent for SidebarModel {
                 },
             },
             ScrolledWindow {
-                set_child: contact_groups = Some(&ListBox) {
+                set_child: contact_groups_list = Some(&ListBox) {
                     set_css_classes: &["navigation-sidebar"],
                     set_vexpand: true,
                     connect_row_activated[sender] => move |_, selected_row| {
@@ -250,6 +256,13 @@ impl SimpleComponent for SidebarModel {
         root: &Self::Root,
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        let mut model = SidebarModel {
+            chats_list: None,
+            friends_list: None,
+            groups_list: None,
+            is_refresh_friends_button_enabled: true,
+            is_refresh_groups_button_enabled: true,
+        };
         let widgets = view_output!();
 
         let stack: &ViewStack = &widgets.stack;
@@ -257,8 +270,8 @@ impl SimpleComponent for SidebarModel {
 
         let chats = stack.add_titled(&widgets._chats, None, "Chats");
         let contact = stack.add_titled(&widgets._contact, None, "Contact");
-        let friends = contact_stack.add_titled(&widgets._contact_friends, None, "Friends");
-        let groups = contact_stack.add_titled(&widgets._contact_groups, None, "Groups");
+        let friends = contact_stack.add_titled(&widgets.contact_friends, None, "Friends");
+        let groups = contact_stack.add_titled(&widgets.contact_groups, None, "Groups");
 
         chats.set_icon_name(Some("chat-symbolic"));
         contact.set_icon_name(Some("address-book-symbolic"));
@@ -268,15 +281,13 @@ impl SimpleComponent for SidebarModel {
         let chats_list: FactoryVecDeque<ListBox, ChatItem, SidebarMsg> =
             FactoryVecDeque::new(widgets.sidebar_chats.clone(), &sender.input);
         let friends_list: FactoryVecDeque<Box, FriendsGroup, SidebarMsg> =
-            FactoryVecDeque::new(widgets.contact_friends.clone(), &sender.input);
+            FactoryVecDeque::new(widgets.contact_friends_list.clone(), &sender.input);
         let groups_list: FactoryVecDeque<ListBox, Group, SidebarMsg> =
-            FactoryVecDeque::new(widgets.contact_groups.clone(), &sender.input);
+            FactoryVecDeque::new(widgets.contact_groups_list.clone(), &sender.input);
 
-        let model = SidebarModel {
-            chats_list: RefCell::new(chats_list),
-            friends_list: RefCell::new(friends_list),
-            groups_list: RefCell::new(groups_list),
-        };
+        model.chats_list = Some(RefCell::new(chats_list));
+        model.friends_list = Some(RefCell::new(friends_list));
+        model.groups_list = Some(RefCell::new(groups_list));
 
         model.render_friends().unwrap();
         model.render_groups().unwrap();
@@ -288,7 +299,7 @@ impl SimpleComponent for SidebarModel {
         use SidebarMsg::*;
         match msg {
             SelectChatroom(index) => {
-                let chat_item = self.chats_list.borrow();
+                let chat_item = self.chats_list.as_ref().unwrap().borrow();
                 let chat_item = chat_item.get(index as usize);
                 let account = chat_item.account;
                 let is_group = chat_item.is_group;
@@ -301,24 +312,32 @@ impl SimpleComponent for SidebarModel {
                 self.insert_chat_item(account, is_group, last_message)
             }
             RefreshFriends => {
+                self.is_refresh_friends_button_enabled = false;
                 task::spawn(refresh_friends(sender.clone()));
             }
             RefreshGroups => {
+                self.is_refresh_groups_button_enabled = false;
                 task::spawn(refresh_groups(sender.clone()));
             }
-            RenderFriends => match self.render_friends() {
-                Ok(_) => sender.output(MainMsg::PushToast(
-                    "Refreshed the friends list.".to_string(),
-                )),
-                Err(err) => sender.output(MainMsg::PushToast(err.to_string())),
-            },
-            RenderGroups => match self.render_groups() {
-                Ok(_) => {
-                    sender.output(MainMsg::PushToast("Refreshed the groups list.".to_string()))
+            RenderFriends => {
+                match self.render_friends() {
+                    Ok(_) => sender.output(MainMsg::PushToast(
+                        "Refreshed the friends list.".to_string(),
+                    )),
+                    Err(err) => sender.output(MainMsg::PushToast(err.to_string())),
                 }
-                Err(err) => sender.output(MainMsg::PushToast(err.to_string())),
-            },
+                self.is_refresh_friends_button_enabled = true;
+            }
+            RenderGroups => {
+                match self.render_groups() {
+                    Ok(_) => {
+                        sender.output(MainMsg::PushToast("Refreshed the groups list.".to_string()))
+                    }
+                    Err(err) => sender.output(MainMsg::PushToast(err.to_string())),
+                }
+                self.is_refresh_groups_button_enabled = true;
+            }
         }
-        self.chats_list.borrow().render_changes();
+        self.chats_list.as_ref().unwrap().borrow().render_changes();
     }
 }
