@@ -3,9 +3,9 @@ use relm4::{adw, gtk, Sender};
 
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, Orientation, Widget};
-use ricq::structs::FriendInfo;
 
-use crate::handler::{ACCOUNT, FRIEND_LIST};
+use crate::db::{get_db, Friend};
+use crate::handler::ACCOUNT;
 
 use super::ChatroomMsg;
 
@@ -67,19 +67,26 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
         }
 
         // TODO: Get group members' info
-        let user = FRIEND_LIST
-            .get()
-            .unwrap()
-            .iter()
-            .find(|user| user.uin == self.account)
-            .unwrap_or(&FriendInfo {
-                uin: self.account,
-                nick: self.account.to_string(),
+        let conn = get_db();
+        let user = conn
+            .query_row(
+                "Select name, remark, group_id from friends where id=?1",
+                [self.account],
+                |row| {
+                    Ok(Friend {
+                        id: self.account,
+                        name: row.get(0).unwrap(),
+                        remark: row.get(1).unwrap(),
+                        group_id: row.get(2).unwrap(),
+                    })
+                },
+            )
+            .unwrap_or(Friend {
+                id: self.account,
+                name: self.account.to_string(),
                 remark: self.account.to_string(),
-                face_id: 0,
                 group_id: 0,
-            })
-            .clone();
+            });
 
         relm4::view! {
             main_box = Box {

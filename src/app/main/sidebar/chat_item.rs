@@ -4,7 +4,7 @@ use relm4::{adw, gtk, Sender};
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, Orientation};
 
-use crate::handler::{FRIEND_LIST, GROUP_LIST};
+use crate::db::get_db;
 
 use super::SidebarMsg;
 
@@ -61,26 +61,25 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
         _output: &Sender<Self::Output>,
     ) -> Self {
         let (account, is_group, last_message) = init_params;
-        let last_message = last_message.replace("\n", " ");
+        let last_message = last_message.replace('\n', " ");
+        let conn = get_db();
         let name = if is_group {
-            GROUP_LIST
-                .get()
-                .unwrap()
-                .iter()
-                .find(|group| group.uin == account)
-                .unwrap_or_else(|| panic!("cannot find account {} in group list", account))
-                .name
-                .clone()
+            conn.query_row("Select name from groups where id=?1", [account], |row| {
+                row.get(0)
+            })
         } else {
-            FRIEND_LIST
-                .get()
-                .unwrap()
-                .iter()
-                .find(|user| user.uin == account)
-                .unwrap_or_else(|| panic!("cannot find account {} in friend list", account))
-                .remark
-                .clone()
-        };
+            conn.query_row("Select remark from friends where id=?1", [account], |row| {
+                row.get(0)
+            })
+        }
+        .unwrap_or_else(|_| {
+            println!(concat!(
+                "It seems that you just got a chat item without name. ",
+                "Try to refresh the contact in sidebar. If the ",
+                "problem still exists, please report it on Github.",
+            ));
+            "CHAT_ITEM_NAME".to_string()
+        });
         ChatItem {
             account,
             is_group,

@@ -4,16 +4,12 @@ use relm4::{adw, gtk, Sender};
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation};
 
+use crate::db::Group;
+
 use super::SidebarMsg;
 
-#[derive(Debug)]
-pub struct GroupItem {
-    pub account: i64,
-    pub name: String,
-}
-
-impl FactoryComponent<ListBox, SidebarMsg> for GroupItem {
-    type InitParams = GroupItem;
+impl FactoryComponent<ListBox, SidebarMsg> for Group {
+    type InitParams = Group;
     type Widgets = ();
     type Input = ();
     type Output = ();
@@ -62,7 +58,7 @@ impl FactoryComponent<ListBox, SidebarMsg> for GroupItem {
                         add_css_class: "heading"
                     },
                     append = &Label {
-                        set_text: self.account.to_string().as_str(),
+                        set_text: self.id.to_string().as_str(),
                         add_css_class: "caption",
                         set_xalign: 0.0,
                     },

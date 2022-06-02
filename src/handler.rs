@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -7,52 +6,16 @@ use ricq::client::event::*;
 use ricq::handler::{Handler, QEvent::*};
 use ricq::msg::elem::{FingerGuessing, RQElem};
 use ricq::msg::MessageChain;
-use ricq::structs::{FriendGroupInfo, FriendInfo, GroupInfo};
 use ricq::Client;
 
-use crate::app::main::FriendsGroup;
 use crate::app::main::{MainMsg, MAIN_SENDER};
+use crate::db::get_db;
 use crate::APP;
 
 pub struct AppHandler;
 
 pub static CLIENT: OnceCell<Arc<Client>> = OnceCell::new();
 pub static ACCOUNT: OnceCell<i64> = OnceCell::new();
-pub static FRIEND_LIST: OnceCell<Vec<FriendInfo>> = OnceCell::new();
-pub static FRIEND_GROUP_LIST: OnceCell<Vec<FriendsGroup>> = OnceCell::new();
-pub static GROUP_LIST: OnceCell<Vec<GroupInfo>> = OnceCell::new();
-
-pub fn init_friends_list(
-    friends_list: Vec<FriendInfo>,
-    friend_groups: HashMap<u8, FriendGroupInfo>,
-) {
-    let mut friend_groups = friend_groups
-        .iter()
-        .map(|(_, v)| v.clone())
-        .collect::<Vec<FriendGroupInfo>>();
-    friend_groups.sort_by(|a, b| a.seq_id.cmp(&b.seq_id));
-    let friends_group_list: Vec<FriendsGroup> = friend_groups
-        .iter()
-        .map(
-            |FriendGroupInfo {
-                 group_name,
-                 group_id,
-                 ..
-             }| FriendsGroup {
-                id: *group_id,
-                name: group_name.to_string(),
-                friends: friends_list
-                    .iter()
-                    .cloned()
-                    .filter(|friend| friend.group_id == *group_id)
-                    .collect(),
-            },
-        )
-        .collect::<Vec<FriendsGroup>>();
-
-    FRIEND_LIST.set(friends_list).unwrap();
-    FRIEND_GROUP_LIST.set(friends_group_list).unwrap();
-}
 
 fn get_text_from(message_chain: &MessageChain) -> String {
     let mut content = Vec::<String>::new();
@@ -125,13 +88,23 @@ impl Handler for AppHandler {
 
                 // Send notification
                 let app = APP.get().unwrap();
-                let group = GROUP_LIST
-                    .get()
-                    .unwrap()
-                    .iter()
-                    .find(|group| group.code == message.group_code)
-                    .unwrap();
-                app.send_notification(&group.name, &content);
+                let conn = get_db();
+                let group_name: String = conn
+                    .query_row(
+                        "Select name from groups where id=?1",
+                        [message.group_code],
+                        |row| row.get(0),
+                    )
+                    .unwrap_or_else(|_| {
+                        println!(concat!(
+                            "It seems that you just got a group without name. ",
+                            "Try to refresh the groups in sidebar. If the ",
+                            "problem still exists, please report it on ",
+                            "Github."
+                        ));
+                        "GROUP_NAME".to_string()
+                    });
+                app.send_notification(&group_name, &content);
             }
             GroupAudioMessage(GroupAudioMessageEvent { client, message }) => {
                 println!("GroupAudioMessage");
@@ -153,13 +126,15 @@ impl Handler for AppHandler {
 
                 // Send notification
                 let app = APP.get().unwrap();
-                let user = FRIEND_LIST
-                    .get()
-                    .unwrap()
-                    .iter()
-                    .find(|user| user.uin == friend_id)
+                let conn = get_db();
+                let user_remark: String = conn
+                    .query_row(
+                        "Select remark from friends where id=?1",
+                        [friend_id],
+                        |row| row.get(0),
+                    )
                     .unwrap();
-                app.send_notification(&user.remark, &content);
+                app.send_notification(&user_remark, &content);
             }
             FriendAudioMessage(FriendAudioMessageEvent { client, message }) => {
                 println!("FriendAudioMessage");

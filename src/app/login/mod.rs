@@ -15,9 +15,8 @@ use ricq::{
 use rusqlite::params;
 use tokio::{net::TcpStream, task};
 
-use crate::app::main::{MainMsg, MAIN_SENDER};
 use crate::app::AppMessage;
-use crate::handler::{init_friends_list, AppHandler, ACCOUNT, CLIENT, GROUP_LIST};
+use crate::handler::{AppHandler, ACCOUNT, CLIENT};
 use crate::{
     actions::{AboutAction, ShortcutsAction},
     db::get_db,
@@ -133,32 +132,20 @@ async fn finish_login(
     };
     // Store user account and password in local database
     let db = get_db();
-    db.execute(
+    if let Err(err) = db.execute(
         "REPLACE INTO configs (key, value) VALUES (?1, ?2)",
         params!["account", account],
-    )
-    .unwrap();
-    db.execute(
+    ) {
+        sender.input(LoginFailed(err.to_string()));
+    }
+    if let Err(err) = db.execute(
         "REPLACE INTO configs (key, value) VALUES (?1, ?2)",
         params!["password", password],
-    )
-    .unwrap();
+    ) {
+        sender.input(LoginFailed(err.to_string()));
+    }
     // Execute Ricq `after_login()`
     after_login(&client).await;
-    match client.get_friend_list().await {
-        Ok(res) => init_friends_list(res.friends, res.friend_groups),
-        Err(err) => {
-            sender.input(LoginFailed(err.to_string()));
-            return;
-        }
-    };
-    match client.get_group_list().await {
-        Ok(res) => GROUP_LIST.set(res).unwrap(),
-        Err(err) => {
-            sender.input(LoginFailed(err.to_string()));
-            return;
-        }
-    };
     sender.input(LoginSuccessful);
     handle.await.unwrap();
 }
@@ -284,7 +271,6 @@ impl SimpleComponent for LoginPageModel {
                 task::spawn(login(account, password, sender.clone()));
             }
             LoginSuccessful => {
-                MAIN_SENDER.get().unwrap().input(MainMsg::InitSidebar);
                 sender.output(AppMessage::LoginSuccessful);
             }
             LoginFailed(msg) => {

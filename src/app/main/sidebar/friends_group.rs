@@ -4,10 +4,9 @@ use relm4::{adw, gtk, Sender, WidgetPlus};
 use adw::{prelude::*, Avatar, ExpanderRow};
 use gtk::{glib::clone, Align, Box, GestureClick, Label, Orientation, Widget};
 
-use ricq::structs::FriendInfo;
-
 use super::SidebarMsg;
 use crate::app::main::{MainMsg, MAIN_SENDER};
+use crate::db::Friend;
 
 pub enum ContactGroupMessage {
     SelectUser(i64),
@@ -17,7 +16,7 @@ pub enum ContactGroupMessage {
 pub struct FriendsGroup {
     pub id: u8,
     pub name: String,
-    pub friends: Vec<FriendInfo>,
+    pub friends: Vec<Friend>,
 }
 
 impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
@@ -74,14 +73,14 @@ impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
             // Create user item click event
             let gesture = GestureClick::new();
             gesture.connect_released(clone!(@strong input => move |_, _, _, _| {
-                input.send(ContactGroupMessage::SelectUser(friend.uin));
+                input.send(ContactGroupMessage::SelectUser(friend.id));
             }));
 
             relm4::view! {
                 child = Box {
                     set_margin_all: 8,
                     Avatar {
-                        set_text: Some(&friend.nick),
+                        set_text: Some(&friend.name),
                         set_show_initials: true,
                         set_size: 48,
                         set_margin_end: 8
@@ -96,7 +95,7 @@ impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
                             add_css_class: "heading"
                         },
                         append = &Label {
-                            set_text: &friend.nick,
+                            set_text: &friend.name,
                             add_css_class: "caption",
                             set_xalign: 0.0,
                         },

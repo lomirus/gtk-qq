@@ -11,13 +11,14 @@ use relm4::{
     SimpleComponent,
 };
 
-use adw::{prelude::*, HeaderBar, Leaflet, ToastOverlay, Toast};
+use adw::{prelude::*, HeaderBar, Leaflet, Toast, ToastOverlay};
 use gtk::{Align, Box, Label, MenuButton, Orientation, Separator, Stack};
 
-use crate::handler::{FRIEND_LIST, GROUP_LIST};
 use chatroom::{Chatroom, ChatroomInitParams};
 pub use sidebar::FriendsGroup;
 use sidebar::{SidebarModel, SidebarMsg};
+
+use crate::db::get_db;
 
 pub static MAIN_SENDER: OnceCell<ComponentSender<MainPageModel>> = OnceCell::new();
 
@@ -102,15 +103,14 @@ pub enum MainMsg {
         content: String,
     },
     SelectChatroom(i64, bool),
-    InitSidebar,
-    PushToast(String)
+    PushToast(String),
 }
 
 #[derive(Debug)]
 enum ViewMsg {
     WindowFolded,
     SelectChatroom(i64, bool),
-    PushToast(String)
+    PushToast(String),
 }
 
 relm4::new_action_group!(WindowActionGroup, "menu");
@@ -262,9 +262,6 @@ impl SimpleComponent for MainPageModel {
 
                 self.push_group_message(group_id, sender_id, content);
             }
-            InitSidebar => {
-                self.sidebar.sender().send(SidebarMsg::RefreshContact);
-            }
             PushToast(content) => {
                 self.message = Some(ViewMsg::PushToast(content));
             }
@@ -282,29 +279,37 @@ impl SimpleComponent for MainPageModel {
                         &format!("{} {}", account, if *is_group { "group" } else { "friend" });
                     chatroom_stack.set_visible_child_name(child_name);
                     if *is_group {
-                        let group = GROUP_LIST
-                            .get()
-                            .unwrap()
-                            .iter()
-                            .find(|group| group.uin == *account)
-                            .unwrap();
-                        let title = group.name.to_string();
+                        let group_name: String = get_db()
+                            .query_row("Select name from groups where id=?1", [account], |row| {
+                                row.get(0)
+                            })
+                            .unwrap_or_else(|_| {
+                                println!(concat!(
+                                    "It seems that you just got a group without name. ",
+                                    "Try to refresh the groups in sidebar. If the ",
+                                    "problem still exists, please report it on ",
+                                    "Github."
+                                ));
+                                "GROUP_NAME".to_string()
+                            });
+                        let title = group_name;
                         let subtitle = account.to_string();
                         chatroom_title.set_label(&title);
                         chatroom_subtitle.set_label(&subtitle);
                     } else {
-                        let user = FRIEND_LIST
-                            .get()
-                            .unwrap()
-                            .iter()
-                            .find(|user| user.uin == *account)
+                        let (user_name, user_remark): (String, String) = get_db()
+                            .query_row(
+                                "Select name, remark from friends where id=?1",
+                                [account],
+                                |row| Ok((row.get(0).unwrap(), row.get(1).unwrap())),
+                            )
                             .unwrap();
-                        let title = &user.remark;
-                        let subtitle = format!("{} ({})", user.nick, account);
+                        let title = &user_name;
+                        let subtitle = format!("{} ({})", user_remark, account);
                         chatroom_title.set_label(title);
                         chatroom_subtitle.set_label(&subtitle);
                     }
-                },
+                }
                 PushToast(content) => {
                     widgets.toast_overlay.add_toast(&Toast::new(content));
                 }
