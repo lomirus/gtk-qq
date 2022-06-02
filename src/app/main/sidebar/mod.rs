@@ -196,6 +196,7 @@ impl SimpleComponent for SidebarModel {
                 Button {
                     #[watch]
                     set_sensitive: model.is_refresh_friends_button_enabled,
+                    set_tooltip_text: Some("Refresh friends list"),
                     set_icon_name: "view-refresh-symbolic",
                     set_margin_end: 8,
                     connect_clicked[sender] => move |_| {
@@ -222,6 +223,7 @@ impl SimpleComponent for SidebarModel {
                 Button {
                     #[watch]
                     set_sensitive: model.is_refresh_groups_button_enabled,
+                    set_tooltip_text: Some("Refreshing groups list"),
                     set_icon_name: "view-refresh-symbolic",
                     set_margin_end: 8,
                     connect_clicked[sender] => move |_| {
