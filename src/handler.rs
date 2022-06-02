@@ -96,6 +96,7 @@ impl Handler for AppHandler {
                         |row| row.get(0),
                     )
                     .unwrap_or_else(|_| {
+                        println!("Failed to get group name: {}", message.group_code);
                         println!(concat!(
                             "It seems that you just got a group without name. ",
                             "Try to refresh the groups in sidebar. If the ",

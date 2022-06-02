@@ -148,7 +148,7 @@ pub async fn refresh_groups_list() -> Result<(), Box<dyn Error>> {
 
     let groups = res
         .into_iter()
-        .map(|GroupInfo { uin, name, .. }| Group { id: uin, name });
+        .map(|GroupInfo { code, name, .. }| Group { id: code, name });
 
     conn.execute("DELETE FROM groups", [])?;
     let mut stmt = conn.prepare("INSERT INTO groups values (?1, ?2)")?;
@@ -158,5 +158,3 @@ pub async fn refresh_groups_list() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-
-// 话说 GroupInfo 的 code 和 uin 有什么区别呢？
