@@ -29,6 +29,7 @@ pub struct FriendsGroup {
 pub struct Group {
     pub id: i64,
     pub name: String,
+    pub owner_id: i64,
 }
 
 pub fn init_sqlite() {
@@ -72,8 +73,9 @@ pub fn init_sqlite() {
 
     conn.execute(
         "Create table if not exists groups (
-            id     INT PRIMARY KEY,
-            name   TEXT NOT NULL
+            id          INT PRIMARY KEY,
+            name        TEXT NOT NULL,
+            owner_id    INT NOT NULL
         )",
         [],
     )
@@ -146,14 +148,23 @@ pub async fn refresh_groups_list() -> Result<(), Box<dyn Error>> {
     let client = CLIENT.get().unwrap();
     let res = client.get_group_list().await?;
 
-    let groups = res
-        .into_iter()
-        .map(|GroupInfo { code, name, .. }| Group { id: code, name });
+    let groups = res.into_iter().map(
+        |GroupInfo {
+             code,
+             name,
+             owner_uin,
+             ..
+         }| Group {
+            id: code,
+            name,
+            owner_id: owner_uin,
+        },
+    );
 
     conn.execute("DELETE FROM groups", [])?;
-    let mut stmt = conn.prepare("INSERT INTO groups values (?1, ?2)")?;
+    let mut stmt = conn.prepare("INSERT INTO groups values (?1, ?2, ?3)")?;
     for group in groups {
-        stmt.execute(params![group.id, group.name,])?;
+        stmt.execute(params![group.id, group.name, group.owner_id])?;
     }
 
     Ok(())

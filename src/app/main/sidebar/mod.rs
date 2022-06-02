@@ -95,12 +95,13 @@ impl SidebarModel {
 
         let conn = get_db();
 
-        let mut stmt = conn.prepare("Select id, name from groups order by name")?;
+        let mut stmt = conn.prepare("Select id, name, owner_id from groups order by name")?;
         let groups = stmt
             .query_map([], |row| {
                 Ok(Group {
                     id: row.get(0)?,
                     name: row.get(1)?,
+                    owner_id: row.get(2)?,
                 })
             })?
             .map(|result| result.unwrap());
