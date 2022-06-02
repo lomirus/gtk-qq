@@ -93,7 +93,7 @@ impl SidebarModel {
 
         let conn = get_db();
 
-        let mut stmt = conn.prepare("Select id, name from groups")?;
+        let mut stmt = conn.prepare("Select id, name from groups order by name")?;
         let groups = stmt
             .query_map([], |row| {
                 Ok(Group {
@@ -235,7 +235,7 @@ impl SimpleComponent for SidebarModel {
                     connect_row_activated[sender] => move |_, selected_row| {
                         let index = selected_row.index();
                         let conn = get_db();
-                        let mut stmt = conn.prepare("Select id from groups").unwrap();
+                        let mut stmt = conn.prepare("Select id from groups order by name").unwrap();
                         let mut group_iter = stmt.query_map([], |row| { row.get(0) }).unwrap();
                         let account = group_iter.nth(index as usize).unwrap().unwrap();
                         sender.output(MainMsg::SelectChatroom(account, true));
