@@ -10,7 +10,7 @@ use adw::{prelude::*, HeaderBar, ViewStack, ViewSwitcherBar, ViewSwitcherTitle};
 use gtk::{Box, Button, Entry, EntryIconPosition, ListBox, Orientation, ScrolledWindow};
 use tokio::task;
 
-use crate::db::{get_db, refresh_friends_list, refresh_groups_list, Friend, Group};
+use crate::db::sql::{get_db, refresh_friends_list, refresh_groups_list, Friend, Group};
 
 use super::MainMsg;
 use chat_item::ChatItem;

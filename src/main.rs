@@ -7,7 +7,7 @@ mod db;
 mod global;
 mod handler;
 
-use db::init_sqlite;
+use db::sql::init_sqlite;
 use gio::{resources_register, Cancellable, Resource};
 use global::{SharedApplication, APP};
 use gtk::{gio, glib::Bytes, prelude::ApplicationExt};

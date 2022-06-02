@@ -18,7 +18,7 @@ use chatroom::{Chatroom, ChatroomInitParams};
 pub use sidebar::FriendsGroup;
 use sidebar::{SidebarModel, SidebarMsg};
 
-use crate::db::{get_db, get_group_name};
+use crate::db::sql::{get_db, get_group_name};
 
 pub static MAIN_SENDER: OnceCell<ComponentSender<MainPageModel>> = OnceCell::new();
 

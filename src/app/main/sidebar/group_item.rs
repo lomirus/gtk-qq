@@ -4,7 +4,7 @@ use relm4::{adw, gtk, Sender};
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation};
 
-use crate::db::Group;
+use crate::db::sql::Group;
 
 use super::SidebarMsg;
 

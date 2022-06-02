@@ -10,7 +10,7 @@ use gtk::{Box, Button, Entry, Orientation, ScrolledWindow, Stack, StackPage};
 use ricq::msg::{elem, MessageChain};
 use tokio::task;
 
-use crate::db::get_friend_remark;
+use crate::db::sql::get_friend_remark;
 use crate::handler::{ACCOUNT, CLIENT};
 
 use super::{MainMsg, Message};

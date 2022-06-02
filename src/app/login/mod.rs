@@ -19,7 +19,7 @@ use crate::app::AppMessage;
 use crate::handler::{AppHandler, ACCOUNT, CLIENT};
 use crate::{
     actions::{AboutAction, ShortcutsAction},
-    db::get_db,
+    db::sql::get_db,
 };
 
 #[derive(Debug)]

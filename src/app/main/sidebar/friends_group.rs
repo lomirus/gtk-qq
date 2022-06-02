@@ -6,7 +6,7 @@ use gtk::{glib::clone, Align, Box, GestureClick, Label, Orientation, Widget};
 
 use super::SidebarMsg;
 use crate::app::main::{MainMsg, MAIN_SENDER};
-use crate::db::Friend;
+use crate::db::sql::Friend;
 
 pub enum ContactGroupMessage {
     SelectUser(i64),

@@ -4,7 +4,7 @@ use relm4::{adw, gtk, Sender};
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, Orientation};
 
-use crate::db::{get_friend_remark, get_group_name};
+use crate::db::sql::{get_friend_remark, get_group_name};
 
 use super::SidebarMsg;
 

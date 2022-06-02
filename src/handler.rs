@@ -9,7 +9,7 @@ use ricq::msg::MessageChain;
 use ricq::Client;
 
 use crate::app::main::{MainMsg, Message, MAIN_SENDER};
-use crate::db::{get_friend_remark, get_group_name};
+use crate::db::sql::{get_friend_remark, get_group_name};
 use crate::APP;
 
 pub struct AppHandler;
