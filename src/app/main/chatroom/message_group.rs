@@ -4,7 +4,6 @@ use relm4::{adw, gtk, Sender};
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, Orientation, Widget};
 
-use crate::db::{get_db, Friend};
 use crate::handler::ACCOUNT;
 
 use super::ChatroomMsg;
@@ -12,6 +11,7 @@ use super::ChatroomMsg;
 #[derive(Debug, Clone)]
 pub struct MessageGroup {
     pub account: i64,
+    pub name: String,
     pub messages: Vec<String>,
 }
 
@@ -66,35 +66,13 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
             }
         }
 
-        // TODO: Get group members' info
-        let conn = get_db();
-        let user = conn
-            .query_row(
-                "Select name, remark, group_id from friends where id=?1",
-                [self.account],
-                |row| {
-                    Ok(Friend {
-                        id: self.account,
-                        name: row.get(0).unwrap(),
-                        remark: row.get(1).unwrap(),
-                        group_id: row.get(2).unwrap(),
-                    })
-                },
-            )
-            .unwrap_or(Friend {
-                id: self.account,
-                name: self.account.to_string(),
-                remark: self.account.to_string(),
-                group_id: 0,
-            });
-
         relm4::view! {
             main_box = Box {
                 set_orientation: Orientation::Vertical,
                 set_spacing: 4,
                 append: username_box = &Box {
                     Label {
-                        set_label: &user.remark,
+                        set_label: &self.name,
                         set_css_classes: &["caption"]
                     }
                 },

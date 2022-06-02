@@ -8,8 +8,8 @@ use ricq::msg::elem::{FingerGuessing, RQElem};
 use ricq::msg::MessageChain;
 use ricq::Client;
 
-use crate::app::main::{MainMsg, MAIN_SENDER};
-use crate::db::get_db;
+use crate::app::main::{MainMsg, MAIN_SENDER, Message};
+use crate::db::{get_friend_remark, get_group_name};
 use crate::APP;
 
 pub struct AppHandler;
@@ -82,29 +82,16 @@ impl Handler for AppHandler {
                 let content = get_text_from(&message.elements);
                 main_sender.input(MainMsg::GroupMessage {
                     group_id: message.group_code,
-                    sender_id: message.from_uin,
-                    content: content.clone(),
+                    message: Message {
+                        sender_id: message.from_uin,
+                        sender_name: message.group_card,
+                        content: content.clone(),
+                    }
                 });
 
                 // Send notification
                 let app = APP.get().unwrap();
-                let conn = get_db();
-                let group_name: String = conn
-                    .query_row(
-                        "Select name from groups where id=?1",
-                        [message.group_code],
-                        |row| row.get(0),
-                    )
-                    .unwrap_or_else(|_| {
-                        println!("Failed to get group name: {}", message.group_code);
-                        println!(concat!(
-                            "It seems that you just got a group without name. ",
-                            "Try to refresh the groups in sidebar. If the ",
-                            "problem still exists, please report it on ",
-                            "Github."
-                        ));
-                        "GROUP_NAME".to_string()
-                    });
+                let group_name: String = get_group_name(message.group_code);
                 app.send_notification(&group_name, &content);
             }
             GroupAudioMessage(GroupAudioMessageEvent { client, message }) => {
@@ -121,21 +108,16 @@ impl Handler for AppHandler {
                 let content = get_text_from(&message.elements);
                 main_sender.input(MainMsg::FriendMessage {
                     friend_id,
-                    sender_id: message.from_uin,
-                    content: content.clone(),
+                    message: Message {
+                        sender_id: message.from_uin,
+                        sender_name: get_friend_remark(message.from_uin),
+                        content: content.clone(),
+                    }
                 });
 
                 // Send notification
                 let app = APP.get().unwrap();
-                let conn = get_db();
-                let user_remark: String = conn
-                    .query_row(
-                        "Select remark from friends where id=?1",
-                        [friend_id],
-                        |row| row.get(0),
-                    )
-                    .unwrap();
-                app.send_notification(&user_remark, &content);
+                app.send_notification(&get_friend_remark(friend_id), &content);
             }
             FriendAudioMessage(FriendAudioMessageEvent { client, message }) => {
                 println!("FriendAudioMessage");

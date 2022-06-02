@@ -18,7 +18,7 @@ use chatroom::{Chatroom, ChatroomInitParams};
 pub use sidebar::FriendsGroup;
 use sidebar::{SidebarModel, SidebarMsg};
 
-use crate::db::get_db;
+use crate::db::{get_db, get_group_name};
 
 pub static MAIN_SENDER: OnceCell<ComponentSender<MainPageModel>> = OnceCell::new();
 
@@ -54,29 +54,23 @@ impl MainPageModel {
         });
     }
 
-    fn push_friend_message(&self, friend_id: i64, sender_id: i64, content: String) {
+    fn push_friend_message(&self, friend_id: i64, message: Message) {
         let mut chatrooms = self.chatrooms.borrow_mut();
         for i in 0..chatrooms.len() {
             let mut chatroom = chatrooms.get_mut(i);
             if chatroom.account == friend_id && !chatroom.is_group {
-                chatroom.push_message(Message {
-                    sender: sender_id,
-                    content,
-                });
+                chatroom.push_message(message);
                 break;
             }
         }
     }
 
-    fn push_group_message(&self, group_id: i64, sender_id: i64, content: String) {
+    fn push_group_message(&self, group_id: i64, message: Message) {
         let mut chatrooms = self.chatrooms.borrow_mut();
         for i in 0..chatrooms.len() {
             let mut chatroom = chatrooms.get_mut(i);
             if chatroom.account == group_id && chatroom.is_group {
-                chatroom.push_message(Message {
-                    sender: sender_id,
-                    content,
-                });
+                chatroom.push_message(message);
                 break;
             }
         }
@@ -85,7 +79,8 @@ impl MainPageModel {
 
 #[derive(Clone, Debug)]
 pub struct Message {
-    pub sender: i64,
+    pub sender_id: i64,
+    pub sender_name: String,
     pub content: String,
 }
 
@@ -94,13 +89,11 @@ pub enum MainMsg {
     WindowFolded,
     GroupMessage {
         group_id: i64,
-        sender_id: i64,
-        content: String,
+        message: Message,
     },
     FriendMessage {
         friend_id: i64,
-        sender_id: i64,
-        content: String,
+        message: Message,
     },
     SelectChatroom(i64, bool),
     PushToast(String),
@@ -216,18 +209,17 @@ impl SimpleComponent for MainPageModel {
             }
             FriendMessage {
                 friend_id,
-                sender_id,
-                content,
+                message
             } => {
                 use SidebarMsg::*;
                 if self.is_item_in_list(friend_id, false) {
                     self.sidebar
                         .sender()
-                        .send(UpdateChatItem(friend_id, false, content.clone()));
+                        .send(UpdateChatItem(friend_id, false, message.content.clone()));
                 } else {
                     self.sidebar
                         .sender()
-                        .send(InsertChatItem(friend_id, false, content.clone()));
+                        .send(InsertChatItem(friend_id, false, message.content.clone()));
                     self.insert_chatroom(friend_id, false);
                     // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
                     // 以触发自动更新 chatroom 的标题与副标题。
@@ -236,22 +228,21 @@ impl SimpleComponent for MainPageModel {
                     }
                 }
 
-                self.push_friend_message(friend_id, sender_id, content);
+                self.push_friend_message(friend_id, message);
             }
             GroupMessage {
                 group_id,
-                sender_id,
-                content,
+                message
             } => {
                 use SidebarMsg::*;
                 if self.is_item_in_list(group_id, true) {
                     self.sidebar
                         .sender()
-                        .send(UpdateChatItem(group_id, true, content.clone()));
+                        .send(UpdateChatItem(group_id, true, message.content.clone()));
                 } else {
                     self.sidebar
                         .sender()
-                        .send(InsertChatItem(group_id, true, content.clone()));
+                        .send(InsertChatItem(group_id, true, message.content.clone()));
                     self.insert_chatroom(group_id, true);
                     // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
                     // 以触发自动更新 chatroom 的标题与副标题。
@@ -260,7 +251,7 @@ impl SimpleComponent for MainPageModel {
                     }
                 }
 
-                self.push_group_message(group_id, sender_id, content);
+                self.push_group_message(group_id, message);
             }
             PushToast(content) => {
                 self.message = Some(ViewMsg::PushToast(content));
@@ -279,20 +270,7 @@ impl SimpleComponent for MainPageModel {
                         &format!("{} {}", account, if *is_group { "group" } else { "friend" });
                     chatroom_stack.set_visible_child_name(child_name);
                     if *is_group {
-                        let group_name: String = get_db()
-                            .query_row("Select name from groups where id=?1", [account], |row| {
-                                row.get(0)
-                            })
-                            .unwrap_or_else(|_| {
-                                println!("Failed to get group name: {}", account);
-                                println!(concat!(
-                                    "It seems that you just got a group without name. ",
-                                    "Try to refresh the groups in sidebar. If the ",
-                                    "problem still exists, please report it on ",
-                                    "Github."
-                                ));
-                                "GROUP_NAME".to_string()
-                            });
+                        let group_name: String = get_group_name(*account);
                         let title = group_name;
                         let subtitle = account.to_string();
                         chatroom_title.set_label(&title);

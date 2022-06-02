@@ -169,3 +169,33 @@ pub async fn refresh_groups_list() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+pub fn get_friend_remark(friend_id: i64) -> String {
+    get_db()
+        .query_row("Select remark from friends where id=?1", [friend_id], |row| {
+            row.get(0)
+        })
+        .unwrap_or_else(|_| {
+            println!("Failed to get friend remark: {}", friend_id);
+            println!(concat!(
+                "Help: Try to refresh the friends list in sidebar. ",
+                "If the problem still exists, please report it on Github.",
+            ));
+            friend_id.to_string()
+        })
+}
+
+pub fn get_group_name(group_id: i64) -> String {
+    get_db()
+        .query_row("Select name from groups where id=?1", [group_id], |row| {
+            row.get(0)
+        })
+        .unwrap_or_else(|_| {
+            println!("Failed to get group name: {}", group_id);
+            println!(concat!(
+                "Help: Try to refresh the groups list in sidebar. ",
+                "If the problem still exists, please report it on Github.",
+            ));
+            group_id.to_string()
+        })
+}

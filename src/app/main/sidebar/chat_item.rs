@@ -4,7 +4,7 @@ use relm4::{adw, gtk, Sender};
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, Orientation};
 
-use crate::db::get_db;
+use crate::db::{get_friend_remark, get_group_name};
 
 use super::SidebarMsg;
 
@@ -62,24 +62,11 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
     ) -> Self {
         let (account, is_group, last_message) = init_params;
         let last_message = last_message.replace('\n', " ");
-        let conn = get_db();
         let name = if is_group {
-            conn.query_row("Select name from groups where id=?1", [account], |row| {
-                row.get(0)
-            })
+            get_group_name(account)
         } else {
-            conn.query_row("Select remark from friends where id=?1", [account], |row| {
-                row.get(0)
-            })
-        }
-        .unwrap_or_else(|_| {
-            println!(concat!(
-                "It seems that you just got a chat item without name. ",
-                "Try to refresh the contact in sidebar. If the ",
-                "problem still exists, please report it on Github.",
-            ));
-            "CHAT_ITEM_NAME".to_string()
-        });
+            get_friend_remark(account)
+        };
         ChatItem {
             account,
             is_group,

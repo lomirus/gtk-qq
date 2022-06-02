@@ -10,6 +10,7 @@ use gtk::{Box, Button, Entry, Orientation, ScrolledWindow, Stack, StackPage};
 use ricq::msg::{elem, MessageChain};
 use tokio::task;
 
+use crate::db::get_friend_remark;
 use crate::handler::{ACCOUNT, CLIENT};
 
 use super::{MainMsg, Message};
@@ -28,18 +29,20 @@ impl Chatroom {
     pub fn push_message(&mut self, message: Message) {
         if self.messages.is_empty() {
             self.messages.push_back(MessageGroup {
-                account: message.sender,
+                account: message.sender_id,
+                name: message.sender_name,
                 messages: vec![message.content],
             });
         } else {
             let mut last_message_group = self.messages.pop_back().unwrap();
-            if last_message_group.account == message.sender {
+            if last_message_group.account == message.sender_id {
                 last_message_group.messages.push(message.content);
                 self.messages.push_back(last_message_group);
             } else {
                 self.messages.push_back(last_message_group);
                 self.messages.push_back(MessageGroup {
-                    account: message.sender,
+                    account: message.sender_id,
+                    name: message.sender_name,
                     messages: vec![message.content],
                 });
             }
@@ -57,8 +60,11 @@ async fn send_message(target: i64, is_group: bool, content: String, output: Send
         match client.send_group_message(target, message).await {
             Ok(_) => output.send(MainMsg::GroupMessage {
                 group_id: target,
-                sender_id: self_account,
-                content,
+                message: Message {
+                    sender_id: self_account,
+                    sender_name: get_friend_remark(self_account),
+                    content,
+                }
             }),
             Err(err) => panic!("err: {:?}", err),
         }
@@ -66,8 +72,11 @@ async fn send_message(target: i64, is_group: bool, content: String, output: Send
         match client.send_friend_message(target, message).await {
             Ok(_) => output.send(MainMsg::FriendMessage {
                 friend_id: target,
-                sender_id: self_account,
-                content,
+                message: Message {
+                    sender_id: self_account,
+                    sender_name: get_friend_remark(self_account),
+                    content,
+                }
             }),
             Err(err) => panic!("err: {:?}", err),
         }
