@@ -272,14 +272,16 @@ impl SimpleComponent for SidebarModel {
         let groups_list: FactoryVecDeque<ListBox, Group, SidebarMsg> =
             FactoryVecDeque::new(widgets.contact_groups.clone(), &sender.input);
 
-        ComponentParts {
-            model: SidebarModel {
-                chats_list: RefCell::new(chats_list),
-                friends_list: RefCell::new(friends_list),
-                groups_list: RefCell::new(groups_list),
-            },
-            widgets,
-        }
+        let model = SidebarModel {
+            chats_list: RefCell::new(chats_list),
+            friends_list: RefCell::new(friends_list),
+            groups_list: RefCell::new(groups_list),
+        };
+
+        model.render_friends().unwrap();
+        model.render_groups().unwrap();
+
+        ComponentParts { model, widgets }
     }
 
     fn update(&mut self, msg: SidebarMsg, sender: &ComponentSender<Self>) {
