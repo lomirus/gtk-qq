@@ -1,11 +1,14 @@
 use relm4::factory::{DynamicIndex, FactoryComponent};
+use relm4::gtk::Picture;
 use relm4::{adw, gtk, Sender, WidgetPlus};
 
 use adw::{prelude::*, Avatar, ExpanderRow};
 use gtk::{glib::clone, Align, Box, GestureClick, Label, Orientation, Widget};
+use tokio::task;
 
 use super::SidebarMsg;
 use crate::app::main::{MainMsg, MAIN_SENDER};
+use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::db::sql::Friend;
 
 pub enum ContactGroupMessage {
@@ -79,7 +82,7 @@ impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
             relm4::view! {
                 child = Box {
                     set_margin_all: 8,
-                    Avatar {
+                    append: avatar = &Avatar {
                         set_text: Some(&friend.name),
                         set_show_initials: true,
                         set_size: 48,
@@ -103,6 +106,18 @@ impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
                     add_controller: &gesture,
                 }
             }
+
+            let avatar_path = get_user_avatar_path(friend.id);
+
+            if avatar_path.exists() {
+                let image = Picture::for_filename(avatar_path);
+                if let Some(paintable) = image.paintable() {
+                    avatar.set_custom_image(Some(&paintable));
+                }
+            } else {
+                task::spawn(download_user_avatar_file(friend.id));
+            }
+
             group.add_row(&child);
         }
     }

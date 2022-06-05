@@ -24,6 +24,7 @@ async-trait = "0.1.53"
 once_cell = "1.11.0"
 rusqlite = "0.27.0"
 dirs = "4.0.0"
+reqwest = "0.11.10"
 
 [profile.release]
 lto = true
