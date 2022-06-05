@@ -27,7 +27,13 @@ Unofficial Linux [QQ](https://im.qq.com/) client, based on GTK4 and libadwaita, 
 
 ### Requirements
 
-Make sure you have installed [`meson`](https://mesonbuild.com/Quick-guide.html), and dev libs of gtk4 and libadwaita before building.
+You will need rustc to build this project. The recommended way to manage rust toolchain is to use the rustup:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Then make sure you have installed [`meson`](https://mesonbuild.com/Quick-guide.html), and the neccessary libraries before building:
 
 #### Ubuntu
 
