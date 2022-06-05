@@ -64,7 +64,7 @@ async fn send_message(target: i64, is_group: bool, content: String, output: Send
                     sender_id: self_account,
                     sender_name: get_friend_remark(self_account),
                     content,
-                }
+                },
             }),
             Err(err) => panic!("err: {:?}", err),
         }
@@ -76,7 +76,7 @@ async fn send_message(target: i64, is_group: bool, content: String, output: Send
                     sender_id: self_account,
                     sender_name: get_friend_remark(self_account),
                     content,
-                }
+                },
             }),
             Err(err) => panic!("err: {:?}", err),
         }

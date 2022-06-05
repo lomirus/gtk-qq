@@ -87,14 +87,8 @@ pub struct Message {
 #[derive(Debug)]
 pub enum MainMsg {
     WindowFolded,
-    GroupMessage {
-        group_id: i64,
-        message: Message,
-    },
-    FriendMessage {
-        friend_id: i64,
-        message: Message,
-    },
+    GroupMessage { group_id: i64, message: Message },
+    FriendMessage { friend_id: i64, message: Message },
     SelectChatroom(i64, bool),
     PushToast(String),
 }
@@ -207,19 +201,20 @@ impl SimpleComponent for MainPageModel {
 
                 self.message = Some(ViewMsg::SelectChatroom(account, is_group));
             }
-            FriendMessage {
-                friend_id,
-                message
-            } => {
+            FriendMessage { friend_id, message } => {
                 use SidebarMsg::*;
                 if self.is_item_in_list(friend_id, false) {
-                    self.sidebar
-                        .sender()
-                        .send(UpdateChatItem(friend_id, false, message.content.clone()));
+                    self.sidebar.sender().send(UpdateChatItem(
+                        friend_id,
+                        false,
+                        message.content.clone(),
+                    ));
                 } else {
-                    self.sidebar
-                        .sender()
-                        .send(InsertChatItem(friend_id, false, message.content.clone()));
+                    self.sidebar.sender().send(InsertChatItem(
+                        friend_id,
+                        false,
+                        message.content.clone(),
+                    ));
                     self.insert_chatroom(friend_id, false);
                     // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
                     // 以触发自动更新 chatroom 的标题与副标题。
@@ -230,19 +225,20 @@ impl SimpleComponent for MainPageModel {
 
                 self.push_friend_message(friend_id, message);
             }
-            GroupMessage {
-                group_id,
-                message
-            } => {
+            GroupMessage { group_id, message } => {
                 use SidebarMsg::*;
                 if self.is_item_in_list(group_id, true) {
-                    self.sidebar
-                        .sender()
-                        .send(UpdateChatItem(group_id, true, message.content.clone()));
+                    self.sidebar.sender().send(UpdateChatItem(
+                        group_id,
+                        true,
+                        message.content.clone(),
+                    ));
                 } else {
-                    self.sidebar
-                        .sender()
-                        .send(InsertChatItem(group_id, true, message.content.clone()));
+                    self.sidebar.sender().send(InsertChatItem(
+                        group_id,
+                        true,
+                        message.content.clone(),
+                    ));
                     self.insert_chatroom(group_id, true);
                     // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
                     // 以触发自动更新 chatroom 的标题与副标题。

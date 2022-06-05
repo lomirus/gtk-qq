@@ -172,9 +172,11 @@ pub async fn refresh_groups_list() -> Result<(), Box<dyn Error>> {
 
 pub fn get_friend_remark(friend_id: i64) -> String {
     get_db()
-        .query_row("Select remark from friends where id=?1", [friend_id], |row| {
-            row.get(0)
-        })
+        .query_row(
+            "Select remark from friends where id=?1",
+            [friend_id],
+            |row| row.get(0),
+        )
         .unwrap_or_else(|_| {
             println!("Failed to get friend remark: {}", friend_id);
             println!(concat!(
