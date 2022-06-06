@@ -1,6 +1,11 @@
 use std::sync::Arc;
 
-use relm4::{adw, gtk, ComponentParts, ComponentSender, JoinHandle, SimpleComponent};
+use qrcode_png::{Color, QrCode, QrCodeEcc};
+use relm4::{
+    adw::{self, Window},
+    gtk::{self, Picture},
+    ComponentParts, ComponentSender, SimpleComponent, WidgetPlus,
+};
 
 use adw::{prelude::*, ActionRow, Avatar, HeaderBar, PreferencesGroup, Toast, ToastOverlay};
 use gtk::{Align, Box, Button, Entry, EntryBuffer, Label, MenuButton, Orientation};
@@ -13,14 +18,18 @@ use ricq::{
     Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse, LoginUnknownStatus,
 };
 use rusqlite::params;
-use tokio::{net::TcpStream, task};
+use tokio::{
+    fs::{self, create_dir_all},
+    net::TcpStream,
+    task,
+};
 
-use crate::app::AppMessage;
 use crate::handler::{AppHandler, ACCOUNT, CLIENT};
 use crate::{
     actions::{AboutAction, ShortcutsAction},
     db::sql::get_db,
 };
+use crate::{app::AppMessage, global::WINDOW};
 
 #[derive(Debug)]
 pub struct LoginPageModel {
@@ -30,13 +39,13 @@ pub struct LoginPageModel {
     toast: Option<String>,
 }
 
-#[derive(Debug)]
 pub enum LoginPageMsg {
     LoginStart,
     LoginSuccessful,
     LoginFailed(String),
     AccountChange(String),
     PasswordChange(String),
+    NeedCaptcha(String, Arc<Client>, i64, String),
 }
 
 async fn login(account: i64, password: String, sender: ComponentSender<LoginPageModel>) {
@@ -57,7 +66,7 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
         }
     };
     let client_cloned = client.clone();
-    let handle = tokio::spawn(async move { client_cloned.start(stream).await });
+    tokio::spawn(async move { client_cloned.start(stream).await });
     task::yield_now().await;
     let res = match client.password_login(account, &password).await {
         Ok(res) => res,
@@ -66,22 +75,49 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
             return;
         }
     };
-    // Handle login response
+    handle_login_response(res, account, password, client, sender).await;
+}
+
+async fn handle_login_response(
+    res: LoginResponse,
+    account: i64,
+    password: String,
+    client: Arc<Client>,
+    sender: ComponentSender<LoginPageModel>,
+) {
+    use LoginPageMsg::LoginFailed;
     match res {
         LoginResponse::Success(_) => {
-            finish_login(account, password, client, handle, sender).await;
+            finish_login(account, password, client, sender).await;
         }
-        LoginResponse::NeedCaptcha(LoginNeedCaptcha {
-            verify_url,
-            image_captcha,
-            ..
-        }) => {
-            sender.input(LoginFailed(
-                "Need Captcha. See more in the console.".to_string(),
+        LoginResponse::NeedCaptcha(LoginNeedCaptcha { verify_url, .. }) => {
+            // Get the captcha url qrcode image path
+            let mut path = dirs::home_dir().unwrap();
+            path.push(".gtk-qq");
+            if let Err(err) = create_dir_all(path.clone()).await {
+                sender.input(LoginFailed(err.to_string()));
+                return;
+            }
+            path.push("captcha_url.png");
+
+            // Generate qrcode image
+            let verify_url = verify_url.unwrap();
+            let mut qrcode = QrCode::new(verify_url.clone(), QrCodeEcc::Low).unwrap();
+            qrcode.margin(10);
+            qrcode.zoom(5);
+
+            // Write the image
+            let buf = qrcode.generate(Color::Grayscale(0, 255)).unwrap();
+            if let Err(err) = fs::write(path.clone(), buf).await {
+                sender.input(LoginFailed(err.to_string()));
+                return;
+            };
+            sender.input(LoginPageMsg::NeedCaptcha(
+                verify_url,
+                client.clone(),
+                account,
+                password,
             ));
-            println!("------[TODO: Add GUI for this]");
-            println!("verify_url: {:?}", verify_url);
-            println!("image_captcha: {:?}", image_captcha);
         }
         LoginResponse::AccountFrozen => {
             sender.input(LoginFailed("Account Frozen".to_string()));
@@ -107,7 +143,7 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
             if let Err(err) = client.device_lock_login().await {
                 sender.input(LoginFailed(err.to_string()));
             } else {
-                finish_login(account, password, client, handle, sender).await;
+                finish_login(account, password, client, sender).await;
             }
         }
         LoginResponse::UnknownStatus(LoginUnknownStatus { message, .. }) => {
@@ -116,11 +152,25 @@ async fn login(account: i64, password: String, sender: ComponentSender<LoginPage
     }
 }
 
+async fn submit_ticket(
+    client: Arc<Client>,
+    ticket: String,
+    sender: ComponentSender<LoginPageModel>,
+    account: i64,
+    password: String,
+) {
+    match client.submit_ticket(&ticket).await {
+        Ok(res) => handle_login_response(res, account, password, client, sender).await,
+        Err(err) => {
+            sender.input(LoginPageMsg::LoginFailed(err.to_string()));
+        }
+    }
+}
+
 async fn finish_login(
     account: i64,
     password: String,
     client: Arc<Client>,
-    handle: JoinHandle<()>,
     sender: ComponentSender<LoginPageModel>,
 ) {
     use LoginPageMsg::{LoginFailed, LoginSuccessful};
@@ -147,7 +197,6 @@ async fn finish_login(
     // Execute Ricq `after_login()`
     after_login(&client).await;
     sender.input(LoginSuccessful);
-    handle.await.unwrap();
 }
 
 fn get_login_info() -> (String, String) {
@@ -279,6 +328,98 @@ impl SimpleComponent for LoginPageModel {
             }
             AccountChange(new_account) => self.account = new_account,
             PasswordChange(new_password) => self.password = new_password,
+            NeedCaptcha(verify_url, client, account, password) => {
+                sender.input(LoginPageMsg::LoginFailed(
+                    "Need Captcha. See more in the pop-up window.".to_string(),
+                ));
+                let window = Window::builder()
+                    .transient_for(&WINDOW.get().unwrap().window)
+                    .default_width(640)
+                    .build();
+                println!("{:?}", WINDOW.get().unwrap().window);
+                window.connect_destroy(|_| println!("closed window"));
+                let window_cloned = window.clone();
+                let mut path = dirs::home_dir().unwrap();
+                path.push(".gtk-qq");
+                path.push("captcha_url.png");
+                relm4::view! {
+                    ticket_entry = Entry {
+                        set_placeholder_text: Some("Paste the ticket here..."),
+                        set_margin_end: 8
+                    }
+                }
+                let ticket_buffer = ticket_entry.buffer();
+                let verify_url = verify_url.replace('&', "&amp;");
+                relm4::view! {
+                    vbox = Box {
+                        set_orientation: Orientation::Vertical,
+                        HeaderBar {
+                            set_title_widget = Some(&Label) {
+                                set_label: "Captcha Verify Introduction"
+                            },
+                        },
+                        Box {
+                            set_valign: Align::Center,
+                            set_halign: Align::Center,
+                            set_vexpand: true,
+                            set_spacing: 24,
+                            Box {
+                                set_margin_all: 16,
+                                set_orientation: Orientation::Vertical,
+                                set_halign: Align::Start,
+                                set_spacing: 8,
+                                Label {
+                                    set_xalign: 0.0,
+                                    set_markup: r#"1. Install the tool on your android phone: <a href="https://github.com/mzdluo123/TxCaptchaHelper">https://github.com/mzdluo123/TxCaptchaHelper</a>."#,
+                                },
+                                Label {
+                                    set_xalign: 0.0,
+                                    set_text: "2. Scan the qrcode and get the ticket."
+                                },
+                                Box {
+                                    Label {
+                                        set_text: "3. "
+                                    },
+                                    append: &ticket_entry,
+                                    Button {
+                                        set_label: "Submit Ticket",
+                                        connect_clicked[sender] => move |_| {
+                                            let ticket = ticket_buffer.text();
+                                            task::spawn(submit_ticket(client.clone(), ticket, sender.clone(), account, password.clone()));
+                                            window_cloned.close();
+                                        },
+                                    }
+                                },
+                                Label {
+                                    set_xalign: 0.0,
+                                    set_markup: &format!(r#"Help: If you do not have an Android phone to install the tool, open the <a href="{}">verify link</a> in the"#, verify_url),
+
+                                },
+                                Label {
+                                    set_xalign: 0.0,
+                                    set_text: "browser manually, open the devtools and switch to the network panel. After you passed the",
+                                },
+                                Label {
+                                    set_xalign: 0.0,
+                                    set_text: "verification, you will find a request whose response contains the `ticket`. Then just paste it",
+                                },
+                                Label {
+                                    set_xalign: 0.0,
+                                    set_text: "above. The result would be same. It just maybe more complex if you don't know devtools well.",
+                                },
+                            },
+                            Picture {
+                                set_filename: Some(&path),
+                                set_width_request: 240,
+                                set_can_shrink: true
+                            },
+                        }
+
+                    }
+                }
+                window.set_content(Some(&vbox));
+                window.present();
+            }
         }
     }
 

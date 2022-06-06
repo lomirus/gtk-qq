@@ -9,7 +9,10 @@ use relm4::{
 use adw::{prelude::*, ApplicationWindow};
 use gtk::{Box, Stack, StackTransitionType};
 
-use crate::actions::create_gactions;
+use crate::{
+    actions::create_gactions,
+    global::{SharedWindow, WINDOW},
+};
 use login::LoginPageModel;
 use main::MainPageModel;
 
@@ -36,7 +39,7 @@ impl SimpleComponent for AppModel {
     type Input = AppMessage;
     type Output = ();
     view! {
-        ApplicationWindow {
+        window = ApplicationWindow {
             add_css_class: "devel",
             set_default_size: (960, 540),
             set_content: stack = Some(&Stack) {
@@ -80,6 +83,10 @@ impl SimpleComponent for AppModel {
 
         let actions = create_gactions(root.clone());
         root.insert_action_group("menu", Some(&actions));
+
+        let window_cloned = widgets.window.clone();
+        let shared_window = SharedWindow::new(window_cloned);
+        WINDOW.set(shared_window).unwrap();
 
         ComponentParts { model, widgets }
     }
