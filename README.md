@@ -1,6 +1,6 @@
 # GTK QQ
 
-[![license-badge]](license-link)
+[![license-badge]][license-link]
 [![dependency-badge]][dependency-link]
 [![check-badge]][check-link]
 [![build-badge]][build-link]
