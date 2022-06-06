@@ -1,15 +1,19 @@
 # GTK QQ
 
+[![license-badge]](license-link)
+[![dependency-badge]][dependency-link]
 [![check-badge]][check-link]
 [![build-badge]][build-link]
-[![dependency-badge]][dependency-link]
 
+[license-badge]: https://img.shields.io/badge/License-AGPL%20v3-blue.svg
+[license-link]: https://www.gnu.org/licenses/agpl-3.0
+[dependency-badge]: https://deps.rs/repo/github/lomirus/gtk-qq/status.svg
+[dependency-link]: https://deps.rs/repo/github/lomirus/gtk-qq
 [check-badge]: https://github.com/lomirus/gtk-qq/workflows/check/badge.svg
 [check-link]: https://github.com/lomirus/gtk-qq/actions/workflows/check.yaml
 [build-badge]: https://github.com/lomirus/gtk-qq/workflows/build/badge.svg
 [build-link]: https://github.com/lomirus/gtk-qq/actions/workflows/build.yaml
-[dependency-badge]: https://deps.rs/repo/github/lomirus/gtk-qq/status.svg
-[dependency-link]: https://deps.rs/repo/github/lomirus/gtk-qq
+
 
 Unofficial Linux [QQ](https://im.qq.com/) client, based on GTK4 and libadwaita, developed with Rust and [Relm4](https://relm4.org/).
 
