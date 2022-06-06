@@ -13,6 +13,8 @@
 
 Unofficial Linux [QQ](https://im.qq.com/) client, based on GTK4 and libadwaita, developed with Rust and [Relm4](https://relm4.org/).
 
+This app uses [ricq](https://github.com/lz1998/ricq) as the rust bindings of QQ APIs.
+
 ## Screenshots
 
 | Light                                      | Dark                                     |
