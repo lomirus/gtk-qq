@@ -109,7 +109,6 @@ impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
             }
 
             let avatar_path = get_user_avatar_path(friend.id);
-
             if avatar_path.exists() {
                 if let Ok(pixbuf) = Pixbuf::from_file_at_size(avatar_path, 48, 48) {
                     let image = Picture::for_pixbuf(&pixbuf);

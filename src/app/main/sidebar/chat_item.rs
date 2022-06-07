@@ -1,9 +1,13 @@
 use relm4::factory::{DynamicIndex, FactoryComponent};
+use relm4::gtk::Picture;
+use relm4::gtk::gdk_pixbuf::Pixbuf;
 use relm4::{adw, gtk, Sender};
 
 use adw::{prelude::*, Avatar};
-use gtk::{Align, Box, Label, ListBox, Orientation};
+use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation};
+use tokio::task;
 
+use crate::db::fs::{get_user_avatar_path, download_user_avatar_file};
 use crate::db::sql::{get_friend_remark, get_group_name};
 
 use super::SidebarMsg;
@@ -16,7 +20,10 @@ pub struct ChatItem {
     pub last_message: String,
 }
 
-#[relm4::factory(pub)]
+pub struct ChatItemWidgets {
+    pub last_message: Label,
+}
+
 impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
     type InitParams = (i64, bool, String);
     type Widgets = ChatItemWidgets;
@@ -24,17 +31,53 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
     type Output = ();
     type Command = ();
     type CommandOutput = ();
+    type Root = Box;
 
-    view! {
-        root = Box {
-            set_margin_top: 8,
-            set_margin_bottom: 8,
+    fn init_root(&self) -> Self::Root {
+        relm4::view! {
+            root = Box {
+                set_margin_top: 8,
+                set_margin_bottom: 8,
+            }
+        }
+
+        root
+    }
+
+    fn init_widgets(
+        &mut self,
+        _index: &DynamicIndex,
+        root: &Self::Root,
+        _returned_widget: &ListBoxRow,
+        _input: &Sender<Self::Input>,
+        _output: &Sender<Self::Output>,
+    ) -> Self::Widgets {
+        relm4::view! {
+            #[name = "avatar"]
             Avatar {
                 set_text: Some(&self.name),
                 set_show_initials: true,
                 set_size: 48,
                 set_margin_end: 8
-            },
+            }
+        };
+
+        if !self.is_group {
+            let avatar_path = get_user_avatar_path(self.account);
+            if avatar_path.exists() {
+                if let Ok(pixbuf) = Pixbuf::from_file_at_size(avatar_path, 48, 48) {
+                    let image = Picture::for_pixbuf(&pixbuf);
+                    if let Some(paintable) = image.paintable() {
+                        avatar.set_custom_image(Some(&paintable));
+                    }
+                }
+            } else {
+                task::spawn(download_user_avatar_file(self.account));
+            }
+        }
+
+        relm4::view! {
+            #[name = "info"]
             Box {
                 set_orientation: Orientation::Vertical,
                 set_halign: Align::Start,
@@ -49,9 +92,14 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
                     set_text: self.last_message.as_str(),
                     add_css_class: "caption",
                     set_xalign: 0.0,
-                },
-            },
-        }
+                }
+            }
+        };
+
+        root.append(&avatar);
+        root.append(&info);
+
+        ChatItemWidgets { last_message }
     }
 
     fn init_model(
@@ -75,7 +123,12 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
         }
     }
 
-    fn pre_view() {
+    fn update_view(
+        &self,
+        widgets: &mut Self::Widgets,
+        _input: &Sender<Self::Input>,
+        _output: &Sender<Self::Output>,
+    ) {
         widgets.last_message.set_label(&self.last_message);
     }
 }
