@@ -163,19 +163,10 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
                 set_show_emoji_icon: true,
                 set_placeholder_text: Some("Send a message..."),
                 set_margin_end: 8,
-                connect_activate[input] => move |e| {
-                    if !e.buffer().text().is_empty(){
-                        input.send(ChatroomMsg::SendMessage(
-                            e.buffer().text()
-                        ));
-                        e.buffer().set_text("");
-                    }
-                }
             }
         }
 
         let entry_buffer = entry.buffer();
-        
 
         relm4::view! {
             input_box = &Box {
