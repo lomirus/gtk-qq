@@ -14,7 +14,7 @@ if build_machine.system() == 'windows'
     config_output_file,
     meson.current_source_dir(),
     # overwrite exist file
-    '/y'
+    '/y',
     check: true
   )
 else
