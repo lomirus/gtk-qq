@@ -89,8 +89,10 @@ impl Handler for AppHandler {
                 });
 
                 // Send notification
-                let app = APP.get().unwrap();
-                app.notify_group_message(message.group_code, &content);
+                if &message.from_uin != ACCOUNT.get().unwrap() {
+                    let app = APP.get().unwrap();
+                    app.notify_group_message(message.group_code, &content);
+                }
             }
             #[allow(unused_variables)]
             GroupAudioMessage(GroupAudioMessageEvent { client, message }) => {
@@ -115,8 +117,10 @@ impl Handler for AppHandler {
                 });
 
                 // Send notification
-                let app = APP.get().unwrap();
-                app.notify_friend_message(friend_id, &content);
+                if message.from_uin != *self_account {
+                    let app = APP.get().unwrap();
+                    app.notify_friend_message(friend_id, &content);
+                }
             }
             #[allow(unused_variables)]
             FriendAudioMessage(FriendAudioMessageEvent { client, message }) => {
