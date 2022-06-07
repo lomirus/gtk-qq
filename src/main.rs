@@ -6,6 +6,7 @@ mod config;
 mod db;
 mod global;
 mod handler;
+mod utils;
 
 use db::sql::init_sqlite;
 use gio::{resources_register, Cancellable, Resource};
