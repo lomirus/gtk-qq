@@ -2,8 +2,12 @@ use relm4::factory::{DynamicIndex, FactoryComponent};
 use relm4::{adw, gtk, Sender};
 
 use adw::{prelude::*, Avatar};
-use gtk::{Align, Box, Label, ListBox, Orientation, Widget};
+use gtk::gdk_pixbuf::Pixbuf;
+use gtk::{Align, Box, Label, ListBox, Orientation, Picture, Widget};
 
+use tokio::task;
+
+use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::handler::ACCOUNT;
 
 use super::ChatroomMsg;
@@ -58,12 +62,25 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
         relm4::view! {
             avatar_box = Box {
                 set_orientation: Orientation::Vertical,
+                #[name = "avatar"]
                 Avatar {
                     set_size: 32,
                     set_text: Some(self.name.as_str()),
                     set_show_initials: true
                 }
             }
+        }
+
+        let avatar_path = get_user_avatar_path(self.account);
+        if avatar_path.exists() {
+            if let Ok(pixbuf) = Pixbuf::from_file_at_size(avatar_path, 32, 32) {
+                let image = Picture::for_pixbuf(&pixbuf);
+                if let Some(paintable) = image.paintable() {
+                    avatar.set_custom_image(Some(&paintable));
+                }
+            }
+        } else {
+            task::spawn(download_user_avatar_file(self.account));
         }
 
         relm4::view! {
