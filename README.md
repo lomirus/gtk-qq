@@ -33,35 +33,29 @@ This app uses [ricq](https://github.com/lz1998/ricq) as the rust bindings of QQ 
 
 ### Requirements
 
-You will need rustc to build this project. The recommended way to manage rust toolchain is to use the rustup:
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-Then make sure you have installed [`meson`](https://mesonbuild.com/Quick-guide.html), and the neccessary libraries before building:
+You will need to install [Rust](https://www.rust-lang.org/tools/install) and [Meson](https://mesonbuild.com/Getting-meson.html) to build this project, and the neccessary libraries below:
 
 #### Ubuntu
 
 ```bash
-sudo apt-get install meson ninja-build libgtk-4-dev libadwaita-1-dev
+sudo apt install ninja-build libgtk-4-dev libadwaita-1-dev
 ```
 
 #### Fedora
 
 ```bash
-sudo dnf install meson gtk4-devel libadwaita-devel
+sudo dnf install gtk4-devel libadwaita-devel
 ```
 
 #### Arch
 
 ```bash
-sudo pacman -S meson pkgconf gtk4 libadwaita
+sudo pacman -S pkgconf gtk4 libadwaita
 ```
 
 #### Windows & MacOS
 
-Gtk4 based projects would be more complex to compile on Windows/MacOS platform. Nevertheless, considering some special reasons that you know, we shall not offer the Windows/MacOS release or even build scripts. 
+GTK4 projects would be more complex to compile on Windows/MacOS. Nevertheless, considering some special reasons that you know, we shall not offer the Windows/MacOS release or even build scripts. 
 
 > **Warning**
 > 
