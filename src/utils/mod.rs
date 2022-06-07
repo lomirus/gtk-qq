@@ -3,17 +3,31 @@ use std::{
     path::PathBuf,
 };
 
+use once_cell::sync::OnceCell;
+
 pub mod avatar;
 
 static BASE_DIR: &str = ".gtk-qq";
 
-pub(crate) fn init_gtk_qq_dir() -> Result<PathBuf, io::Error> {
-    let mut path = dirs::home_dir().ok_or(io::Error::new(
-        io::ErrorKind::NotFound,
-        "user home directory not found",
-    ))?;
-    std::fs::create_dir(&path)?;
-    path.push(BASE_DIR);
+static BASE_DIR_PATH: OnceCell<PathBuf> = OnceCell::new();
 
-    Ok(path)
+pub(crate) fn init_gtk_qq_dir() -> Result<&'static PathBuf, io::Error> {
+    BASE_DIR_PATH.get_or_try_init(|| {
+        let path = dirs::home_dir()
+            .ok_or(io::Error::new(
+                io::ErrorKind::NotFound,
+                "user home directory not found",
+            ))?
+            .join(BASE_DIR);
+
+        std::fs::create_dir(&path)?;
+
+        Ok(path)
+    })
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum DirAction {
+    CreateAll,
+    None,
 }
