@@ -60,7 +60,7 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
                 set_orientation: Orientation::Vertical,
                 Avatar {
                     set_size: 32,
-                    set_text: Some(self.account.to_string().as_str()),
+                    set_text: Some(self.name.as_str()),
                     set_show_initials: true
                 }
             }
