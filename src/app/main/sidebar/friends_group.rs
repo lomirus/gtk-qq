@@ -1,9 +1,10 @@
 use relm4::factory::{DynamicIndex, FactoryComponent};
-use relm4::gtk::Picture;
 use relm4::{adw, gtk, Sender, WidgetPlus};
 
 use adw::{prelude::*, Avatar, ExpanderRow};
-use gtk::{glib::clone, Align, Box, GestureClick, Label, Orientation, Widget};
+use gtk::{glib::clone, Align, Box, GestureClick, Label, Orientation, Widget,Picture};
+use gtk::gdk_pixbuf::Pixbuf;
+
 use tokio::task;
 
 use super::SidebarMsg;
@@ -110,9 +111,11 @@ impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
             let avatar_path = get_user_avatar_path(friend.id);
 
             if avatar_path.exists() {
-                let image = Picture::for_filename(avatar_path);
-                if let Some(paintable) = image.paintable() {
-                    avatar.set_custom_image(Some(&paintable));
+                if let Ok(pixbuf) = Pixbuf::from_file_at_size(avatar_path, 48, 48) {
+                    let image = Picture::for_pixbuf(&pixbuf);
+                    if let Some(paintable) = image.paintable() {
+                        avatar.set_custom_image(Some(&paintable));
+                    }
                 }
             } else {
                 task::spawn(download_user_avatar_file(friend.id));
