@@ -37,8 +37,9 @@ impl SharedApplication {
         notification.set_body(Some(content));
 
         if path.exists() {
-            let icon = Pixbuf::from_file(path).unwrap();
-            notification.set_icon(&icon);
+            if let Ok(icon) = Pixbuf::from_file(path) {
+                notification.set_icon(&icon);
+            }
         } else {
             task::spawn(download_user_avatar_file(friend_id));
         }
@@ -54,8 +55,9 @@ impl SharedApplication {
         notification.set_body(Some(content));
 
         if path.exists() {
-            let icon = Pixbuf::from_file(path).unwrap();
-            notification.set_icon(&icon);
+            if let Ok(icon) = Pixbuf::from_file(path) {
+                notification.set_icon(&icon);
+            }
         } else {
             task::spawn(download_group_avatar_file(group_id));
         }
