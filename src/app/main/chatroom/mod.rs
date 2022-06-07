@@ -175,7 +175,6 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
         }
 
         let entry_buffer = entry.buffer();
-        
 
         relm4::view! {
             input_box = &Box {
