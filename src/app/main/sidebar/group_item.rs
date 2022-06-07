@@ -1,9 +1,13 @@
 use relm4::factory::{DynamicIndex, FactoryComponent};
+use relm4::gtk::Picture;
+use relm4::gtk::gdk_pixbuf::Pixbuf;
 use relm4::{adw, gtk, Sender};
 
 use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation};
+use tokio::task;
 
+use crate::db::fs::{get_group_avatar_path, download_group_avatar_file};
 use crate::db::sql::Group;
 
 use super::SidebarMsg;
@@ -42,6 +46,7 @@ impl FactoryComponent<ListBox, SidebarMsg> for Group {
             item = Box {
                 set_margin_top: 8,
                 set_margin_bottom: 8,
+                #[name = "avatar"]
                 append = &Avatar {
                     set_text: Some(&self.name),
                     set_show_initials: true,
@@ -64,6 +69,18 @@ impl FactoryComponent<ListBox, SidebarMsg> for Group {
                     },
                 },
             }
+        }
+
+        let avatar_path = get_group_avatar_path(self.id);
+        if avatar_path.exists() {
+            if let Ok(pixbuf) = Pixbuf::from_file_at_size(avatar_path, 48, 48) {
+                let image = Picture::for_pixbuf(&pixbuf);
+                if let Some(paintable) = image.paintable() {
+                    avatar.set_custom_image(Some(&paintable));
+                }
+            }
+        } else {
+            task::spawn(download_group_avatar_file(self.id));
         }
 
         root.append(&item);

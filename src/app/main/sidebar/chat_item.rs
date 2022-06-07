@@ -1,13 +1,12 @@
 use relm4::factory::{DynamicIndex, FactoryComponent};
-use relm4::gtk::Picture;
 use relm4::gtk::gdk_pixbuf::Pixbuf;
 use relm4::{adw, gtk, Sender};
 
 use adw::{prelude::*, Avatar};
-use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation};
+use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation, Picture};
 use tokio::task;
 
-use crate::db::fs::{get_user_avatar_path, download_user_avatar_file};
+use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::db::sql::{get_friend_remark, get_group_name};
 
 use super::SidebarMsg;

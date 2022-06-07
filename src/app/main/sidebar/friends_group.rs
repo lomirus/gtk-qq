@@ -2,8 +2,9 @@ use relm4::factory::{DynamicIndex, FactoryComponent};
 use relm4::{adw, gtk, Sender, WidgetPlus};
 
 use adw::{prelude::*, Avatar, ExpanderRow};
-use gtk::{glib::clone, Align, Box, GestureClick, Label, Orientation, Widget,Picture};
 use gtk::gdk_pixbuf::Pixbuf;
+use gtk::glib::clone;
+use gtk::{Align, Box, GestureClick, Label, Orientation, Picture, Widget};
 
 use tokio::task;
 
