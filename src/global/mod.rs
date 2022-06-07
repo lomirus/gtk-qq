@@ -1,7 +1,20 @@
-use adw::{Application, ApplicationWindow};
-use gtk::{gio::Notification, prelude::ApplicationExt};
-use once_cell::sync::OnceCell;
 use relm4::{adw, gtk};
+
+use adw::{Application, ApplicationWindow};
+use gtk::gdk_pixbuf::Pixbuf;
+use gtk::gio::Notification;
+use gtk::prelude::ApplicationExt;
+
+use once_cell::sync::OnceCell;
+use tokio::task;
+
+use crate::db::{
+    fs::{
+        download_group_avatar_file, download_user_avatar_file, get_group_avatar_path,
+        get_user_avatar_path,
+    },
+    sql::{get_friend_remark, get_group_name},
+};
 
 #[derive(Debug)]
 pub struct SharedApplication {
@@ -16,9 +29,37 @@ impl SharedApplication {
         SharedApplication { app }
     }
 
-    pub fn send_notification(&self, title: &str, body: &String) {
-        let notification = Notification::new(title);
-        notification.set_body(Some(body));
+    pub fn notify_friend_message(&self, friend_id: i64, content: &String) {
+        let title = get_friend_remark(friend_id);
+        let path = get_user_avatar_path(friend_id);
+
+        let notification = Notification::new(&title);
+        notification.set_body(Some(content));
+
+        if path.exists() {
+            let icon = Pixbuf::from_file(path).unwrap();
+            notification.set_icon(&icon);
+        } else {
+            task::spawn(download_user_avatar_file(friend_id));
+        }
+
+        self.app.send_notification(None, &notification);
+    }
+
+    pub fn notify_group_message(&self, group_id: i64, content: &String) {
+        let title = get_group_name(group_id);
+        let path = get_group_avatar_path(group_id);
+
+        let notification = Notification::new(&title);
+        notification.set_body(Some(content));
+
+        if path.exists() {
+            let icon = Pixbuf::from_file(path).unwrap();
+            notification.set_icon(&icon);
+        } else {
+            task::spawn(download_group_avatar_file(group_id));
+        }
+
         self.app.send_notification(None, &notification);
     }
 }

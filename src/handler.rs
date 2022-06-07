@@ -9,7 +9,7 @@ use ricq::msg::MessageChain;
 use ricq::Client;
 
 use crate::app::main::{MainMsg, Message, MAIN_SENDER};
-use crate::db::sql::{get_friend_remark, get_group_name};
+use crate::db::sql::get_friend_remark;
 use crate::APP;
 
 pub struct AppHandler;
@@ -90,8 +90,7 @@ impl Handler for AppHandler {
 
                 // Send notification
                 let app = APP.get().unwrap();
-                let group_name: String = get_group_name(message.group_code);
-                app.send_notification(&group_name, &content);
+                app.notify_group_message(message.group_code, &content);
             }
             #[allow(unused_variables)]
             GroupAudioMessage(GroupAudioMessageEvent { client, message }) => {
@@ -117,7 +116,7 @@ impl Handler for AppHandler {
 
                 // Send notification
                 let app = APP.get().unwrap();
-                app.send_notification(&get_friend_remark(friend_id), &content);
+                app.notify_friend_message(friend_id, &content);
             }
             #[allow(unused_variables)]
             FriendAudioMessage(FriendAudioMessageEvent { client, message }) => {
