@@ -6,7 +6,10 @@ use adw::{prelude::*, Avatar};
 use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation, Picture};
 use tokio::task;
 
-use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
+use crate::db::fs::{
+    download_group_avatar_file, download_user_avatar_file, get_group_avatar_path,
+    get_user_avatar_path,
+};
 use crate::db::sql::{get_friend_remark, get_group_name};
 
 use super::SidebarMsg;
@@ -61,7 +64,19 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
             }
         };
 
-        if !self.is_group {
+        if self.is_group {
+            let avatar_path = get_group_avatar_path(self.account);
+            if avatar_path.exists() {
+                if let Ok(pixbuf) = Pixbuf::from_file_at_size(avatar_path, 48, 48) {
+                    let image = Picture::for_pixbuf(&pixbuf);
+                    if let Some(paintable) = image.paintable() {
+                        avatar.set_custom_image(Some(&paintable));
+                    }
+                }
+            } else {
+                task::spawn(download_group_avatar_file(self.account));
+            }
+        } else {
             let avatar_path = get_user_avatar_path(self.account);
             if avatar_path.exists() {
                 if let Ok(pixbuf) = Pixbuf::from_file_at_size(avatar_path, 48, 48) {
