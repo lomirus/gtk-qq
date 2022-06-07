@@ -19,7 +19,9 @@ pub(crate) fn init_gtk_qq_dir() -> Result<&'static PathBuf, io::Error> {
             })?
             .join(BASE_DIR);
 
-        std::fs::create_dir(&path)?;
+        if !path.exists() {
+            std::fs::create_dir(&path)?;
+        }
 
         Ok(path)
     })
