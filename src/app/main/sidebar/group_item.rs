@@ -1,10 +1,11 @@
 use relm4::factory::{DynamicIndex, FactoryComponent};
-use relm4::gtk::gdk_pixbuf::Pixbuf;
-use relm4::gtk::Picture;
 use relm4::{adw, gtk, Sender};
 
 use adw::{prelude::*, Avatar};
-use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation};
+use gtk::gdk_pixbuf::Pixbuf;
+use gtk::pango::EllipsizeMode;
+use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation, Picture};
+
 use tokio::task;
 
 use crate::db::fs::{download_group_avatar_file, get_group_avatar_path};
@@ -60,12 +61,14 @@ impl FactoryComponent<ListBox, SidebarMsg> for Group {
                     append = &Label {
                         set_xalign: 0.0,
                         set_text: self.name.as_str(),
-                        add_css_class: "heading"
+                        add_css_class: "heading",
+                        set_ellipsize: EllipsizeMode::End,
                     },
                     append = &Label {
                         set_text: self.id.to_string().as_str(),
                         add_css_class: "caption",
                         set_xalign: 0.0,
+                        set_ellipsize: EllipsizeMode::End,
                     },
                 },
             }

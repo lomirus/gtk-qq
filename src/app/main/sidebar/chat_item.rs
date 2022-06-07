@@ -1,16 +1,20 @@
 use relm4::factory::{DynamicIndex, FactoryComponent};
-use relm4::gtk::gdk_pixbuf::Pixbuf;
 use relm4::{adw, gtk, Sender};
 
 use adw::{prelude::*, Avatar};
+use gtk::gdk_pixbuf::Pixbuf;
+use gtk::pango::EllipsizeMode;
 use gtk::{Align, Box, Label, ListBox, ListBoxRow, Orientation, Picture};
+
 use tokio::task;
 
-use crate::db::fs::{
-    download_group_avatar_file, download_user_avatar_file, get_group_avatar_path,
-    get_user_avatar_path,
+use crate::db::{
+    fs::{
+        download_group_avatar_file, download_user_avatar_file, get_group_avatar_path,
+        get_user_avatar_path,
+    },
+    sql::{get_friend_remark, get_group_name},
 };
-use crate::db::sql::{get_friend_remark, get_group_name};
 
 use super::SidebarMsg;
 
@@ -99,11 +103,13 @@ impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
                 Label {
                     set_xalign: 0.0,
                     set_text: self.name.as_str(),
+                    set_ellipsize: EllipsizeMode::End,
                     add_css_class: "heading"
                 },
                 #[name = "last_message"]
                 Label {
                     set_text: self.last_message.as_str(),
+                    set_ellipsize: EllipsizeMode::End,
                     add_css_class: "caption",
                     set_xalign: 0.0,
                 }

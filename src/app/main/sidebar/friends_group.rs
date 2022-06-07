@@ -4,6 +4,7 @@ use relm4::{adw, gtk, Sender, WidgetPlus};
 use adw::{prelude::*, Avatar, ExpanderRow};
 use gtk::gdk_pixbuf::Pixbuf;
 use gtk::glib::clone;
+use gtk::pango::EllipsizeMode;
 use gtk::{Align, Box, GestureClick, Label, Orientation, Picture, Widget};
 
 use tokio::task;
@@ -97,12 +98,14 @@ impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
                         append = &Label {
                             set_xalign: 0.0,
                             set_text:  &friend.remark,
-                            add_css_class: "heading"
+                            add_css_class: "heading",
+                            set_ellipsize: EllipsizeMode::End,
                         },
                         append = &Label {
                             set_text: &friend.name,
                             add_css_class: "caption",
                             set_xalign: 0.0,
+                            set_ellipsize: EllipsizeMode::End,
                         },
                     },
                     add_controller: &gesture,
