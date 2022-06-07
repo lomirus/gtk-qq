@@ -9,7 +9,7 @@ config_output_file = configure_file(
 )
 # Copy the config.rs output to the source directory.
 run_command(
-  'Xcopy',
+  'cp',
   config_output_file,
   meson.current_source_dir(),
   check: true
