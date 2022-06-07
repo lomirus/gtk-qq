@@ -7,13 +7,13 @@ mod db;
 mod global;
 mod handler;
 
-use db::sql::init_sqlite;
 use gio::{resources_register, Cancellable, Resource};
-use global::{SharedApplication, APP};
 use gtk::{gio, glib::Bytes, prelude::ApplicationExt};
 use relm4::{gtk, RelmApp};
 
 use app::AppModel;
+use db::sql::init_sqlite;
+use global::{SharedApplication, APP};
 
 #[tokio::main]
 async fn main() {
