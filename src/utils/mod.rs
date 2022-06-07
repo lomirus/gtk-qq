@@ -27,6 +27,7 @@ pub(crate) fn init_gtk_qq_dir() -> Result<&'static PathBuf, io::Error> {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub enum DirAction {
     CreateAll,
     None,

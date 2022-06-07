@@ -11,13 +11,12 @@ pub trait AvatarLoad {
     fn avatar_download_url(id: i64) -> Cow<'static, String>;
 
     fn download_avatar(id: i64) -> Pin<Box<dyn Future<Output = Result<(), AvatarError>>>> {
-        use tokio::{fs::write};
+        use tokio::fs::write;
 
         let filename = <Self as AvatarLoad>::get_avatar_filename(id, DirAction::CreateAll);
         let url = <Self as AvatarLoad>::avatar_download_url(id);
 
         Box::pin(async move {
-
             let body = reqwest::get(&*url).await?.bytes().await?;
 
             write(filename?, &body).await?;
