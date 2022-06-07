@@ -6,6 +6,7 @@ mod config;
 mod db;
 mod global;
 mod handler;
+mod utils;
 
 use gio::{resources_register, Cancellable, Resource};
 use gtk::{gio, glib::Bytes, prelude::ApplicationExt};
