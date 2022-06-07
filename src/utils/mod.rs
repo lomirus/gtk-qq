@@ -1,13 +1,10 @@
-use std::{
-    io::{self},
-    path::PathBuf,
-};
+pub mod avatar;
+
+use std::{io, path::PathBuf};
 
 use once_cell::sync::OnceCell;
 
-pub mod avatar;
-
-static BASE_DIR: &str = ".gtk-qq";
+const BASE_DIR: &str = ".gtk-qq";
 
 static BASE_DIR_PATH: OnceCell<PathBuf> = OnceCell::new();
 
