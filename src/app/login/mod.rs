@@ -3,7 +3,7 @@ use std::sync::Arc;
 use qrcode_png::{Color, QrCode, QrCodeEcc};
 use relm4::{
     adw::{self, Window},
-    gtk::{self, Picture},
+    gtk::{self, gdk_pixbuf::Pixbuf, Picture, gdk::Paintable},
     ComponentParts, ComponentSender, SimpleComponent, WidgetPlus,
 };
 
@@ -24,12 +24,15 @@ use tokio::{
     task,
 };
 
-use crate::handler::{AppHandler, ACCOUNT, CLIENT};
 use crate::{
     actions::{AboutAction, ShortcutsAction},
     db::sql::get_db,
 };
 use crate::{app::AppMessage, global::WINDOW};
+use crate::{
+    db::fs::{download_user_avatar_file, get_user_avatar_path},
+    handler::{AppHandler, ACCOUNT, CLIENT},
+};
 
 #[derive(Debug)]
 pub struct LoginPageModel {
@@ -264,9 +267,9 @@ impl SimpleComponent for LoginPageModel {
                     set_valign: Align::Center,
                     set_vexpand: true,
                     set_spacing: 32,
+                    #[name = "avatar"]
                     Avatar {
-                        set_text: Some("ADW"),
-                        set_size: 72,
+                        set_size: 96,
                     },
                     PreferencesGroup {
                         add = &ActionRow {
@@ -438,6 +441,20 @@ impl SimpleComponent for LoginPageModel {
         widgets.account_entry.set_buffer(&account_buffer);
         widgets.password_entry.set_buffer(&password_buffer);
 
+        if let Ok(account) = account.parse::<i64>() {
+            let path = get_user_avatar_path(account);
+            if path.exists() {
+                if let Ok(pixbuf) = Pixbuf::from_file_at_size(path, 96, 96) {
+                    let image = Picture::for_pixbuf(&pixbuf);
+                    if let Some(paintable) = image.paintable() {
+                        widgets.avatar.set_custom_image(Some(&paintable));
+                    }
+                }
+            } else {
+                task::spawn(download_user_avatar_file(account));
+            }
+        }
+
         let model = LoginPageModel {
             account,
             password,
@@ -455,5 +472,26 @@ impl SimpleComponent for LoginPageModel {
         widgets
             .go_next_button
             .set_sensitive(self.is_login_button_enabled);
+
+        // TODO: IF ELSE HELL!!! Someone helps improve here please.
+        if let Ok(account) = self.account.parse::<i64>() {
+            let path = get_user_avatar_path(account);
+            if path.exists() {
+                if let Ok(pixbuf) = Pixbuf::from_file_at_size(path, 96, 96) {
+                    let image = Picture::for_pixbuf(&pixbuf);
+                    if let Some(paintable) = image.paintable() {
+                        widgets.avatar.set_custom_image(Some(&paintable));
+                    } else {
+                        widgets.avatar.set_custom_image(Option::<&Paintable>::None);
+                    }
+                } else {
+                    widgets.avatar.set_custom_image(Option::<&Paintable>::None);
+                }
+            } else {
+                widgets.avatar.set_custom_image(Option::<&Paintable>::None);
+            }
+        } else {
+            widgets.avatar.set_custom_image(Option::<&Paintable>::None);
+        }
     }
 }
