@@ -65,11 +65,12 @@ impl SidebarModel {
             .collect();
 
         let friends_groups: Vec<FriendsGroup> = conn
-            .prepare("Select id, name from friends_groups")?
+            .prepare("Select id, name, online_friends from friends_groups")?
             .query_map([], |row| {
                 Ok(FriendsGroup {
                     id: row.get(0)?,
                     name: row.get(1)?,
+                    online_friends: row.get(2)?,
                     friends: friends
                         .clone()
                         .into_iter()

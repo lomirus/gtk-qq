@@ -23,6 +23,7 @@ pub struct Friend {
 pub struct FriendsGroup {
     pub id: u8,
     pub name: String,
+    pub online_friends: i32,
 }
 
 #[derive(Debug)]
@@ -64,8 +65,9 @@ pub fn init_sqlite() {
 
     conn.execute(
         "Create table if not exists friends_groups (
-            id      INT PRIMARY KEY,
-            name    TEXT NOT NULL
+            id              INT PRIMARY KEY,
+            name            TEXT NOT NULL,
+            online_friends  INT NOT NULL
         )",
         [],
     )
@@ -108,11 +110,12 @@ pub async fn refresh_friends_list() -> Result<(), Box<dyn Error>> {
         .map(|friends_group| FriendsGroup {
             id: friends_group.group_id,
             name: friends_group.group_name,
+            online_friends: friends_group.online_friend_count
         });
     conn.execute("DELETE FROM friends_groups", [])?;
-    let mut stmt = conn.prepare("INSERT INTO friends_groups values (?1, ?2)")?;
+    let mut stmt = conn.prepare("INSERT INTO friends_groups values (?1, ?2, ?3)")?;
     for friends_group in friends_groups {
-        stmt.execute(params![friends_group.id, friends_group.name])?;
+        stmt.execute(params![friends_group.id, friends_group.name, friends_group.online_friends])?;
     }
     // Handle the friends
     let friends = friends.into_iter().map(

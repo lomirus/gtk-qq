@@ -22,6 +22,7 @@ pub enum ContactGroupMessage {
 pub struct FriendsGroup {
     pub id: u8,
     pub name: String,
+    pub online_friends: i32,
     pub friends: Vec<Friend>,
 }
 
@@ -45,13 +46,9 @@ impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
 
     fn init_root(&self) -> Self::Root {
         let subtitle = format!(
-            "{} {}",
-            self.friends.len(),
-            if self.friends.len() == 1 {
-                "Person"
-            } else {
-                "People"
-            }
+            "{}/{}",
+            self.online_friends,
+            self.friends.len()
         );
         relm4::view! {
             group = ExpanderRow {
