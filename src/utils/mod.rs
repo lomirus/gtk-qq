@@ -1,5 +1,5 @@
-pub mod widgets;
 pub mod avatar;
+pub mod widgets;
 
 use std::{io, path::PathBuf};
 
