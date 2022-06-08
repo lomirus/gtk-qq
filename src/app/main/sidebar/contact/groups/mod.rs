@@ -15,7 +15,7 @@ use crate::db::sql::{get_db, refresh_groups_list, Group};
 pub struct GroupsModel {
     groups_list: Option<RefCell<FactoryVecDeque<ListBox, Group, GroupsMsg>>>,
     is_refresh_button_enabled: bool,
-    keywords: String
+    keywords: String,
 }
 
 impl GroupsModel {
@@ -50,16 +50,16 @@ async fn refresh_groups(sender: ComponentSender<GroupsModel>) {
         "Start refreshing the groups list...".to_string(),
     ));
     match refresh_groups_list().await {
-        Ok(_) => sender.input(GroupsMsg::RenderGroups),
+        Ok(_) => sender.input(GroupsMsg::Render),
         Err(err) => sender.output(ContactMsg::PushToast(err.to_string())),
     }
 }
 
 #[derive(Debug)]
 pub enum GroupsMsg {
-    RefreshGroups,
-    RenderGroups,
-    SearchGroups(String)
+    Refresh,
+    Render,
+    Search(String),
 }
 
 #[relm4::component(pub)]
@@ -82,7 +82,7 @@ impl SimpleComponent for GroupsModel {
                     set_icon_name: "view-refresh-symbolic",
                     set_margin_end: 8,
                     connect_clicked[sender] => move |_| {
-                        sender.input(GroupsMsg::RefreshGroups);
+                        sender.input(GroupsMsg::Refresh);
                     },
                 },
                 #[name = "search_entry"]
@@ -92,7 +92,7 @@ impl SimpleComponent for GroupsModel {
                     set_width_request: 320 - 3 * 8 - 32,
                     connect_changed[sender] => move |entry| {
                         let keywords = entry.buffer().text();
-                        sender.input(GroupsMsg::SearchGroups(keywords));
+                        sender.input(GroupsMsg::Search(keywords));
                     },
                 },
             },
@@ -121,7 +121,7 @@ impl SimpleComponent for GroupsModel {
         let mut model = GroupsModel {
             groups_list: None,
             is_refresh_button_enabled: true,
-            keywords: String::new()
+            keywords: String::new(),
         };
         let widgets = view_output!();
 
@@ -138,11 +138,11 @@ impl SimpleComponent for GroupsModel {
     fn update(&mut self, msg: GroupsMsg, sender: &ComponentSender<Self>) {
         use GroupsMsg::*;
         match msg {
-            RefreshGroups => {
+            Refresh => {
                 self.is_refresh_button_enabled = false;
                 task::spawn(refresh_groups(sender.clone()));
             }
-            RenderGroups => {
+            Render => {
                 match self.render_groups() {
                     Ok(_) => sender.output(ContactMsg::PushToast(
                         "Refreshed the groups list.".to_string(),
@@ -150,8 +150,8 @@ impl SimpleComponent for GroupsModel {
                     Err(err) => sender.output(ContactMsg::PushToast(err.to_string())),
                 }
                 self.is_refresh_button_enabled = true;
-            },
-            SearchGroups(keywords) => {
+            }
+            Search(keywords) => {
                 println!("{keywords}");
                 self.keywords = keywords;
             }

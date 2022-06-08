@@ -1,14 +1,13 @@
 use std::sync::Arc;
 
 use qrcode_png::{Color, QrCode, QrCodeEcc};
-use relm4::{
-    adw::{self, Window},
-    gtk::{self, gdk_pixbuf::Pixbuf, Picture, gdk::Paintable},
-    ComponentParts, ComponentSender, SimpleComponent, WidgetPlus,
-};
+use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent, WidgetPlus};
 
-use adw::{prelude::*, ActionRow, Avatar, HeaderBar, PreferencesGroup, Toast, ToastOverlay};
-use gtk::{Align, Box, Button, Entry, EntryBuffer, Label, MenuButton, Orientation};
+use adw::prelude::*;
+use adw::{ActionRow, Avatar, HeaderBar, PreferencesGroup, Toast, ToastOverlay, Window};
+use gtk::gdk::Paintable;
+use gtk::gdk_pixbuf::Pixbuf;
+use gtk::{Align, Box, Button, Entry, EntryBuffer, Label, MenuButton, Orientation, Picture};
 
 use rand::prelude::*;
 use ricq::{
