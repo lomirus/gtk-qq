@@ -1,25 +1,27 @@
-mod chat_item;
+mod chats;
 mod friends_group;
 mod group_item;
 
 use relm4::factory::FactoryVecDeque;
-use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent, WidgetPlus};
+use relm4::{
+    adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller,
+    SimpleComponent, WidgetPlus,
+};
 use std::cell::RefCell;
 
 use adw::{prelude::*, HeaderBar, ViewStack, ViewSwitcherBar, ViewSwitcherTitle};
 use gtk::{Box, Button, Entry, EntryIconPosition, ListBox, Orientation, ScrolledWindow};
 use tokio::task;
 
-use crate::db::sql::{get_db, refresh_friends_list, refresh_groups_list, Friend, Group};
-
-use super::MainMsg;
-use chat_item::ChatItem;
-
 pub use self::friends_group::FriendsGroup;
+use super::MainMsg;
+use crate::app::main::sidebar::chats::ChatsMsg;
+use crate::db::sql::{get_db, refresh_friends_list, refresh_groups_list, Friend, Group};
+use chats::ChatsModel;
 
 #[derive(Debug)]
 pub struct SidebarModel {
-    chats_list: Option<RefCell<FactoryVecDeque<ListBox, ChatItem, SidebarMsg>>>,
+    chats: Controller<ChatsModel>,
     friends_list: Option<RefCell<FactoryVecDeque<Box, FriendsGroup, SidebarMsg>>>,
     groups_list: Option<RefCell<FactoryVecDeque<ListBox, Group, SidebarMsg>>>,
     is_refresh_friends_button_enabled: bool,
@@ -27,24 +29,6 @@ pub struct SidebarModel {
 }
 
 impl SidebarModel {
-    fn update_chat_item(&self, account: i64, is_group: bool, last_message: String) {
-        let mut chats_list = self.chats_list.as_ref().unwrap().borrow_mut();
-        for i in 0..chats_list.len() {
-            let this_account = chats_list.get(i).account;
-            let is_this_group = chats_list.get(i).is_group;
-            if this_account == account && is_this_group == is_group {
-                chats_list.swap(0, i);
-                chats_list.front_mut().unwrap().last_message = last_message;
-                break;
-            }
-        }
-    }
-
-    fn insert_chat_item(&self, account: i64, is_group: bool, last_message: String) {
-        let mut chats_list = self.chats_list.as_ref().unwrap().borrow_mut();
-        chats_list.push_front((account, is_group, last_message));
-    }
-
     fn render_friends(&self) -> rusqlite::Result<()> {
         let mut friends_list = self.friends_list.as_ref().unwrap().borrow_mut();
         friends_list.clear();
@@ -138,7 +122,7 @@ async fn refresh_groups(sender: ComponentSender<SidebarModel>) {
 
 #[derive(Debug)]
 pub enum SidebarMsg {
-    SelectChatroom(i32),
+    SelectChatroom(i64, bool),
     UpdateChatItem(i64, bool, String),
     InsertChatItem(i64, bool, String),
     RefreshFriends,
@@ -171,15 +155,6 @@ impl SimpleComponent for SidebarModel {
             #[name = "stack"]
             ViewStack {
                 set_vexpand: true,
-            }
-        },
-        _chats = ScrolledWindow {
-            set_child: sidebar_chats = Some(&ListBox) {
-                set_css_classes: &["navigation-sidebar"],
-                connect_row_activated[sender] => move |_, selected_row| {
-                    let index = selected_row.index();
-                    sender.input(SidebarMsg::SelectChatroom(index));
-                },
             }
         },
         _contact = Box {
@@ -265,7 +240,9 @@ impl SimpleComponent for SidebarModel {
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let mut model = SidebarModel {
-            chats_list: None,
+            chats: ChatsModel::builder()
+                .launch(())
+                .forward(&sender.input, |message| message),
             friends_list: None,
             groups_list: None,
             is_refresh_friends_button_enabled: true,
@@ -276,7 +253,7 @@ impl SimpleComponent for SidebarModel {
         let stack: &ViewStack = &widgets.stack;
         let contact_stack: &ViewStack = &widgets.contact_stack;
 
-        let chats = stack.add_titled(&widgets._chats, None, "Chats");
+        let chats = stack.add_titled(model.chats.widget(), None, "Chats");
         let contact = stack.add_titled(&widgets._contact, None, "Contact");
         let friends = contact_stack.add_titled(&widgets.contact_friends, None, "Friends");
         let groups = contact_stack.add_titled(&widgets.contact_groups, None, "Groups");
@@ -286,14 +263,11 @@ impl SimpleComponent for SidebarModel {
         friends.set_icon_name(Some("person2-symbolic"));
         groups.set_icon_name(Some("people-symbolic"));
 
-        let chats_list: FactoryVecDeque<ListBox, ChatItem, SidebarMsg> =
-            FactoryVecDeque::new(widgets.sidebar_chats.clone(), &sender.input);
         let friends_list: FactoryVecDeque<Box, FriendsGroup, SidebarMsg> =
             FactoryVecDeque::new(widgets.contact_friends_list.clone(), &sender.input);
         let groups_list: FactoryVecDeque<ListBox, Group, SidebarMsg> =
             FactoryVecDeque::new(widgets.contact_groups_list.clone(), &sender.input);
 
-        model.chats_list = Some(RefCell::new(chats_list));
         model.friends_list = Some(RefCell::new(friends_list));
         model.groups_list = Some(RefCell::new(groups_list));
 
@@ -306,18 +280,18 @@ impl SimpleComponent for SidebarModel {
     fn update(&mut self, msg: SidebarMsg, sender: &ComponentSender<Self>) {
         use SidebarMsg::*;
         match msg {
-            SelectChatroom(index) => {
-                let chat_item = self.chats_list.as_ref().unwrap().borrow();
-                let chat_item = chat_item.get(index as usize);
-                let account = chat_item.account;
-                let is_group = chat_item.is_group;
+            SelectChatroom(account, is_group) => {
                 sender.output(MainMsg::SelectChatroom(account, is_group));
             }
             UpdateChatItem(account, is_group, last_message) => {
-                self.update_chat_item(account, is_group, last_message)
+                self.chats
+                    .sender()
+                    .send(ChatsMsg::UpdateChatItem(account, is_group, last_message));
             }
             InsertChatItem(account, is_group, last_message) => {
-                self.insert_chat_item(account, is_group, last_message)
+                self.chats
+                    .sender()
+                    .send(ChatsMsg::InsertChatItem(account, is_group, last_message));
             }
             RefreshFriends => {
                 self.is_refresh_friends_button_enabled = false;
@@ -346,6 +320,5 @@ impl SimpleComponent for SidebarModel {
                 self.is_refresh_groups_button_enabled = true;
             }
         }
-        self.chats_list.as_ref().unwrap().borrow().render_changes();
     }
 }

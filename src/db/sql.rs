@@ -110,12 +110,16 @@ pub async fn refresh_friends_list() -> Result<(), Box<dyn Error>> {
         .map(|friends_group| FriendsGroup {
             id: friends_group.group_id,
             name: friends_group.group_name,
-            online_friends: friends_group.online_friend_count
+            online_friends: friends_group.online_friend_count,
         });
     conn.execute("DELETE FROM friends_groups", [])?;
     let mut stmt = conn.prepare("INSERT INTO friends_groups values (?1, ?2, ?3)")?;
     for friends_group in friends_groups {
-        stmt.execute(params![friends_group.id, friends_group.name, friends_group.online_friends])?;
+        stmt.execute(params![
+            friends_group.id,
+            friends_group.name,
+            friends_group.online_friends
+        ])?;
     }
     // Handle the friends
     let friends = friends.into_iter().map(

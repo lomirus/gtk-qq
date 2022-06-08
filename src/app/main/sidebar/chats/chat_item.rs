@@ -16,7 +16,7 @@ use crate::db::{
     sql::{get_friend_remark, get_group_name},
 };
 
-use super::SidebarMsg;
+use super::ChatsMsg;
 
 #[derive(Debug)]
 pub struct ChatItem {
@@ -30,7 +30,7 @@ pub struct ChatItemWidgets {
     pub last_message: Label,
 }
 
-impl FactoryComponent<ListBox, SidebarMsg> for ChatItem {
+impl FactoryComponent<ListBox, ChatsMsg> for ChatItem {
     type InitParams = (i64, bool, String);
     type Widgets = ChatItemWidgets;
     type Input = ();

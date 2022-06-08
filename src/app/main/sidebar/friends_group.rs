@@ -45,11 +45,7 @@ impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
     }
 
     fn init_root(&self) -> Self::Root {
-        let subtitle = format!(
-            "{}/{}",
-            self.online_friends,
-            self.friends.len()
-        );
+        let subtitle = format!("{}/{}", self.online_friends, self.friends.len());
         relm4::view! {
             group = ExpanderRow {
                 set_width_request: 320,
