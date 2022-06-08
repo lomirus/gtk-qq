@@ -159,7 +159,7 @@ impl SimpleComponent for SidebarModel {
             set_vexpand: true,
             set_width_request: 320,
             set_orientation: Orientation::Vertical,
-            append = &HeaderBar {
+            HeaderBar {
                 set_show_start_title_buttons: false,
                 set_show_end_title_buttons: false,
                 set_title_widget = Some(&ViewSwitcherTitle) {
@@ -167,7 +167,8 @@ impl SimpleComponent for SidebarModel {
                     set_stack: Some(&stack)
                 }
             },
-            append: stack = &ViewStack {
+            #[name = "stack"]
+            ViewStack {
                 set_vexpand: true,
             }
         },
@@ -182,10 +183,11 @@ impl SimpleComponent for SidebarModel {
         },
         _contact = Box {
             set_orientation: Orientation::Vertical,
-            append: contact_stack = &ViewStack {
+            #[name = "contact_stack"]
+            ViewStack {
                 set_vexpand: true,
             },
-            append = &ViewSwitcherBar {
+            ViewSwitcherBar {
                 set_stack: Some(&contact_stack),
                 set_reveal: true
             }
@@ -204,7 +206,8 @@ impl SimpleComponent for SidebarModel {
                         sender.input(SidebarMsg::RefreshFriends);
                     },
                 },
-                append: search_friends_entry = &Entry {
+                #[name = "search_friends_entry"]
+                Entry {
                     set_icon_from_icon_name: (EntryIconPosition::Secondary, Some("system-search-symbolic")),
                     set_placeholder_text: Some("Search in friends..."),
                     set_width_request: 320 - 3 * 8 - 32
@@ -231,7 +234,8 @@ impl SimpleComponent for SidebarModel {
                         sender.input(SidebarMsg::RefreshGroups);
                     },
                 },
-                append: search_groups_entry = &Entry {
+                #[name = "search_groups_entry"]
+                Entry {
                     set_icon_from_icon_name: (EntryIconPosition::Secondary, Some("system-search-symbolic")),
                     set_placeholder_text: Some("Search in groups..."),
                     set_width_request: 320 - 3 * 8 - 32

@@ -241,7 +241,8 @@ impl SimpleComponent for LoginPageModel {
             set_hexpand: true,
             set_vexpand: true,
             set_orientation: Orientation::Vertical,
-            append: headerbar = &HeaderBar {
+            #[name = "headerbar"]
+            HeaderBar {
                 set_title_widget = Some(&Label) {
                     set_label: "Login"
                 },
@@ -256,17 +257,18 @@ impl SimpleComponent for LoginPageModel {
                     set_menu_model: Some(&main_menu),
                 }
             },
-            append: toast_overlay = &ToastOverlay {
+            #[name = "toast_overlay"]
+            ToastOverlay {
                 set_child = Some(&Box) {
                     set_halign: Align::Center,
                     set_valign: Align::Center,
                     set_vexpand: true,
                     set_spacing: 32,
-                    append = &Avatar {
+                    Avatar {
                         set_text: Some("ADW"),
                         set_size: 72,
                     },
-                    append = &PreferencesGroup {
+                    PreferencesGroup {
                         add = &ActionRow {
                             set_title: "Account",
                             set_focusable: false,

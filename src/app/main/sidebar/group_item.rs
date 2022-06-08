@@ -48,23 +48,23 @@ impl FactoryComponent<ListBox, SidebarMsg> for Group {
                 set_margin_top: 8,
                 set_margin_bottom: 8,
                 #[name = "avatar"]
-                append = &Avatar {
+                Avatar {
                     set_text: Some(&self.name),
                     set_show_initials: true,
                     set_size: 48,
                     set_margin_end: 8
                 },
-                append = &Box {
+                Box {
                     set_orientation: Orientation::Vertical,
                     set_halign: Align::Start,
                     set_spacing: 8,
-                    append = &Label {
+                    Label {
                         set_xalign: 0.0,
                         set_text: self.name.as_str(),
                         add_css_class: "heading",
                         set_ellipsize: EllipsizeMode::End,
                     },
-                    append = &Label {
+                    Label {
                         set_text: self.id.to_string().as_str(),
                         add_css_class: "caption",
                         set_xalign: 0.0,

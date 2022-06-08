@@ -85,7 +85,8 @@ impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
             relm4::view! {
                 child = Box {
                     set_margin_all: 8,
-                    append: avatar = &Avatar {
+                    #[name = "avatar"]
+                    Avatar {
                         set_text: Some(&friend.name),
                         set_show_initials: true,
                         set_size: 48,
@@ -95,13 +96,13 @@ impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
                         set_orientation: Orientation::Vertical,
                         set_halign: Align::Start,
                         set_spacing: 8,
-                        append = &Label {
+                        Label {
                             set_xalign: 0.0,
                             set_text:  &friend.remark,
                             add_css_class: "heading",
                             set_ellipsize: EllipsizeMode::End,
                         },
-                        append = &Label {
+                        Label {
                             set_text: &friend.name,
                             add_css_class: "caption",
                             set_xalign: 0.0,

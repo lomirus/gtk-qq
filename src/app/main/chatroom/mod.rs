@@ -180,7 +180,7 @@ impl FactoryComponent<Stack, MainMsg> for Chatroom {
             input_box = &Box {
                 set_margin_all: 8,
                 append: &entry,
-                append = &Button {
+                Button {
                     set_icon_name: "send-symbolic",
                     connect_clicked[input] => move |_| {
                         input.send(ChatroomMsg::SendMessage(

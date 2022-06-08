@@ -87,13 +87,15 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
             main_box = Box {
                 set_orientation: Orientation::Vertical,
                 set_spacing: 4,
-                append: username_box = &Box {
+                #[name = "username_box"]
+                Box {
                     Label {
                         set_label: &self.name,
                         set_css_classes: &["caption"]
                     }
                 },
-                append: messages_box = &ListBox {
+                #[name = "messages_box"]
+                ListBox {
                     set_css_classes: &["boxed-list"]
                 }
             }

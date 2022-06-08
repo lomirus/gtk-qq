@@ -117,18 +117,21 @@ impl SimpleComponent for MainPageModel {
             set_child: main_page = Some(&Leaflet) {
                 append: sidebar_controller.widget(),
                 append = &Separator::new(Orientation::Horizontal),
-                append: chatroom = &Box {
+                #[name = "chatroom"]
+                append = &Box {
                     set_vexpand: true,
                     set_hexpand: true,
                     set_orientation: Orientation::Vertical,
-                    append = &HeaderBar {
+                    HeaderBar {
                         set_title_widget = Some(&Box) {
                             set_orientation: Orientation::Vertical,
                             set_valign: Align::Center,
-                            append: chatroom_title = &Label {
+                            #[name = "chatroom_title"]
+                            Label {
                                 set_label: "Chatroom"
                             },
-                            append: chatroom_subtitle = &Label {
+                            #[name = "chatroom_subtitle"]
+                            Label {
                                 set_css_classes: &["subtitle"],
                                 set_label: "Chatroom"
                             },
