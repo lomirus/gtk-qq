@@ -16,6 +16,7 @@ use friends_group::FriendsGroup;
 pub struct FriendsModel {
     friends_list: Option<RefCell<FactoryVecDeque<Box, FriendsGroup, FriendsMsg>>>,
     is_refresh_button_enabled: bool,
+    keywords: String
 }
 
 impl FriendsModel {
@@ -78,6 +79,7 @@ async fn refresh_friends(sender: ComponentSender<FriendsModel>) {
 #[derive(Debug)]
 pub enum FriendsMsg {
     SelectChatroom(i64, bool),
+    SearchFriends(String),
     RefreshFriends,
     RenderFriends,
 }
@@ -109,7 +111,11 @@ impl SimpleComponent for FriendsModel {
                 Entry {
                     set_icon_from_icon_name: (EntryIconPosition::Secondary, Some("system-search-symbolic")),
                     set_placeholder_text: Some("Search in friends..."),
-                    set_width_request: 320 - 3 * 8 - 32
+                    set_width_request: 320 - 3 * 8 - 32,
+                    connect_changed[sender] => move |entry| {
+                        let keywords = entry.buffer().text();
+                        sender.input(FriendsMsg::SearchFriends(keywords));
+                    },
                 },
             },
             ScrolledWindow {
@@ -129,6 +135,7 @@ impl SimpleComponent for FriendsModel {
         let mut model = FriendsModel {
             friends_list: None,
             is_refresh_button_enabled: true,
+            keywords: String::new()
         };
         let widgets = view_output!();
 
@@ -160,6 +167,10 @@ impl SimpleComponent for FriendsModel {
                     Err(err) => sender.output(ContactMsg::PushToast(err.to_string())),
                 }
                 self.is_refresh_button_enabled = true;
+            }
+            SearchFriends(keywords) => {
+                println!("{keywords}");
+                self.keywords = keywords;
             }
         }
     }

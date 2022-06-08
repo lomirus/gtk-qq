@@ -15,6 +15,7 @@ use crate::db::sql::{get_db, refresh_groups_list, Group};
 pub struct GroupsModel {
     groups_list: Option<RefCell<FactoryVecDeque<ListBox, Group, GroupsMsg>>>,
     is_refresh_button_enabled: bool,
+    keywords: String
 }
 
 impl GroupsModel {
@@ -58,6 +59,7 @@ async fn refresh_groups(sender: ComponentSender<GroupsModel>) {
 pub enum GroupsMsg {
     RefreshGroups,
     RenderGroups,
+    SearchGroups(String)
 }
 
 #[relm4::component(pub)]
@@ -87,7 +89,11 @@ impl SimpleComponent for GroupsModel {
                 Entry {
                     set_icon_from_icon_name: (EntryIconPosition::Secondary, Some("system-search-symbolic")),
                     set_placeholder_text: Some("Search in groups..."),
-                    set_width_request: 320 - 3 * 8 - 32
+                    set_width_request: 320 - 3 * 8 - 32,
+                    connect_changed[sender] => move |entry| {
+                        let keywords = entry.buffer().text();
+                        sender.input(GroupsMsg::SearchGroups(keywords));
+                    },
                 },
             },
             ScrolledWindow {
@@ -115,6 +121,7 @@ impl SimpleComponent for GroupsModel {
         let mut model = GroupsModel {
             groups_list: None,
             is_refresh_button_enabled: true,
+            keywords: String::new()
         };
         let widgets = view_output!();
 
@@ -143,6 +150,10 @@ impl SimpleComponent for GroupsModel {
                     Err(err) => sender.output(ContactMsg::PushToast(err.to_string())),
                 }
                 self.is_refresh_button_enabled = true;
+            },
+            SearchGroups(keywords) => {
+                println!("{keywords}");
+                self.keywords = keywords;
             }
         }
     }
