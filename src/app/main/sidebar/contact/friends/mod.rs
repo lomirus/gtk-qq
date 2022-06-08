@@ -15,7 +15,7 @@ use friends_group::FriendsGroup;
 #[derive(Debug)]
 pub struct FriendsModel {
     friends_list: Option<RefCell<FactoryVecDeque<Box, FriendsGroup, FriendsMsg>>>,
-    is_refresh_friends_button_enabled: bool,
+    is_refresh_button_enabled: bool,
 }
 
 impl FriendsModel {
@@ -97,7 +97,7 @@ impl SimpleComponent for FriendsModel {
                 set_margin_all: 8,
                 Button {
                     #[watch]
-                    set_sensitive: model.is_refresh_friends_button_enabled,
+                    set_sensitive: model.is_refresh_button_enabled,
                     set_tooltip_text: Some("Refresh friends list"),
                     set_icon_name: "view-refresh-symbolic",
                     set_margin_end: 8,
@@ -105,7 +105,7 @@ impl SimpleComponent for FriendsModel {
                         sender.input(FriendsMsg::RefreshFriends);
                     },
                 },
-                #[name = "search_friends_entry"]
+                #[name = "search_entry"]
                 Entry {
                     set_icon_from_icon_name: (EntryIconPosition::Secondary, Some("system-search-symbolic")),
                     set_placeholder_text: Some("Search in friends..."),
@@ -113,7 +113,7 @@ impl SimpleComponent for FriendsModel {
                 },
             },
             ScrolledWindow {
-                set_child: contact_friends_list = Some(&Box) {
+                set_child: friends_list = Some(&Box) {
                     set_vexpand: true,
                     set_orientation: Orientation::Vertical,
                 }
@@ -128,12 +128,12 @@ impl SimpleComponent for FriendsModel {
     ) -> ComponentParts<Self> {
         let mut model = FriendsModel {
             friends_list: None,
-            is_refresh_friends_button_enabled: true,
+            is_refresh_button_enabled: true,
         };
         let widgets = view_output!();
 
         let friends_list: FactoryVecDeque<Box, FriendsGroup, FriendsMsg> =
-            FactoryVecDeque::new(widgets.contact_friends_list.clone(), &sender.input);
+            FactoryVecDeque::new(widgets.friends_list.clone(), &sender.input);
 
         model.friends_list = Some(RefCell::new(friends_list));
 
@@ -149,7 +149,7 @@ impl SimpleComponent for FriendsModel {
                 sender.output(ContactMsg::SelectChatroom(account, is_group));
             }
             RefreshFriends => {
-                self.is_refresh_friends_button_enabled = false;
+                self.is_refresh_button_enabled = false;
                 task::spawn(refresh_friends(sender.clone()));
             }
             RenderFriends => {
@@ -159,7 +159,7 @@ impl SimpleComponent for FriendsModel {
                     )),
                     Err(err) => sender.output(ContactMsg::PushToast(err.to_string())),
                 }
-                self.is_refresh_friends_button_enabled = true;
+                self.is_refresh_button_enabled = true;
             }
         }
     }
