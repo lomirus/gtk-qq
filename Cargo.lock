@@ -2059,8 +2059,8 @@ dependencies = [
 
 [[package]]
 name = "ricq"
-version = "0.1.7"
-source = "git+https://github.com/lz1998/ricq.git?rev=98061b2d58ff7aeec48c92eeb07bd5b2492de60c#98061b2d58ff7aeec48c92eeb07bd5b2492de60c"
+version = "0.1.10"
+source = "git+https://github.com/lz1998/ricq.git?rev=38fff7007cb51bc39acc30087c3f042031a38eda#38fff7007cb51bc39acc30087c3f042031a38eda"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2084,8 +2084,8 @@ dependencies = [
 
 [[package]]
 name = "ricq-core"
-version = "0.1.7"
-source = "git+https://github.com/lz1998/ricq.git?rev=98061b2d58ff7aeec48c92eeb07bd5b2492de60c#98061b2d58ff7aeec48c92eeb07bd5b2492de60c"
+version = "0.1.10"
+source = "git+https://github.com/lz1998/ricq.git?rev=38fff7007cb51bc39acc30087c3f042031a38eda#38fff7007cb51bc39acc30087c3f042031a38eda"
 dependencies = [
  "byteorder",
  "bytes",

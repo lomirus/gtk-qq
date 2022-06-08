@@ -127,8 +127,8 @@ impl Handler for AppHandler {
                 println!("FriendAudioMessage");
             }
             #[allow(unused_variables)]
-            TempMessage(TempMessageEvent { client, message }) => {
-                println!("TempMessage");
+            GroupTempMessage(GroupTempMessageEvent { client, message }) => {
+                println!("GroupTempMessage");
             }
             #[allow(unused_variables)]
             GroupRequest(GroupRequestEvent { client, request }) => {
