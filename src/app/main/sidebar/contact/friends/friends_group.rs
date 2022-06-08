@@ -9,7 +9,7 @@ use gtk::{Align, Box, GestureClick, Label, Orientation, Picture, Widget};
 
 use tokio::task;
 
-use super::ContactMsg;
+use super::FriendsMsg;
 use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::db::sql::Friend;
 
@@ -25,11 +25,11 @@ pub struct FriendsGroup {
     pub friends: Vec<Friend>,
 }
 
-impl FactoryComponent<Box, ContactMsg> for FriendsGroup {
+impl FactoryComponent<Box, FriendsMsg> for FriendsGroup {
     type InitParams = FriendsGroup;
     type Widgets = ();
     type Input = ContactGroupMessage;
-    type Output = ContactMsg;
+    type Output = FriendsMsg;
     type Command = ();
     type CommandOutput = ();
     type Root = ExpanderRow;
@@ -130,7 +130,7 @@ impl FactoryComponent<Box, ContactMsg> for FriendsGroup {
         use ContactGroupMessage::*;
         match relm_msg {
             SelectUser(account) => {
-                output.send(ContactMsg::SelectChatroom(account, false));
+                output.send(FriendsMsg::SelectChatroom(account, false));
             }
         }
         None

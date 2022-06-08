@@ -10,7 +10,6 @@ use tokio::task;
 
 use crate::db::fs::{download_group_avatar_file, get_group_avatar_path};
 use crate::db::sql::Group;
-
 use super::ContactMsg;
 
 impl FactoryComponent<ListBox, ContactMsg> for Group {

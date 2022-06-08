@@ -31,7 +31,7 @@ pub enum SidebarMsg {
 impl SimpleComponent for SidebarModel {
     type Input = SidebarMsg;
     type Output = MainMsg;
-    type Widgets = MainPageWidgets;
+    type Widgets = SiderbarWidgets;
     type InitParams = ();
 
     view! {
