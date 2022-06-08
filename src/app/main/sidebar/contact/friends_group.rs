@@ -9,8 +9,7 @@ use gtk::{Align, Box, GestureClick, Label, Orientation, Picture, Widget};
 
 use tokio::task;
 
-use super::SidebarMsg;
-use crate::app::main::{MainMsg, MAIN_SENDER};
+use super::ContactMsg;
 use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::db::sql::Friend;
 
@@ -26,11 +25,11 @@ pub struct FriendsGroup {
     pub friends: Vec<Friend>,
 }
 
-impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
+impl FactoryComponent<Box, ContactMsg> for FriendsGroup {
     type InitParams = FriendsGroup;
     type Widgets = ();
     type Input = ContactGroupMessage;
-    type Output = ();
+    type Output = ContactMsg;
     type Command = ();
     type CommandOutput = ();
     type Root = ExpanderRow;
@@ -126,13 +125,12 @@ impl FactoryComponent<Box, SidebarMsg> for FriendsGroup {
         &mut self,
         relm_msg: Self::Input,
         _input: &Sender<Self::Input>,
-        _output: &Sender<Self::Output>,
+        output: &Sender<Self::Output>,
     ) -> Option<Self::Command> {
         use ContactGroupMessage::*;
         match relm_msg {
             SelectUser(account) => {
-                let main_sender = MAIN_SENDER.get().unwrap();
-                main_sender.input(MainMsg::SelectChatroom(account, false));
+                output.send(ContactMsg::SelectChatroom(account, false));
             }
         }
         None

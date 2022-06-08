@@ -15,7 +15,6 @@ use adw::{prelude::*, HeaderBar, Leaflet, Toast, ToastOverlay};
 use gtk::{Align, Box, Label, MenuButton, Orientation, Separator, Stack};
 
 use chatroom::{Chatroom, ChatroomInitParams};
-pub use sidebar::FriendsGroup;
 use sidebar::{SidebarModel, SidebarMsg};
 
 use crate::db::sql::{get_db, get_group_name};

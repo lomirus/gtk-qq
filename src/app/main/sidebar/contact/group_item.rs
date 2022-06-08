@@ -11,9 +11,9 @@ use tokio::task;
 use crate::db::fs::{download_group_avatar_file, get_group_avatar_path};
 use crate::db::sql::Group;
 
-use super::SidebarMsg;
+use super::ContactMsg;
 
-impl FactoryComponent<ListBox, SidebarMsg> for Group {
+impl FactoryComponent<ListBox, ContactMsg> for Group {
     type InitParams = Group;
     type Widgets = ();
     type Input = ();

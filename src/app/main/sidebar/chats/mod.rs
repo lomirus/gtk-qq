@@ -10,8 +10,6 @@ use gtk::{ListBox, ScrolledWindow};
 use super::SidebarMsg;
 use chat_item::ChatItem;
 
-pub use super::friends_group::FriendsGroup;
-
 #[derive(Debug)]
 pub struct ChatsModel {
     chats_list: RefCell<FactoryVecDeque<ListBox, ChatItem, ChatsMsg>>,
