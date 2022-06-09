@@ -35,7 +35,7 @@ impl LinkCopierWidgets {
 
     fn create_link_btn(uri: &impl AsRef<str>, label: &impl AsRef<str>) -> LinkButton {
         gtk::LinkButton::builder()
-            .css_name("link-part")
+            // .css_name("link-part")
             .uri(uri.as_ref())
             .label(label.as_ref())
             .build()
@@ -43,7 +43,7 @@ impl LinkCopierWidgets {
 
     fn create_copy_btn() -> Button {
         gtk::Button::builder()
-            .css_name("copy-part")
+            // .css_name("copy-part")
             .label("Copy")
             .build()
     }
