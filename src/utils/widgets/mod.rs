@@ -1,15 +1,23 @@
-use relm4::gtk::{prelude::IsA, Widget};
+use relm4::{
+    gtk::{prelude::IsA, Widget},
+    Component, OnDestroy,
+};
 
 pub mod linker_copier;
 
-/// 摆烂级
-pub trait CustomWidget<Message> {
-    type Widget: IsA<Widget>;
+pub trait CustomWidget {
+    type Root: std::fmt::Debug + OnDestroy;
+    type InitParams: 'static;
+    type Widgets:'static;
+    fn init_root() -> Self::Root;
 
-    fn to_widget(self) -> Self::Widget;
-    fn to_widget_ref(&self) -> &Self::Widget;
+    fn init(params: Self::InitParams, root: &Self::Root)->Self::Widgets;
 }
 
-pub trait InternalBuilder<W> {
-    fn get_internal(&mut self) -> &mut W;
+pub fn new_widget<C: CustomWidget>(params: C::InitParams) -> C::Root {
+    let root = C::init_root();
+
+    C::init(params, &root);
+
+    root
 }
