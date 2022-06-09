@@ -35,10 +35,10 @@ This app uses [ricq](https://github.com/lz1998/ricq) as the rust bindings of QQ 
 
 You will need to install [Rust](https://www.rust-lang.org/tools/install) and [Meson](https://mesonbuild.com/Getting-meson.html) to build this project, and the neccessary libraries below:
 
-#### Ubuntu
+#### Ubuntu (>= 22.04)
 
 ```bash
-sudo apt install ninja-build libgtk-4-dev libadwaita-1-dev
+sudo apt install gcc libssl-dev libsqlite3-dev libgtk-4-dev libadwaita-1-dev
 ```
 
 #### Fedora
