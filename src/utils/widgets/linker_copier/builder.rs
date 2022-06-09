@@ -1,17 +1,9 @@
-use relm4::gtk::{
-    builders::{BoxBuilder, ButtonBuilder, LinkButtonBuilder},
-    traits::{BoxExt, ButtonExt, WidgetExt},
-    Align, Box, Button, LinkButton, Orientation,
-};
 
-enum SetStatus {
-    UrISet,
-    LabelSet,
-    Both,
-    None,
-}
 
+
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
+
 pub enum LinkCopierState {
     Both,
     LinkOnly,

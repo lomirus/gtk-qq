@@ -4,7 +4,7 @@ use relm4::gtk::{
     Button, LinkButton,
 };
 
-use crate::utils::widgets::CustomWidget;
+
 
 use super::builder::LinkerCopierCfg;
 
@@ -37,7 +37,7 @@ impl LinkCopierWidgets {
         gtk::LinkButton::builder()
             .css_name("link-part")
             .uri(uri.as_ref())
-            .label(uri.as_ref())
+            .label(label.as_ref())
             .build()
     }
 

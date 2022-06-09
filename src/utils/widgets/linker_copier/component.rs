@@ -1,7 +1,6 @@
 use relm4::{
-    adw::{Toast, ToastOverlay},
-    gtk::{self, traits::BoxExt, Box},
-    Component, ComponentParts,
+    gtk::{self, traits::BoxExt},
+    ComponentParts,
 };
 
 use crate::utils::widgets::CustomWidget;
@@ -31,7 +30,7 @@ impl relm4::SimpleComponent for LinkCopierModel {
     fn init(
         params: Self::InitParams,
         root: &Self::Root,
-        sender: &relm4::ComponentSender<Self>,
+        _sender: &relm4::ComponentSender<Self>,
     ) -> relm4::ComponentParts<Self> {
         let widget = <Self as CustomWidget>::init(params, root);
 
