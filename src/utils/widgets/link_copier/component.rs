@@ -6,7 +6,7 @@ use relm4::{
 use crate::utils::widgets::CustomWidget;
 
 use super::{
-    builder::{LinkCopierState, LinkCopierCfg},
+    builder::{LinkCopierCfg, LinkCopierState},
     widgets::LinkCopierWidgets,
 };
 

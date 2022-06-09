@@ -4,8 +4,6 @@ use relm4::gtk::{
     Button, LinkButton,
 };
 
-
-
 use super::builder::LinkCopierCfg;
 
 #[derive(Debug, typed_builder::TypedBuilder)]
