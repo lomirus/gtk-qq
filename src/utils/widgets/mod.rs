@@ -6,10 +6,10 @@ pub mod linker_copier;
 pub trait CustomWidget<Message> {
     type Widget: IsA<Widget>;
 
-    fn into_widget(self) -> Self::Widget;
-    fn into_widget_ref(&self) -> &Self::Widget;
+    fn to_widget(self) -> Self::Widget;
+    fn to_widget_ref(&self) -> &Self::Widget;
 }
 
 pub trait InternalBuilder<W> {
-    fn get_internal(&mut self)->&mut W;   
+    fn get_internal(&mut self) -> &mut W;
 }
