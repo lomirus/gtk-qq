@@ -27,5 +27,7 @@ dirs = "4.0.0"
 reqwest = "0.11.10"
 qrcode-png = "0.4.0"
 
+typed-builder="0.10"
+
 [profile.release]
 lto = true
