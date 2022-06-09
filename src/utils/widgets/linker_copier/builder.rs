@@ -9,8 +9,11 @@ pub struct Builder {
 }
 
 impl Builder {
-    pub(super) fn new()->Self{
-        Self { text: None, url: None }
+    pub(super) fn new() -> Self {
+        Self {
+            text: None,
+            url: None,
+        }
     }
     #[allow(dead_code)]
     pub fn text(mut self, text: &str) -> Self {
