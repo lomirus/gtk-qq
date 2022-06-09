@@ -1,11 +1,17 @@
-use relm4::{gtk::{self, Box, traits::BoxExt}, Component, adw::{Toast, ToastOverlay}, ComponentParts};
+use relm4::{
+    adw::{Toast, ToastOverlay},
+    gtk::{self, traits::BoxExt, Box},
+    Component, ComponentParts,
+};
 
 use crate::utils::widgets::CustomWidget;
 
-use super::{builder::{LinkerCopierCfg, LinkCopierState}, widgets::LinkCopierWidgets};
+use super::{
+    builder::{LinkCopierState, LinkerCopierCfg},
+    widgets::LinkCopierWidgets,
+};
 
 pub struct LinkCopierModel;
-
 
 impl relm4::SimpleComponent for LinkCopierModel {
     type Input = ();
@@ -29,19 +35,21 @@ impl relm4::SimpleComponent for LinkCopierModel {
     ) -> relm4::ComponentParts<Self> {
         let widget = <Self as CustomWidget>::init(params, root);
 
-
-        ComponentParts{ model: LinkCopierModel, widgets: widget }
+        ComponentParts {
+            model: LinkCopierModel,
+            widgets: widget,
+        }
     }
 }
 
 impl CustomWidget for LinkCopierModel {
-    type Root=gtk::Box;
+    type Root = gtk::Box;
 
-    type InitParams=LinkerCopierCfg;
+    type InitParams = LinkerCopierCfg;
     type Widgets = LinkCopierWidgets;
-    fn init_root()->Self::Root {
+    fn init_root() -> Self::Root {
         gtk::Box::builder()
-        .css_name("link-copier")
+            .css_name("link-copier")
             .orientation(gtk::Orientation::Horizontal)
             .halign(gtk::Align::Center)
             .valign(gtk::Align::Center)
@@ -49,7 +57,7 @@ impl CustomWidget for LinkCopierModel {
             .build()
     }
 
-    fn init(params:Self::InitParams,root:&Self::Root) ->Self::Widgets{
+    fn init(params: Self::InitParams, root: &Self::Root) -> Self::Widgets {
         let ty = params.ty;
         let widget = Self::Widgets::new(params);
 
@@ -57,7 +65,7 @@ impl CustomWidget for LinkCopierModel {
             LinkCopierState::Both => {
                 root.append(&widget.link_btn);
                 root.append(&widget.copy_btn);
-            },
+            }
             LinkCopierState::LinkOnly => root.append(&widget.link_btn),
             LinkCopierState::BtnOnly => root.append(&widget.copy_btn),
         }

@@ -28,8 +28,6 @@ impl LinkCopierWidgets {
             clipboard.set_text(&cfg.url);
             // set btn label to `Coped`
             btn.set_label("Copied")
-
-            
         });
 
         Self { link_btn, copy_btn }
@@ -50,4 +48,3 @@ impl LinkCopierWidgets {
             .build()
     }
 }
-
