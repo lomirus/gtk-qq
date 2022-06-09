@@ -1,14 +1,8 @@
+mod widgets;
 mod builder;
-mod widget_impl;
+mod component;
 
-#[derive(Debug)]
-pub struct LinkerCopier(Box);
-pub use builder::Builder as LinkerCopierBuilder;
-use relm4::gtk::Box;
 
-#[allow(dead_code)]
-impl LinkerCopier {
-    pub fn builder() -> LinkerCopierBuilder {
-        LinkerCopierBuilder::new()
-    }
-}
+pub use component::LinkCopierModel;
+pub use widgets::LinkCopierWidgets;
+pub use builder::{LinkCopierState,LinkerCopierCfg};
