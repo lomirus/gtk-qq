@@ -1,7 +1,4 @@
-use relm4::{
-    gtk::{prelude::IsA, Widget},
-    Component, OnDestroy,
-};
+use relm4::OnDestroy;
 
 pub mod linker_copier;
 
@@ -14,6 +11,7 @@ pub trait CustomWidget {
     fn init(params: Self::InitParams, root: &Self::Root) -> Self::Widgets;
 }
 
+#[allow(dead_code)]
 pub fn new_widget<C: CustomWidget>(params: C::InitParams) -> C::Root {
     let root = C::init_root();
 
