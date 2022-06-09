@@ -11,7 +11,7 @@ pub enum LinkCopierState {
 }
 
 #[derive(Debug, typed_builder::TypedBuilder)]
-pub struct LinkerCopierCfg {
+pub struct LinkCopierCfg {
     pub(super) url: String,
     #[builder(default, setter(strip_option))]
     pub(super) label: Option<String>,

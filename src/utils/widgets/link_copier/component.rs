@@ -6,7 +6,7 @@ use relm4::{
 use crate::utils::widgets::CustomWidget;
 
 use super::{
-    builder::{LinkCopierState, LinkerCopierCfg},
+    builder::{LinkCopierState, LinkCopierCfg},
     widgets::LinkCopierWidgets,
 };
 
@@ -17,7 +17,7 @@ impl relm4::SimpleComponent for LinkCopierModel {
 
     type Output = ();
 
-    type InitParams = LinkerCopierCfg;
+    type InitParams = LinkCopierCfg;
 
     type Root = gtk::Box;
 
@@ -44,7 +44,7 @@ impl relm4::SimpleComponent for LinkCopierModel {
 impl CustomWidget for LinkCopierModel {
     type Root = gtk::Box;
 
-    type InitParams = LinkerCopierCfg;
+    type InitParams = LinkCopierCfg;
     type Widgets = LinkCopierWidgets;
     fn init_root() -> Self::Root {
         gtk::Box::builder()

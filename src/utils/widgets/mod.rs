@@ -1,6 +1,6 @@
 use relm4::OnDestroy;
 
-pub mod linker_copier;
+pub mod link_copier;
 
 pub trait CustomWidget {
     type Root: std::fmt::Debug + OnDestroy;

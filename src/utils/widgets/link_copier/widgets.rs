@@ -6,7 +6,7 @@ use relm4::gtk::{
 
 
 
-use super::builder::LinkerCopierCfg;
+use super::builder::LinkCopierCfg;
 
 #[derive(Debug, typed_builder::TypedBuilder)]
 pub struct LinkCopierWidgets {
@@ -15,7 +15,7 @@ pub struct LinkCopierWidgets {
 }
 
 impl LinkCopierWidgets {
-    pub(super) fn new(cfg: LinkerCopierCfg) -> Self {
+    pub(super) fn new(cfg: LinkCopierCfg) -> Self {
         let label: Option<&String> = (&cfg.label).into();
         let label = label.map(String::as_str).unwrap_or(&cfg.url);
 
