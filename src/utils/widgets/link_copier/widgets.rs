@@ -1,10 +1,13 @@
-use relm4::gtk::{
-    self,
-    traits::{ButtonExt, WidgetExt},
-    Button, LinkButton,
+use relm4::{
+    gtk::{
+        self,
+        traits::{ButtonExt, WidgetExt},
+        Button, LinkButton,
+    },
+    ComponentSender,
 };
 
-use super::builder::LinkCopierCfg;
+use super::{payloads::Payload, LinkCopierModel, Output};
 
 #[derive(Debug, typed_builder::TypedBuilder)]
 pub struct LinkCopierWidgets {
@@ -13,19 +16,20 @@ pub struct LinkCopierWidgets {
 }
 
 impl LinkCopierWidgets {
-    pub(super) fn new(cfg: LinkCopierCfg) -> Self {
+    pub(super) fn new(cfg: &Payload, sender: ComponentSender<LinkCopierModel>) -> Self {
         let label: Option<&String> = (&cfg.label).into();
         let label = label.map(String::as_str).unwrap_or(&cfg.url);
 
         let link_btn = Self::create_link_btn(&cfg.url, &label);
         let copy_btn = Self::create_copy_btn();
 
+        let url = cfg.url.clone();
         copy_btn.connect_clicked(move |btn| {
             // past url to clipboard
             let clipboard = btn.clipboard();
-            clipboard.set_text(&cfg.url);
-            // set btn label to `Coped`
-            btn.set_label("Copied")
+            clipboard.set_text(&url);
+
+            sender.output(Output::LinkCopied);
         });
 
         Self { link_btn, copy_btn }
