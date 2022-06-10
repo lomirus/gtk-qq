@@ -8,7 +8,6 @@ use relm4::{
     ComponentParts,
 };
 
-
 use super::{widgets::LinkCopierWidgets, Input, Output, Payload, State};
 
 pub struct LinkCopierModel {
@@ -70,7 +69,9 @@ impl relm4::SimpleComponent for LinkCopierModel {
     fn update(&mut self, message: Self::Input, _sender: &relm4::ComponentSender<Self>) {
         match message {
             Input::SetLink(url) => self.link = url.into_owned(),
-            Input::SetLabel(label) => {self.label.replace(label.into_owned());},
+            Input::SetLabel(label) => {
+                self.label.replace(label.into_owned());
+            }
             Input::SetState(s) => self.state = s,
         }
     }
