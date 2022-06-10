@@ -156,16 +156,9 @@ pub async fn refresh_groups_list() -> Result<(), Box<dyn Error>> {
     let client = CLIENT.get().unwrap();
     let res = client.get_group_list().await?;
 
-    let groups = res.into_iter().map(
-        |GroupInfo {
-             code,
-             name,
-             ..
-         }| Group {
-            id: code,
-            name,
-        },
-    );
+    let groups = res
+        .into_iter()
+        .map(|GroupInfo { code, name, .. }| Group { id: code, name });
 
     conn.execute("DELETE FROM groups", [])?;
     let mut stmt = conn.prepare("INSERT INTO groups values (?1, ?2)")?;
