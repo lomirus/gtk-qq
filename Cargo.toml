@@ -7,10 +7,7 @@ edition = "2021"
 git = "https://github.com/Relm4/Relm4.git"
 # next, 2022/05/25
 rev = "968d09c9417dce6f84446948523e3befc4954d50"
-features = [
-    "macros",
-    "libadwaita",
-]
+features = ["macros", "libadwaita"]
 
 [dependencies.ricq]
 git = "https://github.com/lz1998/ricq.git"
@@ -26,6 +23,7 @@ rusqlite = "0.27.0"
 dirs = "4.0.0"
 reqwest = "0.11.10"
 qrcode-png = "0.4.0"
+typed-builder = "0.10"
 
 [profile.release]
 lto = true
