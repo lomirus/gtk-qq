@@ -78,7 +78,7 @@ impl SimpleComponent for GroupsModel {
                 Button {
                     #[watch]
                     set_sensitive: model.is_refresh_button_enabled,
-                    set_tooltip_text: Some("Refreshing groups list"),
+                    set_tooltip_text: Some("Refresh groups list"),
                     set_icon_name: "view-refresh-symbolic",
                     set_margin_end: 8,
                     connect_clicked[sender] => move |_| {
