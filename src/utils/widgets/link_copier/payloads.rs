@@ -9,10 +9,11 @@ pub enum State {
     BtnOnly,
 }
 
+#[allow(dead_code)]
 pub enum Input {
-    SetLink(Cow<'static, String>),
-    SetLabel(Cow<'static, String>),
-    SetState(State),
+    Link(Cow<'static, String>),
+    Label(Cow<'static, String>),
+    State(State),
 }
 
 pub enum Output {
