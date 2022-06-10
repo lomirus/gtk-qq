@@ -1,51 +1,33 @@
+use std::sync::Arc;
+
 use relm4::{
-    gtk::{self, traits::BoxExt},
+    gtk::{
+        self,
+        traits::{BoxExt, ButtonExt, WidgetExt},
+    },
     ComponentParts,
 };
 
-use crate::utils::widgets::CustomWidget;
 
-use super::{
-    builder::{LinkCopierCfg, LinkCopierState},
-    widgets::LinkCopierWidgets,
-};
+use super::{widgets::LinkCopierWidgets, Input, Output, Payload, State};
 
-pub struct LinkCopierModel;
-
-impl relm4::SimpleComponent for LinkCopierModel {
-    type Input = ();
-
-    type Output = ();
-
-    type InitParams = LinkCopierCfg;
-
-    type Root = gtk::Box;
-
-    type Widgets = LinkCopierWidgets;
-
-    fn init_root() -> Self::Root {
-        <Self as CustomWidget>::init_root()
-    }
-
-    fn init(
-        params: Self::InitParams,
-        root: &Self::Root,
-        _sender: &relm4::ComponentSender<Self>,
-    ) -> relm4::ComponentParts<Self> {
-        let widget = <Self as CustomWidget>::init(params, root);
-
-        ComponentParts {
-            model: LinkCopierModel,
-            widgets: widget,
-        }
-    }
+pub struct LinkCopierModel {
+    link: String,
+    label: Option<String>,
+    state: State,
 }
 
-impl CustomWidget for LinkCopierModel {
+impl relm4::SimpleComponent for LinkCopierModel {
+    type Input = Input;
+
+    type Output = Output;
+
+    type InitParams = Payload;
+
     type Root = gtk::Box;
 
-    type InitParams = LinkCopierCfg;
     type Widgets = LinkCopierWidgets;
+
     fn init_root() -> Self::Root {
         gtk::Box::builder()
             .css_name("link-copier")
@@ -56,19 +38,63 @@ impl CustomWidget for LinkCopierModel {
             .build()
     }
 
-    fn init(params: Self::InitParams, root: &Self::Root) -> Self::Widgets {
+    fn init(
+        params: Self::InitParams,
+        root: &Self::Root,
+        sender: &relm4::ComponentSender<Self>,
+    ) -> relm4::ComponentParts<Self> {
         let ty = params.ty;
-        let widget = Self::Widgets::new(params);
+        let widget = Self::Widgets::new(&params, Arc::clone(sender));
 
         match ty {
-            LinkCopierState::Both => {
+            State::Both => {
                 root.append(&widget.link_btn);
                 root.append(&widget.copy_btn);
             }
-            LinkCopierState::LinkOnly => root.append(&widget.link_btn),
-            LinkCopierState::BtnOnly => root.append(&widget.copy_btn),
-        }
+            State::LinkOnly => root.append(&widget.link_btn),
+            State::BtnOnly => root.append(&widget.copy_btn),
+        };
 
-        widget
+        let model = LinkCopierModel {
+            link: params.url,
+            label: params.label,
+            state: ty,
+        };
+
+        ComponentParts {
+            model,
+            widgets: widget,
+        }
+    }
+
+    fn update(&mut self, message: Self::Input, _sender: &relm4::ComponentSender<Self>) {
+        match message {
+            Input::SetLink(url) => self.link = url.into_owned(),
+            Input::SetLabel(label) => {self.label.replace(label.into_owned());},
+            Input::SetState(s) => self.state = s,
+        }
+    }
+
+    fn update_view(&self, widgets: &mut Self::Widgets, _sender: &relm4::ComponentSender<Self>) {
+        let label: Option<_> = (&self.label).into();
+        let label = label.unwrap_or(&self.link).as_str();
+
+        widgets.link_btn.set_uri(&self.link);
+        widgets.link_btn.set_label(label);
+
+        match self.state {
+            State::Both => {
+                widgets.copy_btn.set_visible(true);
+                widgets.link_btn.set_visible(true);
+            }
+            State::LinkOnly => {
+                widgets.copy_btn.set_visible(false);
+                widgets.link_btn.set_visible(true);
+            }
+            State::BtnOnly => {
+                widgets.copy_btn.set_visible(true);
+                widgets.link_btn.set_visible(false);
+            }
+        }
     }
 }
