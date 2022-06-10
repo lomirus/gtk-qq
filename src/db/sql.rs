@@ -31,7 +31,6 @@ pub struct FriendsGroup {
 pub struct Group {
     pub id: i64,
     pub name: String,
-    pub owner_id: i64,
 }
 
 pub fn init_sqlite() {
@@ -79,8 +78,7 @@ pub fn init_sqlite() {
     conn.execute(
         "Create table if not exists groups (
             id          INT PRIMARY KEY,
-            name        TEXT NOT NULL,
-            owner_id    INT NOT NULL
+            name        TEXT NOT NULL
         )",
         [],
     )
@@ -162,19 +160,17 @@ pub async fn refresh_groups_list() -> Result<(), Box<dyn Error>> {
         |GroupInfo {
              code,
              name,
-             owner_uin,
              ..
          }| Group {
             id: code,
             name,
-            owner_id: owner_uin,
         },
     );
 
     conn.execute("DELETE FROM groups", [])?;
-    let mut stmt = conn.prepare("INSERT INTO groups values (?1, ?2, ?3)")?;
+    let mut stmt = conn.prepare("INSERT INTO groups values (?1, ?2)")?;
     for group in groups {
-        stmt.execute(params![group.id, group.name, group.owner_id])?;
+        stmt.execute(params![group.id, group.name])?;
     }
 
     Ok(())
@@ -215,7 +211,7 @@ pub fn get_group_name(group_id: i64) -> String {
 pub fn check_db_version() {
     let conn = get_db();
     let res = conn.query_row::<String, _, _>(
-        "Select value from configs where key='version'",
+        "Select value from configs where key='db_version'",
         [],
         |row| row.get(0),
     );
@@ -229,7 +225,7 @@ pub fn check_db_version() {
         Err(err) => {
             if err.to_string() == "Query returned no rows" {
                 conn.execute(
-                    "Insert into configs values ('version', ?1)",
+                    "Insert into configs values ('db_version', ?1)",
                     [DB_VERSION.to_string()],
                 )
                 .unwrap();
