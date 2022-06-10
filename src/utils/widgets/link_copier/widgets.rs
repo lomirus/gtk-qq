@@ -37,7 +37,7 @@ impl LinkCopierWidgets {
 
     fn create_link_btn(uri: &impl AsRef<str>, label: &impl AsRef<str>) -> LinkButton {
         gtk::LinkButton::builder()
-            .css_classes(vec!["link-part".into()])
+            // .css_classes(vec!["link-part".into()])
             .uri(uri.as_ref())
             .label(label.as_ref())
             .build()
@@ -45,7 +45,7 @@ impl LinkCopierWidgets {
 
     fn create_copy_btn() -> Button {
         gtk::Button::builder()
-            .css_classes(vec!["copy-part".into()])
+            // .css_classes(vec!["copy-part".into()])
             .label("Copy Link")
             .build()
     }

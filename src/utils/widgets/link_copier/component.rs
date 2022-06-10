@@ -10,6 +10,7 @@ use relm4::{
 
 use super::{widgets::LinkCopierWidgets, Input, Output, Payload, State};
 
+#[derive(Debug)]
 pub struct LinkCopierModel {
     link: String,
     label: Option<String>,
