@@ -13,7 +13,7 @@ use super::FriendsMsg;
 use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::db::sql::Friend;
 
-pub enum ContactGroupMessage {
+pub enum FriendsGroupMessage {
     SelectUser(i64),
 }
 
@@ -28,7 +28,7 @@ pub struct FriendsGroup {
 impl FactoryComponent<Box, FriendsMsg> for FriendsGroup {
     type InitParams = FriendsGroup;
     type Widgets = ();
-    type Input = ContactGroupMessage;
+    type Input = FriendsGroupMessage;
     type Output = FriendsMsg;
     type Command = ();
     type CommandOutput = ();
@@ -71,7 +71,7 @@ impl FactoryComponent<Box, FriendsMsg> for FriendsGroup {
             // Create user item click event
             let gesture = GestureClick::new();
             gesture.connect_released(clone!(@strong input => move |_, _, _, _| {
-                input.send(ContactGroupMessage::SelectUser(friend.id));
+                input.send(FriendsGroupMessage::SelectUser(friend.id));
             }));
 
             relm4::view! {
@@ -127,12 +127,16 @@ impl FactoryComponent<Box, FriendsMsg> for FriendsGroup {
         _input: &Sender<Self::Input>,
         output: &Sender<Self::Output>,
     ) -> Option<Self::Command> {
-        use ContactGroupMessage::*;
+        use FriendsGroupMessage::*;
         match relm_msg {
             SelectUser(account) => {
                 output.send(FriendsMsg::SelectChatroom(account, false));
             }
         }
         None
+    }
+
+    fn output_to_parent_msg(output: FriendsMsg) -> Option<FriendsMsg> {
+        Some(output)
     }
 }
