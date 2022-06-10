@@ -3,6 +3,7 @@ use std::error::Error;
 use ricq::structs::{FriendGroupInfo, FriendInfo, GroupInfo};
 use rusqlite::{params, Connection};
 
+use crate::config::DB_VERSION;
 use crate::handler::CLIENT;
 
 #[derive(Debug)]
@@ -45,12 +46,14 @@ pub fn init_sqlite() {
 
     conn.execute(
         "Create table if not exists configs (
-            key     INT PRIMARY KEY,
+            key     TEXT PRIMARY KEY,
             value   TEXT NOT NULL
         )",
         [],
     )
     .unwrap();
+
+    check_db_version();
 
     conn.execute(
         "Create table if not exists friends (
@@ -207,4 +210,32 @@ pub fn get_group_name(group_id: i64) -> String {
             ));
             group_id.to_string()
         })
+}
+
+pub fn check_db_version() {
+    let conn = get_db();
+    let res = conn.query_row::<String, _, _>(
+        "Select value from configs where key='version'",
+        [],
+        |row| row.get(0),
+    );
+    match res {
+        Ok(version) => {
+            let version: usize = version.parse().unwrap();
+            if version != DB_VERSION {
+                panic!("unrecognized database version")
+            }
+        }
+        Err(err) => {
+            if err.to_string() == "Query returned no rows" {
+                conn.execute(
+                    "Insert into configs values ('version', ?1)",
+                    [DB_VERSION.to_string()],
+                )
+                .unwrap();
+            } else {
+                panic!("{}", err);
+            }
+        }
+    }
 }
