@@ -68,11 +68,11 @@ impl relm4::SimpleComponent for LinkCopierModel {
 
     fn update(&mut self, message: Self::Input, _sender: &relm4::ComponentSender<Self>) {
         match message {
-            Input::SetLink(url) => self.link = url.into_owned(),
-            Input::SetLabel(label) => {
+            Input::Link(url) => self.link = url.into_owned(),
+            Input::Label(label) => {
                 self.label.replace(label.into_owned());
             }
-            Input::SetState(s) => self.state = s,
+            Input::State(s) => self.state = s,
         }
     }
 
