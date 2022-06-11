@@ -100,17 +100,11 @@ async fn handle_login_response(
         LoginResponse::DeviceLocked(LoginDeviceLocked {
             sms_phone,
             verify_url,
-            message,
             ..
         }) => {
             sender.input(LoginFailed(
                 "Device Locked. See more in the pop-up window.".to_string(),
             ));
-
-            println!("------[TODO: Add GUI for this]");
-            println!("message: {:?}", message);
-            println!("sms_phone: {:?}", sms_phone);
-            println!("verify_url: {:?}", verify_url);
 
             sender.input(LoginPageMsg::DeviceLock(
                 verify_url.unwrap_or_else(|| "<unknown>".into()),
