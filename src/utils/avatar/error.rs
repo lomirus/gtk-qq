@@ -4,6 +4,7 @@ use std::io;
 pub enum AvatarError {
     Io(io::Error),
     Request(reqwest::Error),
+    Glib(relm4::gtk::glib::Error),
 }
 
 impl std::fmt::Display for AvatarError {
@@ -11,6 +12,7 @@ impl std::fmt::Display for AvatarError {
         match self {
             AvatarError::Io(err) => write!(f, "Avatar Io Error : {}", err),
             AvatarError::Request(err) => write!(f, "Avatar Request Error : {}", err),
+            AvatarError::Glib(err) => write!(f, "Avatar GLib Error : {}", err),
         }
     }
 }
@@ -24,5 +26,11 @@ impl From<io::Error> for AvatarError {
 impl From<reqwest::Error> for AvatarError {
     fn from(err: reqwest::Error) -> Self {
         AvatarError::Request(err)
+    }
+}
+
+impl From<relm4::gtk::glib::Error> for AvatarError {
+    fn from(err: relm4::gtk::glib::Error) -> Self {
+        AvatarError::Glib(err)
     }
 }
