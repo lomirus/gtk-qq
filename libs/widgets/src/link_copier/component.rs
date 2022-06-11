@@ -34,7 +34,6 @@ impl relm4::SimpleComponent for LinkCopierModel {
             .orientation(gtk::Orientation::Horizontal)
             .halign(gtk::Align::Center)
             .valign(gtk::Align::Center)
-            .spacing(3)
             .build()
     }
 

@@ -22,6 +22,7 @@ pub struct CaptchaWidgets {
     pub(super) _ticket_label: Label,
     pub(super) _ticket_input: Entry,
     pub(super) _ticket_submit_btn: Button,
+    pub(super) _no_qr_box_1: Box,
     pub(super) _no_qr_ticket_info_1: Label,
     pub(super) _no_qr_ticket_info_2: Label,
     pub(super) _no_qr_ticket_info_3: Label,
@@ -110,6 +111,8 @@ impl CaptchaWidgets {
             .label("Help: If you do not have an Android phone to install the tool, open the")
             .build();
 
+        let no_qr_box_1 = Box::new(Orientation::Horizontal, 0);
+
         let no_qr_ticket_info_2 = Label::builder().xalign(0.0).label(" in the browser manually, open the devtools and switch to the network panel. After you passed the").build();
 
         let no_qr_ticket_info_3 = Label::builder().xalign(0.0).label("verification, you will find a request whose response contains the `ticket`. Then just paste it").build();
@@ -140,8 +143,10 @@ impl CaptchaWidgets {
         ticket_input_area.append(&ticket_input);
         ticket_input_area.append(&ticket_submit_btn);
 
-        body_left_info.append(&no_qr_ticket_info_1);
-        body_left_info.append(no_qr_link);
+        body_left_info.append(&no_qr_box_1);
+
+        no_qr_box_1.append(&no_qr_ticket_info_1);
+        no_qr_box_1.append(no_qr_link);
         body_left_info.append(&no_qr_ticket_info_2);
         body_left_info.append(&no_qr_ticket_info_3);
         body_left_info.append(&no_qr_ticket_info_4);
@@ -163,6 +168,7 @@ impl CaptchaWidgets {
             _no_qr_ticket_info_3: no_qr_ticket_info_3,
             _no_qr_ticket_info_4: no_qr_ticket_info_4,
             _body_right_qrcode: body_right_qrcode,
+            _no_qr_box_1: no_qr_box_1,
         }
     }
 }
