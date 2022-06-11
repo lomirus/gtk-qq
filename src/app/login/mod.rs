@@ -473,9 +473,7 @@ impl SimpleComponent for LoginPageModel {
             .go_next_button
             .set_sensitive(self.is_login_button_enabled);
 
-        // TODO: IF ELSE HELL!!! Someone helps improve here please.
-
-        let pix_buf_owner = self
+        let paint = self
             .account
             .parse::<i64>()
             .ok()
@@ -485,6 +483,6 @@ impl SimpleComponent for LoginPageModel {
 
         widgets
             .avatar
-            .set_custom_image(Into::<Option<&'_ Paintable>>::into(&pix_buf_owner));
+            .set_custom_image(Into::<Option<&'_ Paintable>>::into(&paint));
     }
 }
