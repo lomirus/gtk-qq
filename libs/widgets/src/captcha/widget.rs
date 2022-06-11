@@ -13,29 +13,29 @@ use relm4::{
 use super::{payloads::Output, CaptchaModel};
 
 pub struct CaptchaWidgets {
-    pub(super) _header_bar: HeaderBar,
-    pub(super) _body: Box,
-    pub(super) _body_left_info: Box,
-    pub(super) _body_scan_info_1: Label,
-    pub(super) _body_scan_info_2: Label,
-    pub(super) _ticket_input_area: Box,
-    pub(super) _ticket_label: Label,
-    pub(super) _ticket_input: Entry,
-    pub(super) _ticket_submit_btn: Button,
-    pub(super) _no_qr_box_1: Box,
-    pub(super) _no_qr_ticket_info_1: Label,
-    pub(super) _no_qr_ticket_info_2: Label,
-    pub(super) _no_qr_ticket_info_3: Label,
-    pub(super) _no_qr_ticket_info_4: Label,
+    _header_bar: HeaderBar,
+    _body: Box,
+    _body_left_info: Box,
+    _body_scan_info_1: Label,
+    _body_scan_info_2: Label,
+    _ticket_input_area: Box,
+    _ticket_label: Label,
+    _ticket_input: Entry,
+    _ticket_submit_btn: Button,
+    _tip_box_1: Box,
+    _tip_1: Label,
+    _tip_2: Label,
+    _tip_3: Label,
+    _tip_4: Label,
 
-    pub(super) _body_right_qrcode: Picture,
+    _body_right_qrcode: Picture,
 }
 
 impl CaptchaWidgets {
     pub fn new(
         root: &Box,
         scanner_link: &Box,
-        no_qr_link: &Box,
+        verify_link: &Box,
         window_ref: &Window,
         sender_ref: &ComponentSender<CaptchaModel>,
     ) -> Self {
@@ -66,7 +66,7 @@ impl CaptchaWidgets {
 
         let body_scan_info_1 = Label::builder()
             .xalign(0.0)
-            .label(r#"1. Install the tool on your android phone: "#)
+            .label("1. Install the tool on your Android phone: ")
             .build();
 
         let body_scan_info_2 = Label::builder()
@@ -106,18 +106,17 @@ impl CaptchaWidgets {
             window.close();
         });
 
-        let no_qr_ticket_info_1 = Label::builder()
+        let tip_box = Box::new(Orientation::Horizontal, 0);
+        let tip_1 = Label::builder()
             .xalign(0.0)
             .label("Help: If you do not have an Android phone to install the tool, open the")
             .build();
 
-        let no_qr_box_1 = Box::new(Orientation::Horizontal, 0);
+        let tip_2 = Label::builder().xalign(0.0).label(" in the browser manually, open the devtools and switch to the network panel. After you passed the").build();
 
-        let no_qr_ticket_info_2 = Label::builder().xalign(0.0).label(" in the browser manually, open the devtools and switch to the network panel. After you passed the").build();
+        let tip_3 = Label::builder().xalign(0.0).label("verification, you will find a request whose response contains the `ticket`. Then just paste it").build();
 
-        let no_qr_ticket_info_3 = Label::builder().xalign(0.0).label("verification, you will find a request whose response contains the `ticket`. Then just paste it").build();
-
-        let no_qr_ticket_info_4 = Label::builder().xalign(0.0).label("above. The result would be same. It just maybe more complex if you don't know devtools well.").build();
+        let tip_4 = Label::builder().xalign(0.0).label("above. The result would be same. It just maybe more complex if you don't know devtools well.").build();
 
         let body_right_qrcode = Picture::builder()
             .width_request(240)
@@ -143,13 +142,13 @@ impl CaptchaWidgets {
         ticket_input_area.append(&ticket_input);
         ticket_input_area.append(&ticket_submit_btn);
 
-        body_left_info.append(&no_qr_box_1);
+        body_left_info.append(&tip_box);
 
-        no_qr_box_1.append(&no_qr_ticket_info_1);
-        no_qr_box_1.append(no_qr_link);
-        body_left_info.append(&no_qr_ticket_info_2);
-        body_left_info.append(&no_qr_ticket_info_3);
-        body_left_info.append(&no_qr_ticket_info_4);
+        tip_box.append(&tip_1);
+        tip_box.append(verify_link);
+        body_left_info.append(&tip_2);
+        body_left_info.append(&tip_3);
+        body_left_info.append(&tip_4);
 
         body.append(&body_right_qrcode);
 
@@ -163,12 +162,12 @@ impl CaptchaWidgets {
             _ticket_label: ticket_label,
             _ticket_input: ticket_input,
             _ticket_submit_btn: ticket_submit_btn,
-            _no_qr_ticket_info_1: no_qr_ticket_info_1,
-            _no_qr_ticket_info_2: no_qr_ticket_info_2,
-            _no_qr_ticket_info_3: no_qr_ticket_info_3,
-            _no_qr_ticket_info_4: no_qr_ticket_info_4,
+            _tip_1: tip_1,
+            _tip_2: tip_2,
+            _tip_3: tip_3,
+            _tip_4: tip_4,
             _body_right_qrcode: body_right_qrcode,
-            _no_qr_box_1: no_qr_box_1,
+            _tip_box_1: tip_box,
         }
     }
 }
