@@ -7,7 +7,7 @@ use relm4::{
         traits::{BoxExt, ButtonExt, GtkWindowExt},
         Button, Label,
     },
-    Component, ComponentController, ComponentSender,
+    Component, ComponentController, ComponentSender, WidgetPlus,
 };
 
 use crate::link_copier::{self, LinkCopier, LinkCopierModel};
@@ -35,19 +35,25 @@ impl Widgets {
             .build();
 
         let body = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
             .valign(gtk::Align::Center)
             .halign(gtk::Align::Center)
             .vexpand(true)
             .spacing(24)
             .build();
 
+        body.set_margin_all(16);
+
         let msg = Label::new(
             format!(
-                "Please open the following link using logged in device[{}] to verification",
+                "Please open the link below and use your logged in device[sms:{}] to verify",
                 cfg.sms_phone.unwrap_or("<unknown>".into())
-            ).as_str()
+            )
+            .as_str()
             .into(),
         );
+
+        
 
         let link = LinkCopierModel::builder()
             .launch(
@@ -60,9 +66,11 @@ impl Widgets {
                 link_copier::Output::LinkCopied => payloads::Output::CopyLink,
             });
 
-        let msg2 = Label::new("once finish verification ,press following button".into());
+        let msg2 = Label::new("Once verified, click the button below".into());
 
-        let btn = Button::builder().label("Confirm Verification").build();
+        let btn = Button::builder()
+            .label("Confirm Verification")
+            .build();
 
         let sender = Arc::clone(sender_ref);
         btn.connect_clicked(move |_| {
