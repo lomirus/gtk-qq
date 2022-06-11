@@ -51,7 +51,7 @@ impl SimpleComponent for CaptchaModel {
             .launch(
                 link_copier::Payload::builder()
                     .url(params.verify_url)
-                    .label("Verification link".into())
+                    .label("Verification Link".into())
                     .build(),
             )
             .forward(&sender.output, |msg| match msg {
