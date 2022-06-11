@@ -47,7 +47,7 @@ impl Widgets {
         let msg = Label::new(
             format!(
                 "Please open the link below and use your logged in device[sms:{}] to verify",
-                cfg.sms_phone.unwrap_or("<unknown>".into())
+                cfg.sms_phone.unwrap_or_else(||"<unknown>".into())
             )
             .as_str()
             .into(),
