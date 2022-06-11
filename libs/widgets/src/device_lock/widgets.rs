@@ -41,7 +41,13 @@ impl Widgets {
             .spacing(24)
             .build();
 
-        let msg = Label::new("Please open the following link to verification".into());
+        let msg = Label::new(
+            format!(
+                "Please open the following link using logged in device[{}] to verification",
+                cfg.sms_phone.unwrap_or("<unknown>".into())
+            ).as_str()
+            .into(),
+        );
 
         let link = LinkCopierModel::builder()
             .launch(

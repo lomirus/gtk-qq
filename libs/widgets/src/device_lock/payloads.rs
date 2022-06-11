@@ -8,6 +8,8 @@ pub enum Output {
 
 #[derive(Debug, TypedBuilder)]
 pub struct Payload {
-    pub(super) unlock_url: String,
     pub(super) window: adw::Window,
+    pub(super) unlock_url: String,
+    #[builder(default)]
+    pub(super) sms_phone:Option<String>
 }
