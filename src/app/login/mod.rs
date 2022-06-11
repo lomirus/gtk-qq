@@ -1,3 +1,4 @@
+mod device_lock;
 mod service;
 
 use std::sync::Arc;
@@ -15,7 +16,7 @@ use gtk::{Align, Box, Button, Entry, EntryBuffer, Label, MenuButton, Orientation
 
 use ricq::Client;
 use tokio::task;
-use widgets::{captcha, device_lock};
+use widgets::captcha;
 
 use crate::actions::{AboutAction, ShortcutsAction};
 use crate::app::AppMessage;
@@ -23,7 +24,7 @@ use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::global::WINDOW;
 use crate::utils::avatar::loader::{AvatarLoader, User};
 
-use self::service::{get_login_info, submit_ticket,login};
+use self::service::{get_login_info, login, submit_ticket};
 
 type SmsPhone = Option<String>;
 type VerifyUrl = String;
@@ -49,7 +50,7 @@ pub enum LoginPageMsg {
     NeedCaptcha(String, Arc<Client>, UserId, Password),
     SubmitTicket(String, Arc<Client>, UserId, Password),
     DeviceLock(VerifyUrl, SmsPhone),
-    ConfirmVerified,
+    ConfirmVerification,
     CopyLink,
 }
 
@@ -179,23 +180,18 @@ impl SimpleComponent for LoginPageModel {
                     .build();
 
                 let device_lock = device_lock::DeviceLock::builder()
-                    .launch(
-                        device_lock::Payload::builder()
-                            .window(window.clone())
-                            .unlock_url(verify_url)
-                            .sms_phone(sms)
-                            .build(),
-                    )
-                    .forward(sender.input_sender(), move |out| match out {
-                        device_lock::Output::ConfirmVerify => ConfirmVerified,
-                        device_lock::Output::CopyLink => CopyLink,
-                    });
+                    .launch(device_lock::Payload {
+                        window: window.clone(),
+                        unlock_url: verify_url,
+                        sms_phone: sms,
+                    })
+                    .forward(sender.input_sender(), |output| output);
 
                 window.set_content(Some(device_lock.widget()));
                 window.present()
             }
-            //TODO: proc follow operate
-            ConfirmVerified => sender.input(LoginStart),
+            // TODO: proc follow operate
+            ConfirmVerification => sender.input(LoginStart),
         }
     }
 
