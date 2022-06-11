@@ -24,7 +24,7 @@ use tokio::{
     net::TcpStream,
     task,
 };
-use widgets::captcha;
+use widgets::{captcha, device_lock};
 
 use crate::{
     actions::{AboutAction, ShortcutsAction},
@@ -35,6 +35,11 @@ use crate::{
     db::fs::{download_user_avatar_file, get_user_avatar_path},
     handler::{AppHandler, ACCOUNT, CLIENT},
 };
+
+type SmsPhone = Option<String>;
+type VerifyUrl = String;
+type UserId = i64;
+type Password = String;
 
 #[derive(Debug)]
 pub struct LoginPageModel {
@@ -50,8 +55,10 @@ pub enum LoginPageMsg {
     LoginFailed(String),
     AccountChange(String),
     PasswordChange(String),
-    NeedCaptcha(String, Arc<Client>, i64, String),
-    SubmitTicket(String, Arc<Client>, i64, String),
+    NeedCaptcha(String, Arc<Client>, UserId, Password),
+    SubmitTicket(String, Arc<Client>, UserId, Password),
+    DeviceLock(VerifyUrl, SmsPhone),
+    ConfirmVerified,
     CopyLink,
 }
 
@@ -136,12 +143,18 @@ async fn handle_login_response(
             ..
         }) => {
             sender.input(LoginFailed(
-                "Device Locked. See more in the console.".to_string(),
+                "Device Locked. See more in the pop-up window.".to_string(),
             ));
+
             println!("------[TODO: Add GUI for this]");
             println!("message: {:?}", message);
             println!("sms_phone: {:?}", sms_phone);
             println!("verify_url: {:?}", verify_url);
+
+            sender.input(LoginPageMsg::DeviceLock(
+                verify_url.unwrap_or("<unknown>".into()),
+                sms_phone,
+            ));
         }
         LoginResponse::TooManySMSRequest => {
             sender.input(LoginFailed("Too Many SMS Request".to_string()));
@@ -344,6 +357,30 @@ impl SimpleComponent for LoginPageModel {
             CopyLink => {
                 self.toast.replace("Link Copied".into());
             }
+            DeviceLock(verify_url, sms) => {
+                let window = Window::builder()
+                    .transient_for(&WINDOW.get().unwrap().window)
+                    .default_width(640)
+                    .build();
+
+                let device_lock = device_lock::DeviceLock::builder()
+                    .launch(
+                        device_lock::Payload::builder()
+                            .window(window.clone())
+                            .unlock_url(verify_url)
+                            .sms_phone(sms)
+                            .build(),
+                    )
+                    .forward(sender.input_sender(), move |out| match out {
+                        device_lock::Output::ConfirmVerify => ConfirmVerified,
+                        device_lock::Output::CopyLink => CopyLink,
+                    });
+
+                window.set_content(Some(device_lock.widget()));
+                window.present()
+            }
+            //TODO: proc follow operate
+            ConfirmVerified => sender.input(LoginStart),
         }
     }
 
