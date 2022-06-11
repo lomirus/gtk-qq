@@ -6,6 +6,7 @@ use std::{borrow::Cow, future::Future, io, path::PathBuf, pin::Pin};
 use super::error::AvatarError;
 use crate::utils::DirAction;
 pub use group::Group;
+use relm4::gtk::gdk_pixbuf::Pixbuf;
 pub use user::User;
 
 pub trait AvatarLoader {
@@ -37,5 +38,18 @@ pub trait AvatarLoader {
 
     fn get_avatar(id: i64) -> io::Result<PathBuf> {
         <Self as AvatarLoader>::get_avatar_filename(id, DirAction::None)
+    }
+
+    fn get_avatar_as_pixbuf(id: i64, width: i32, height: i32) -> Result<Pixbuf, AvatarError> {
+        let path = <Self as AvatarLoader>::get_avatar(id)?;
+        if !path.exists() {
+            Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Target Avatar Not Found",
+            ))?;
+        }
+        let pix_buf = Pixbuf::from_file_at_size(path, width, height)?;
+
+        Ok(pix_buf)
     }
 }

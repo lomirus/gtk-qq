@@ -23,6 +23,7 @@ use tokio::{
     task,
 };
 
+use crate::utils::avatar::loader::{AvatarLoader, User};
 use crate::{
     actions::{AboutAction, ShortcutsAction},
     db::sql::get_db,
@@ -472,25 +473,16 @@ impl SimpleComponent for LoginPageModel {
             .go_next_button
             .set_sensitive(self.is_login_button_enabled);
 
-        // TODO: IF ELSE HELL!!! Someone helps improve here please.
-        if let Ok(account) = self.account.parse::<i64>() {
-            let path = get_user_avatar_path(account);
-            if path.exists() {
-                if let Ok(pixbuf) = Pixbuf::from_file_at_size(path, 96, 96) {
-                    let image = Picture::for_pixbuf(&pixbuf);
-                    if let Some(paintable) = image.paintable() {
-                        widgets.avatar.set_custom_image(Some(&paintable));
-                    } else {
-                        widgets.avatar.set_custom_image(Option::<&Paintable>::None);
-                    }
-                } else {
-                    widgets.avatar.set_custom_image(Option::<&Paintable>::None);
-                }
-            } else {
-                widgets.avatar.set_custom_image(Option::<&Paintable>::None);
-            }
-        } else {
-            widgets.avatar.set_custom_image(Option::<&Paintable>::None);
-        }
+        let paint = self
+            .account
+            .parse::<i64>()
+            .ok()
+            .and_then(|id| User::get_avatar_as_pixbuf(id, 96, 96).ok())
+            .map(|pix_buf| Picture::for_pixbuf(&pix_buf))
+            .and_then(|pic| pic.paintable());
+
+        widgets
+            .avatar
+            .set_custom_image(Into::<Option<&'_ Paintable>>::into(&paint));
     }
 }
