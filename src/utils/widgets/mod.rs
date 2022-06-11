@@ -1,1 +1,1 @@
-pub mod link_copier;
+pub use widgets::link_copier;

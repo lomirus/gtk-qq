@@ -3,6 +3,9 @@ name = "gtk-qq"
 version = "0.1.0"
 edition = "2021"
 
+[workspace]
+members = ["./libs/*"]
+
 [dependencies.relm4]
 git = "https://github.com/Relm4/Relm4.git"
 # next, 2022/05/25
@@ -13,6 +16,9 @@ features = ["macros", "libadwaita"]
 git = "https://github.com/lz1998/ricq.git"
 # v0.1.10, master, 2022/06/08
 rev = "38fff7007cb51bc39acc30087c3f042031a38eda"
+
+[dependencies.widgets]
+path = "./libs/widgets"
 
 [dependencies]
 tokio = "1.18.2"

@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use qrcode_png::{Color, QrCode, QrCodeEcc};
-use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent, WidgetPlus};
+use relm4::{
+    adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, SimpleComponent,
+};
 
 use adw::prelude::*;
 use adw::{ActionRow, Avatar, HeaderBar, PreferencesGroup, Toast, ToastOverlay, Window};
@@ -22,6 +24,7 @@ use tokio::{
     net::TcpStream,
     task,
 };
+use widgets::{captcha, device_lock};
 
 use crate::utils::avatar::loader::{AvatarLoader, User};
 use crate::{
@@ -33,6 +36,11 @@ use crate::{
     db::fs::{download_user_avatar_file, get_user_avatar_path},
     handler::{AppHandler, ACCOUNT, CLIENT},
 };
+
+type SmsPhone = Option<String>;
+type VerifyUrl = String;
+type UserId = i64;
+type Password = String;
 
 #[derive(Debug)]
 pub struct LoginPageModel {
@@ -48,7 +56,11 @@ pub enum LoginPageMsg {
     LoginFailed(String),
     AccountChange(String),
     PasswordChange(String),
-    NeedCaptcha(String, Arc<Client>, i64, String),
+    NeedCaptcha(String, Arc<Client>, UserId, Password),
+    SubmitTicket(String, Arc<Client>, UserId, Password),
+    DeviceLock(VerifyUrl, SmsPhone),
+    ConfirmVerified,
+    CopyLink,
 }
 
 async fn login(account: i64, password: String, sender: ComponentSender<LoginPageModel>) {
@@ -132,12 +144,18 @@ async fn handle_login_response(
             ..
         }) => {
             sender.input(LoginFailed(
-                "Device Locked. See more in the console.".to_string(),
+                "Device Locked. See more in the pop-up window.".to_string(),
             ));
+
             println!("------[TODO: Add GUI for this]");
             println!("message: {:?}", message);
             println!("sms_phone: {:?}", sms_phone);
             println!("verify_url: {:?}", verify_url);
+
+            sender.input(LoginPageMsg::DeviceLock(
+                verify_url.unwrap_or_else(|| "<unknown>".into()),
+                sms_phone,
+            ));
         }
         LoginResponse::TooManySMSRequest => {
             sender.input(LoginFailed("Too Many SMS Request".to_string()));
@@ -227,10 +245,145 @@ fn get_login_info() -> (String, String) {
 
 #[relm4::component(pub)]
 impl SimpleComponent for LoginPageModel {
-    type Widgets = LoginPageWidgets;
-    type InitParams = ();
     type Input = LoginPageMsg;
     type Output = AppMessage;
+    type InitParams = ();
+    type Widgets = LoginPageWidgets;
+
+    fn init(
+        _init_params: Self::InitParams,
+        root: &Self::Root,
+        sender: &ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        let widgets = view_output!();
+
+        let (account, password) = get_login_info();
+        let account_buffer = EntryBuffer::new(Some(&account));
+        let password_buffer = EntryBuffer::new(Some(&password));
+        widgets.account_entry.set_buffer(&account_buffer);
+        widgets.password_entry.set_buffer(&password_buffer);
+
+        if let Ok(account) = account.parse::<i64>() {
+            let path = get_user_avatar_path(account);
+            if path.exists() {
+                if let Ok(pixbuf) = Pixbuf::from_file_at_size(path, 96, 96) {
+                    let image = Picture::for_pixbuf(&pixbuf);
+                    if let Some(paintable) = image.paintable() {
+                        widgets.avatar.set_custom_image(Some(&paintable));
+                    }
+                }
+            } else {
+                task::spawn(download_user_avatar_file(account));
+            }
+        }
+
+        let model = LoginPageModel {
+            account,
+            password,
+            is_login_button_enabled: true,
+            toast: None,
+        };
+
+        ComponentParts { model, widgets }
+    }
+
+    fn update(&mut self, msg: LoginPageMsg, sender: &ComponentSender<Self>) {
+        use LoginPageMsg::*;
+        match msg {
+            LoginStart => {
+                // Get the account
+                let account: i64 = match self.account.parse::<i64>() {
+                    Ok(account) => account,
+                    Err(_) => {
+                        self.toast = Some("Account is invalid".to_string());
+                        return;
+                    }
+                };
+                // Get the password
+                let password = if self.password.is_empty() {
+                    self.toast = Some("Password cannot be empty".to_string());
+                    return;
+                } else {
+                    self.password.to_string()
+                };
+
+                self.is_login_button_enabled = false;
+                task::spawn(login(account, password, sender.clone()));
+            }
+            LoginSuccessful => {
+                sender.output(AppMessage::LoginSuccessful);
+            }
+            LoginFailed(msg) => {
+                self.toast = Some(msg);
+                self.is_login_button_enabled = true;
+            }
+            AccountChange(new_account) => self.account = new_account,
+            PasswordChange(new_password) => self.password = new_password,
+            NeedCaptcha(verify_url, client, account, password) => {
+                sender.input(LoginPageMsg::LoginFailed(
+                    "Need Captcha. See more in the pop-up window.".to_string(),
+                ));
+                let window = Window::builder()
+                    .transient_for(&WINDOW.get().unwrap().window)
+                    .default_width(640)
+                    .build();
+                println!("{:?}", WINDOW.get().unwrap().window);
+                window.connect_destroy(|_| println!("closed window"));
+                let mut path = dirs::home_dir().unwrap();
+                path.push(".gtk-qq");
+                path.push("captcha_url.png");
+
+                let verify_url = verify_url.replace('&', "&amp;");
+
+                let captcha = widgets::captcha::CaptchaModel::builder()
+                    .launch(
+                        captcha::PayLoad::builder()
+                            .verify_url(verify_url)
+                            .window(window.clone())
+                            .build(),
+                    )
+                    .forward(sender.input_sender(), move |out| match out {
+                        captcha::Output::Submit { ticket } => {
+                            SubmitTicket(ticket, Arc::clone(&client), account, password.clone())
+                        }
+                        captcha::Output::CopyLink => CopyLink,
+                    });
+
+                window.set_content(Some(captcha.widget()));
+                window.present();
+            }
+            SubmitTicket(t, c, account, pwd) => {
+                task::spawn(submit_ticket(c, t, sender.clone(), account, pwd));
+            }
+            CopyLink => {
+                self.toast.replace("Link Copied".into());
+            }
+            DeviceLock(verify_url, sms) => {
+                let window = Window::builder()
+                    .transient_for(&WINDOW.get().unwrap().window)
+                    .default_width(640)
+                    .build();
+
+                let device_lock = device_lock::DeviceLock::builder()
+                    .launch(
+                        device_lock::Payload::builder()
+                            .window(window.clone())
+                            .unlock_url(verify_url)
+                            .sms_phone(sms)
+                            .build(),
+                    )
+                    .forward(sender.input_sender(), move |out| match out {
+                        device_lock::Output::ConfirmVerify => ConfirmVerified,
+                        device_lock::Output::CopyLink => CopyLink,
+                    });
+
+                window.set_content(Some(device_lock.widget()));
+                window.present()
+            }
+            //TODO: proc follow operate
+            ConfirmVerified => sender.input(LoginStart),
+        }
+    }
 
     menu! {
         main_menu: {
@@ -299,170 +452,6 @@ impl SimpleComponent for LoginPageModel {
                 },
             }
         }
-    }
-
-    fn update(&mut self, msg: LoginPageMsg, sender: &ComponentSender<Self>) {
-        use LoginPageMsg::*;
-        match msg {
-            LoginStart => {
-                // Get the account
-                let account: i64 = match self.account.parse::<i64>() {
-                    Ok(account) => account,
-                    Err(_) => {
-                        self.toast = Some("Account is invalid".to_string());
-                        return;
-                    }
-                };
-                // Get the password
-                let password = if self.password.is_empty() {
-                    self.toast = Some("Password cannot be empty".to_string());
-                    return;
-                } else {
-                    self.password.to_string()
-                };
-
-                self.is_login_button_enabled = false;
-                task::spawn(login(account, password, sender.clone()));
-            }
-            LoginSuccessful => {
-                sender.output(AppMessage::LoginSuccessful);
-            }
-            LoginFailed(msg) => {
-                self.toast = Some(msg);
-                self.is_login_button_enabled = true;
-            }
-            AccountChange(new_account) => self.account = new_account,
-            PasswordChange(new_password) => self.password = new_password,
-            NeedCaptcha(verify_url, client, account, password) => {
-                sender.input(LoginPageMsg::LoginFailed(
-                    "Need Captcha. See more in the pop-up window.".to_string(),
-                ));
-                let window = Window::builder()
-                    .transient_for(&WINDOW.get().unwrap().window)
-                    .default_width(640)
-                    .build();
-                println!("{:?}", WINDOW.get().unwrap().window);
-                window.connect_destroy(|_| println!("closed window"));
-                let window_cloned = window.clone();
-                let mut path = dirs::home_dir().unwrap();
-                path.push(".gtk-qq");
-                path.push("captcha_url.png");
-                relm4::view! {
-                    ticket_entry = Entry {
-                        set_placeholder_text: Some("Paste the ticket here..."),
-                        set_margin_end: 8
-                    }
-                }
-                let ticket_buffer = ticket_entry.buffer();
-                let verify_url = verify_url.replace('&', "&amp;");
-                relm4::view! {
-                    vbox = Box {
-                        set_orientation: Orientation::Vertical,
-                        HeaderBar {
-                            set_title_widget = Some(&Label) {
-                                set_label: "Captcha Verify Introduction"
-                            },
-                        },
-                        Box {
-                            set_valign: Align::Center,
-                            set_halign: Align::Center,
-                            set_vexpand: true,
-                            set_spacing: 24,
-                            Box {
-                                set_margin_all: 16,
-                                set_orientation: Orientation::Vertical,
-                                set_halign: Align::Start,
-                                set_spacing: 8,
-                                Label {
-                                    set_xalign: 0.0,
-                                    set_markup: r#"1. Install the tool on your android phone: <a href="https://github.com/mzdluo123/TxCaptchaHelper">https://github.com/mzdluo123/TxCaptchaHelper</a>."#,
-                                },
-                                Label {
-                                    set_xalign: 0.0,
-                                    set_text: "2. Scan the qrcode and get the ticket."
-                                },
-                                Box {
-                                    Label {
-                                        set_text: "3. "
-                                    },
-                                    append: &ticket_entry,
-                                    Button {
-                                        set_label: "Submit Ticket",
-                                        connect_clicked[sender] => move |_| {
-                                            let ticket = ticket_buffer.text();
-                                            task::spawn(submit_ticket(client.clone(), ticket, sender.clone(), account, password.clone()));
-                                            window_cloned.close();
-                                        },
-                                    }
-                                },
-                                Label {
-                                    set_xalign: 0.0,
-                                    set_markup: &format!(r#"Help: If you do not have an Android phone to install the tool, open the <a href="{}">verify link</a> in the"#, verify_url),
-
-                                },
-                                Label {
-                                    set_xalign: 0.0,
-                                    set_text: "browser manually, open the devtools and switch to the network panel. After you passed the",
-                                },
-                                Label {
-                                    set_xalign: 0.0,
-                                    set_text: "verification, you will find a request whose response contains the `ticket`. Then just paste it",
-                                },
-                                Label {
-                                    set_xalign: 0.0,
-                                    set_text: "above. The result would be same. It just maybe more complex if you don't know devtools well.",
-                                },
-                            },
-                            Picture {
-                                set_filename: Some(&path),
-                                set_width_request: 240,
-                                set_can_shrink: true
-                            },
-                        }
-
-                    }
-                }
-                window.set_content(Some(&vbox));
-                window.present();
-            }
-        }
-    }
-
-    fn init(
-        _init_params: Self::InitParams,
-        root: &Self::Root,
-        sender: &ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
-        let widgets = view_output!();
-
-        let (account, password) = get_login_info();
-        let account_buffer = EntryBuffer::new(Some(&account));
-        let password_buffer = EntryBuffer::new(Some(&password));
-        widgets.account_entry.set_buffer(&account_buffer);
-        widgets.password_entry.set_buffer(&password_buffer);
-
-        if let Ok(account) = account.parse::<i64>() {
-            let path = get_user_avatar_path(account);
-            if path.exists() {
-                if let Ok(pixbuf) = Pixbuf::from_file_at_size(path, 96, 96) {
-                    let image = Picture::for_pixbuf(&pixbuf);
-                    if let Some(paintable) = image.paintable() {
-                        widgets.avatar.set_custom_image(Some(&paintable));
-                    }
-                }
-            } else {
-                task::spawn(download_user_avatar_file(account));
-            }
-        }
-
-        let model = LoginPageModel {
-            account,
-            password,
-            is_login_button_enabled: true,
-            toast: None,
-        };
-
-        ComponentParts { model, widgets }
     }
 
     fn pre_view(&self, widgets: &mut Self::Widgets, sender: &ComponentSender<Self>) {
