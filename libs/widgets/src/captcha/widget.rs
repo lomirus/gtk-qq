@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use relm4::{
-    adw::HeaderBar,
+    adw::{HeaderBar, Window},
     gtk::{
         prelude::EntryBufferExtManual,
-        traits::{BoxExt, ButtonExt, EntryExt},
+        traits::{BoxExt, ButtonExt, EntryExt, GtkWindowExt},
         Align, Box, Button, Entry, Label, Orientation, Picture,
     },
     ComponentSender,
@@ -35,6 +35,7 @@ impl CaptchaWidgets {
         root: &Box,
         scanner_link: &Box,
         no_qr_link: &Box,
+        window_ref: &Window,
         sender_ref: &ComponentSender<CaptchaModel>,
     ) -> Self {
         let header_bar = HeaderBar::builder()
@@ -83,10 +84,12 @@ impl CaptchaWidgets {
             .build();
 
         let sender = Arc::clone(sender_ref);
+        let window = window_ref.clone();
         ticket_input.connect_activate(move |entry| {
             sender.output(Output::Submit {
                 ticket: entry.buffer().text(),
-            })
+            });
+            window.close();
         });
 
         let entry_buf = ticket_input.buffer();
@@ -94,10 +97,12 @@ impl CaptchaWidgets {
         let ticket_submit_btn = Button::builder().label("Submit Ticket").build();
 
         let sender = Arc::clone(sender_ref);
+        let window = window_ref.clone();
         ticket_submit_btn.connect_clicked(move |_| {
             sender.output(Output::Submit {
                 ticket: entry_buf.text(),
-            })
+            });
+            window.close();
         });
 
         let no_qr_ticket_info_1 = Label::builder()

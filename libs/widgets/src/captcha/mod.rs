@@ -58,8 +58,13 @@ impl SimpleComponent for CaptchaModel {
                 link_copier::Output::LinkCopied => Output::CopyLink,
             });
 
-        let widgets =
-            CaptchaWidgets::new(root, scanner_link.widget(), verify_link.widget(), sender);
+        let widgets = CaptchaWidgets::new(
+            root,
+            scanner_link.widget(),
+            verify_link.widget(),
+            &params.window,
+            sender,
+        );
 
         let model = Self {
             _scanner_link: scanner_link,
