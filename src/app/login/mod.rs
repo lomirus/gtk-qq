@@ -1,6 +1,8 @@
+mod service;
+
 use std::sync::Arc;
 
-use qrcode_png::{Color, QrCode, QrCodeEcc};
+use once_cell::sync::OnceCell;
 use relm4::{
     adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, SimpleComponent,
 };
@@ -11,36 +13,24 @@ use gtk::gdk::Paintable;
 use gtk::gdk_pixbuf::Pixbuf;
 use gtk::{Align, Box, Button, Entry, EntryBuffer, Label, MenuButton, Orientation, Picture};
 
-use rand::prelude::*;
-use ricq::{
-    device::Device,
-    ext::common::after_login,
-    version::{get_version, Protocol},
-    Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse, LoginUnknownStatus,
-};
-use rusqlite::params;
-use tokio::{
-    fs::{self, create_dir_all},
-    net::TcpStream,
-    task,
-};
+use ricq::Client;
+use tokio::task;
 use widgets::{captcha, device_lock};
 
+use crate::actions::{AboutAction, ShortcutsAction};
+use crate::app::AppMessage;
+use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
+use crate::global::WINDOW;
 use crate::utils::avatar::loader::{AvatarLoader, User};
-use crate::{
-    actions::{AboutAction, ShortcutsAction},
-    db::sql::get_db,
-};
-use crate::{app::AppMessage, global::WINDOW};
-use crate::{
-    db::fs::{download_user_avatar_file, get_user_avatar_path},
-    handler::{AppHandler, ACCOUNT, CLIENT},
-};
+
+use self::service::{get_login_info, submit_ticket,login};
 
 type SmsPhone = Option<String>;
 type VerifyUrl = String;
 type UserId = i64;
 type Password = String;
+
+pub static LOGIN_SENDER: OnceCell<ComponentSender<LoginPageModel>> = OnceCell::new();
 
 #[derive(Debug)]
 pub struct LoginPageModel {
@@ -63,186 +53,6 @@ pub enum LoginPageMsg {
     CopyLink,
 }
 
-async fn login(account: i64, password: String, sender: ComponentSender<LoginPageModel>) {
-    use LoginPageMsg::LoginFailed;
-    // Initialize device and client
-    let device = Device::random_with_rng(&mut StdRng::seed_from_u64(account as u64));
-    let client = Arc::new(Client::new(
-        device,
-        get_version(Protocol::MacOS),
-        AppHandler,
-    ));
-    // Connect to server
-    let stream = match TcpStream::connect(client.get_address()).await {
-        Ok(stream) => stream,
-        Err(err) => {
-            sender.input(LoginFailed(err.to_string()));
-            return;
-        }
-    };
-    let client_cloned = client.clone();
-    tokio::spawn(async move { client_cloned.start(stream).await });
-    task::yield_now().await;
-    let res = match client.password_login(account, &password).await {
-        Ok(res) => res,
-        Err(err) => {
-            sender.input(LoginFailed(err.to_string()));
-            return;
-        }
-    };
-    handle_login_response(res, account, password, client, sender).await;
-}
-
-async fn handle_login_response(
-    res: LoginResponse,
-    account: i64,
-    password: String,
-    client: Arc<Client>,
-    sender: ComponentSender<LoginPageModel>,
-) {
-    use LoginPageMsg::LoginFailed;
-    match res {
-        LoginResponse::Success(_) => {
-            finish_login(account, password, client, sender).await;
-        }
-        LoginResponse::NeedCaptcha(LoginNeedCaptcha { verify_url, .. }) => {
-            // Get the captcha url qrcode image path
-            let mut path = dirs::home_dir().unwrap();
-            path.push(".gtk-qq");
-            if let Err(err) = create_dir_all(path.clone()).await {
-                sender.input(LoginFailed(err.to_string()));
-                return;
-            }
-            path.push("captcha_url.png");
-
-            // Generate qrcode image
-            let verify_url = verify_url.unwrap();
-            let mut qrcode = QrCode::new(verify_url.clone(), QrCodeEcc::Low).unwrap();
-            qrcode.margin(10);
-            qrcode.zoom(5);
-
-            // Write the image
-            let buf = qrcode.generate(Color::Grayscale(0, 255)).unwrap();
-            if let Err(err) = fs::write(path.clone(), buf).await {
-                sender.input(LoginFailed(err.to_string()));
-                return;
-            };
-            sender.input(LoginPageMsg::NeedCaptcha(
-                verify_url,
-                client.clone(),
-                account,
-                password,
-            ));
-        }
-        LoginResponse::AccountFrozen => {
-            sender.input(LoginFailed("Account Frozen".to_string()));
-        }
-        LoginResponse::DeviceLocked(LoginDeviceLocked {
-            sms_phone,
-            verify_url,
-            message,
-            ..
-        }) => {
-            sender.input(LoginFailed(
-                "Device Locked. See more in the pop-up window.".to_string(),
-            ));
-
-            println!("------[TODO: Add GUI for this]");
-            println!("message: {:?}", message);
-            println!("sms_phone: {:?}", sms_phone);
-            println!("verify_url: {:?}", verify_url);
-
-            sender.input(LoginPageMsg::DeviceLock(
-                verify_url.unwrap_or_else(|| "<unknown>".into()),
-                sms_phone,
-            ));
-        }
-        LoginResponse::TooManySMSRequest => {
-            sender.input(LoginFailed("Too Many SMS Request".to_string()));
-        }
-        LoginResponse::DeviceLockLogin(_) => {
-            if let Err(err) = client.device_lock_login().await {
-                sender.input(LoginFailed(err.to_string()));
-            } else {
-                finish_login(account, password, client, sender).await;
-            }
-        }
-        LoginResponse::UnknownStatus(LoginUnknownStatus { message, .. }) => {
-            sender.input(LoginFailed(message));
-        }
-    }
-}
-
-async fn submit_ticket(
-    client: Arc<Client>,
-    ticket: String,
-    sender: ComponentSender<LoginPageModel>,
-    account: i64,
-    password: String,
-) {
-    match client.submit_ticket(&ticket).await {
-        Ok(res) => handle_login_response(res, account, password, client, sender).await,
-        Err(err) => {
-            sender.input(LoginPageMsg::LoginFailed(err.to_string()));
-        }
-    }
-}
-
-async fn finish_login(
-    account: i64,
-    password: String,
-    client: Arc<Client>,
-    sender: ComponentSender<LoginPageModel>,
-) {
-    use LoginPageMsg::{LoginFailed, LoginSuccessful};
-    if CLIENT.set(client.clone()).is_err() {
-        panic!("falied to store client");
-    };
-    if ACCOUNT.set(account).is_err() {
-        panic!("falied to store account");
-    };
-    // Store user account and password in local database
-    let db = get_db();
-    if let Err(err) = db.execute(
-        "REPLACE INTO configs (key, value) VALUES (?1, ?2)",
-        params!["account", account],
-    ) {
-        sender.input(LoginFailed(err.to_string()));
-    }
-    if let Err(err) = db.execute(
-        "REPLACE INTO configs (key, value) VALUES (?1, ?2)",
-        params!["password", password],
-    ) {
-        sender.input(LoginFailed(err.to_string()));
-    }
-    // Execute Ricq `after_login()`
-    after_login(&client).await;
-    sender.input(LoginSuccessful);
-}
-
-fn get_login_info() -> (String, String) {
-    let conn = get_db();
-    let mut stmt = conn
-        .prepare("SELECT value FROM configs where key='account'")
-        .unwrap();
-    let mut rows = stmt.query([]).unwrap();
-    let account = match rows.next().unwrap() {
-        Some(row) => row.get(0).unwrap(),
-        None => String::new(),
-    };
-
-    let mut stmt = conn
-        .prepare("SELECT value FROM configs where key='password'")
-        .unwrap();
-    let mut rows = stmt.query([]).unwrap();
-    let password = match rows.next().unwrap() {
-        Some(row) => row.get(0).unwrap(),
-        None => String::new(),
-    };
-
-    (account, password)
-}
-
 #[relm4::component(pub)]
 impl SimpleComponent for LoginPageModel {
     type Input = LoginPageMsg;
@@ -255,6 +65,10 @@ impl SimpleComponent for LoginPageModel {
         root: &Self::Root,
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        if let Err(_) = LOGIN_SENDER.set(sender.clone()) {
+            panic!("failed to initialize login sender");
+        }
+
         let widgets = view_output!();
 
         let (account, password) = get_login_info();
@@ -308,7 +122,7 @@ impl SimpleComponent for LoginPageModel {
                 };
 
                 self.is_login_button_enabled = false;
-                task::spawn(login(account, password, sender.clone()));
+                task::spawn(login(account, password));
             }
             LoginSuccessful => {
                 sender.output(AppMessage::LoginSuccessful);
@@ -353,7 +167,7 @@ impl SimpleComponent for LoginPageModel {
                 window.present();
             }
             SubmitTicket(t, c, account, pwd) => {
-                task::spawn(submit_ticket(c, t, sender.clone(), account, pwd));
+                task::spawn(submit_ticket(c, t, account, pwd));
             }
             CopyLink => {
                 self.toast.replace("Link Copied".into());
