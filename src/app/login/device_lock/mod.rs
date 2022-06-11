@@ -67,7 +67,7 @@ impl SimpleComponent for DeviceLock {
                             .build(),
                     )
                     .forward(sender.output_sender(), |msg| match msg {
-                        link_copier::Output::LinkCopied => LoginPageMsg::CopyLink,
+                        link_copier::Output::LinkCopied => LoginPageMsg::LinkCopied,
                     })
                     .widget(),
                 Label {

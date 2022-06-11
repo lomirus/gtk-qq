@@ -1,4 +1,5 @@
 mod device_lock;
+mod captcha;
 mod service;
 
 use std::sync::Arc;
@@ -16,7 +17,6 @@ use gtk::{Align, Box, Button, Entry, EntryBuffer, Label, MenuButton, Orientation
 
 use ricq::Client;
 use tokio::task;
-use widgets::captcha;
 
 use crate::actions::{AboutAction, ShortcutsAction};
 use crate::app::AppMessage;
@@ -51,7 +51,7 @@ pub enum LoginPageMsg {
     SubmitTicket(String, Arc<Client>, UserId, Password),
     DeviceLock(VerifyUrl, SmsPhone),
     ConfirmVerification,
-    CopyLink,
+    LinkCopied,
 }
 
 #[relm4::component(pub)]
@@ -150,7 +150,7 @@ impl SimpleComponent for LoginPageModel {
 
                 let verify_url = verify_url.replace('&', "&amp;");
 
-                let captcha = widgets::captcha::CaptchaModel::builder()
+                let captcha = captcha::CaptchaModel::builder()
                     .launch(
                         captcha::PayLoad::builder()
                             .verify_url(verify_url)
@@ -161,7 +161,7 @@ impl SimpleComponent for LoginPageModel {
                         captcha::Output::Submit { ticket } => {
                             SubmitTicket(ticket, Arc::clone(&client), account, password.clone())
                         }
-                        captcha::Output::CopyLink => CopyLink,
+                        captcha::Output::CopyLink => LinkCopied,
                     });
 
                 window.set_content(Some(captcha.widget()));
@@ -170,7 +170,7 @@ impl SimpleComponent for LoginPageModel {
             SubmitTicket(t, c, account, pwd) => {
                 task::spawn(submit_ticket(c, t, account, pwd));
             }
-            CopyLink => {
+            LinkCopied => {
                 self.toast.replace("Link Copied".into());
             }
             DeviceLock(verify_url, sms) => {
