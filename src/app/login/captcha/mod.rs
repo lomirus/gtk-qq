@@ -2,28 +2,23 @@ use relm4::gtk::glib::clone;
 use relm4::gtk::Align;
 use relm4::{adw, gtk, Component, ComponentController, SimpleComponent, WidgetPlus};
 
-use adw::{Window, HeaderBar};
+use adw::{HeaderBar, Window};
 use gtk::prelude::*;
 use gtk::{Box, Button, Entry, Label, Orientation, Picture};
 
-use typed_builder::TypedBuilder;
 use widgets::link_copier::{self, LinkCopierModel};
 
 pub struct CaptchaModel;
 
 pub enum Output {
     Submit { ticket: String },
-    CopyLink,
+    LinkCopied,
 }
 
-#[derive(TypedBuilder)]
 pub struct PayLoad {
     pub(crate) window: Window,
     pub(crate) verify_url: String,
-    #[builder(default = String::from("https://github.com/mzdluo123/TxCaptchaHelper"))]
-    pub(crate) scanner_url: String,
 }
-
 
 impl SimpleComponent for CaptchaModel {
     type Input = ();
@@ -54,11 +49,11 @@ impl SimpleComponent for CaptchaModel {
         let scanner_link = LinkCopierModel::builder()
             .launch(
                 link_copier::Payload::builder()
-                    .url(params.scanner_url)
+                    .url("https://github.com/mzdluo123/TxCaptchaHelper".to_string())
                     .build(),
             )
             .forward(&sender.output, |msg| match msg {
-                link_copier::Output::LinkCopied => Output::CopyLink,
+                link_copier::Output::LinkCopied => Output::LinkCopied,
             });
 
         let verify_link = LinkCopierModel::builder()
@@ -69,7 +64,7 @@ impl SimpleComponent for CaptchaModel {
                     .build(),
             )
             .forward(&sender.output, |msg| match msg {
-                link_copier::Output::LinkCopied => Output::CopyLink,
+                link_copier::Output::LinkCopied => Output::LinkCopied,
             });
 
         let cloned_window = params.window.clone();

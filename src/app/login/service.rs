@@ -127,7 +127,12 @@ async fn handle_login_response(
     }
 }
 
-pub(crate) async fn submit_ticket(client: Arc<Client>, ticket: String, account: i64, password: String) {
+pub(crate) async fn submit_ticket(
+    client: Arc<Client>,
+    ticket: String,
+    account: i64,
+    password: String,
+) {
     let sender = LOGIN_SENDER.get().unwrap();
 
     match client.submit_ticket(&ticket).await {

@@ -1,5 +1,5 @@
-mod device_lock;
 mod captcha;
+mod device_lock;
 mod service;
 
 use std::sync::Arc;
@@ -66,7 +66,7 @@ impl SimpleComponent for LoginPageModel {
         root: &Self::Root,
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        if let Err(_) = LOGIN_SENDER.set(sender.clone()) {
+        if LOGIN_SENDER.set(sender.clone()).is_err() {
             panic!("failed to initialize login sender");
         }
 
@@ -142,26 +142,21 @@ impl SimpleComponent for LoginPageModel {
                     .transient_for(&WINDOW.get().unwrap().window)
                     .default_width(640)
                     .build();
-                println!("{:?}", WINDOW.get().unwrap().window);
+                    
                 window.connect_destroy(|_| println!("closed window"));
-                let mut path = dirs::home_dir().unwrap();
-                path.push(".gtk-qq");
-                path.push("captcha_url.png");
 
                 let verify_url = verify_url.replace('&', "&amp;");
 
                 let captcha = captcha::CaptchaModel::builder()
-                    .launch(
-                        captcha::PayLoad::builder()
-                            .verify_url(verify_url)
-                            .window(window.clone())
-                            .build(),
-                    )
+                    .launch(captcha::PayLoad {
+                        verify_url,
+                        window: window.clone(),
+                    })
                     .forward(sender.input_sender(), move |out| match out {
                         captcha::Output::Submit { ticket } => {
                             SubmitTicket(ticket, Arc::clone(&client), account, password.clone())
                         }
-                        captcha::Output::CopyLink => LinkCopied,
+                        captcha::Output::LinkCopied => LinkCopied,
                     });
 
                 window.set_content(Some(captcha.widget()));
