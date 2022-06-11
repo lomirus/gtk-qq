@@ -978,6 +978,7 @@ dependencies = [
  "rusqlite",
  "tokio",
  "typed-builder",
+ "widgets",
 ]
 
 [[package]]
@@ -2744,6 +2745,14 @@ dependencies = [
  "either",
  "lazy_static",
  "libc",
+]
+
+[[package]]
+name = "widgets"
+version = "0.1.0"
+dependencies = [
+ "relm4",
+ "typed-builder",
 ]
 
 [[package]]
