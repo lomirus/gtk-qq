@@ -152,7 +152,7 @@ async fn handle_login_response(
             println!("verify_url: {:?}", verify_url);
 
             sender.input(LoginPageMsg::DeviceLock(
-                verify_url.unwrap_or("<unknown>".into()),
+                verify_url.unwrap_or_else(|| "<unknown>".into()),
                 sms_phone,
             ));
         }

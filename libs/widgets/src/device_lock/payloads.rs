@@ -11,5 +11,5 @@ pub struct Payload {
     pub(super) window: adw::Window,
     pub(super) unlock_url: String,
     #[builder(default)]
-    pub(super) sms_phone:Option<String>
+    pub(super) sms_phone: Option<String>,
 }

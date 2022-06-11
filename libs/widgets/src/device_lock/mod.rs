@@ -3,8 +3,7 @@ use relm4::{gtk, SimpleComponent};
 mod payloads;
 mod widgets;
 
-
-pub use payloads::{Payload, Output};
+pub use payloads::{Output, Payload};
 
 pub struct DeviceLock;
 

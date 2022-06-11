@@ -53,8 +53,6 @@ impl Widgets {
             .into(),
         );
 
-        
-
         let link = LinkCopierModel::builder()
             .launch(
                 link_copier::Payload::builder()
@@ -68,9 +66,7 @@ impl Widgets {
 
         let msg2 = Label::new("Once verified, click the button below".into());
 
-        let btn = Button::builder()
-            .label("Confirm Verification")
-            .build();
+        let btn = Button::builder().label("Confirm Verification").build();
 
         let sender = Arc::clone(sender_ref);
         btn.connect_clicked(move |_| {
