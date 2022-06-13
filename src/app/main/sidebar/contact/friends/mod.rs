@@ -1,11 +1,12 @@
 mod friends_group;
+mod search_item;
 
 use relm4::factory::FactoryVecDeque;
 use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent, WidgetPlus};
 use std::cell::RefCell;
 
 use adw::prelude::*;
-use gtk::{Box, Button, Entry, EntryIconPosition, Orientation, ScrolledWindow};
+use gtk::{Box, Button, Entry, EntryIconPosition, ListBox, Orientation, ScrolledWindow};
 use tokio::task;
 
 use super::ContactMsg;
@@ -15,8 +16,9 @@ use friends_group::FriendsGroup;
 #[derive(Debug)]
 pub struct FriendsModel {
     friends_list: Option<RefCell<FactoryVecDeque<Box, FriendsGroup, FriendsMsg>>>,
+    search_list: Option<RefCell<FactoryVecDeque<ListBox, Friend, FriendsMsg>>>,
     is_refresh_button_enabled: bool,
-    keywords: String,
+    keyword: String,
 }
 
 impl FriendsModel {
@@ -61,6 +63,42 @@ impl FriendsModel {
         }
 
         friends_list.render_changes();
+
+        Ok(())
+    }
+
+    fn render_search_result(&self) -> rusqlite::Result<()> {
+        let mut search_list = self.search_list.as_ref().unwrap().borrow_mut();
+        search_list.clear();
+
+        let keyword = self.keyword.to_lowercase();
+
+        let conn = get_db();
+
+        let mut stmt = conn.prepare("Select id, name, remark, group_id from friends")?;
+        let eligible_friends: Vec<Friend> = stmt
+            .query_map([], |row| {
+                Ok(Friend {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    remark: row.get(2)?,
+                    group_id: row.get(3)?,
+                })
+            })?
+            .map(|result| result.unwrap())
+            .filter(|friend| {
+                let match_name = friend.name.to_lowercase().contains(&keyword);
+                let match_remark = friend.remark.to_lowercase().contains(&keyword);
+
+                match_name || match_remark
+            })
+            .collect();
+
+        for friend in eligible_friends {
+            search_list.push_back(friend);
+        }
+
+        search_list.render_changes();
 
         Ok(())
     }
@@ -118,12 +156,18 @@ impl SimpleComponent for FriendsModel {
                     },
                 },
             },
+            #[name = "scrolled_window"]
             ScrolledWindow {
-                set_child: friends_list = Some(&Box) {
-                    set_vexpand: true,
-                    set_orientation: Orientation::Vertical,
-                }
+                set_child: Some(&friends_list)
             }
+        },
+        friends_list = Box {
+            set_vexpand: true,
+            set_orientation: Orientation::Vertical,
+        },
+        search_result = ListBox {
+            set_vexpand: true,
+            set_css_classes: &["navigation-sidebar"],
         }
     }
 
@@ -134,15 +178,19 @@ impl SimpleComponent for FriendsModel {
     ) -> ComponentParts<Self> {
         let mut model = FriendsModel {
             friends_list: None,
+            search_list: None,
             is_refresh_button_enabled: true,
-            keywords: String::new(),
+            keyword: String::new(),
         };
         let widgets = view_output!();
 
         let friends_list: FactoryVecDeque<Box, FriendsGroup, FriendsMsg> =
             FactoryVecDeque::new(widgets.friends_list.clone(), &sender.input);
+        let search_result: FactoryVecDeque<ListBox, Friend, FriendsMsg> =
+            FactoryVecDeque::new(widgets.search_result.clone(), &sender.input);
 
         model.friends_list = Some(RefCell::new(friends_list));
+        model.search_list = Some(RefCell::new(search_result));
 
         model.render_friends().unwrap();
 
@@ -168,10 +216,26 @@ impl SimpleComponent for FriendsModel {
                 }
                 self.is_refresh_button_enabled = true;
             }
-            Search(keywords) => {
-                println!("{keywords}");
-                self.keywords = keywords;
+            Search(keyword) => {
+                self.keyword = keyword.clone();
+                if !keyword.is_empty() {
+                    if let Err(err) = self.render_search_result() {
+                        sender.output(ContactMsg::PushToast(err.to_string()))
+                    }
+                }
             }
+        }
+    }
+
+    fn pre_view() {
+        if self.keyword.is_empty() {
+            widgets
+                .scrolled_window
+                .set_child(Some(&widgets.friends_list));
+        } else {
+            widgets
+                .scrolled_window
+                .set_child(Some(&widgets.search_result));
         }
     }
 }
