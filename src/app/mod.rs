@@ -41,7 +41,7 @@ impl SimpleComponent for AppModel {
     view! {
         window = ApplicationWindow {
             add_css_class: "devel",
-            set_default_size: (960, 540),
+            set_default_size: (1024, 600),
             set_content: stack = Some(&Stack) {
                 set_transition_type: StackTransitionType::SlideLeft,
                 add_child: login_page = &Box {
