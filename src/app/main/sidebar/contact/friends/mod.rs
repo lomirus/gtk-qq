@@ -2,7 +2,7 @@ mod friends_group;
 mod search_item;
 
 use relm4::factory::FactoryVecDeque;
-use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent, WidgetPlus};
+use relm4::{adw, gtk, Component, ComponentParts, ComponentSender, WidgetPlus};
 use std::cell::RefCell;
 
 use adw::prelude::*;
@@ -18,7 +18,6 @@ pub struct FriendsModel {
     friends_list: Option<RefCell<FactoryVecDeque<Box, FriendsGroup, FriendsMsg>>>,
     search_list: Option<RefCell<FactoryVecDeque<ListBox, Friend, FriendsMsg>>>,
     is_refresh_button_enabled: bool,
-    keyword: String,
 }
 
 impl FriendsModel {
@@ -67,11 +66,11 @@ impl FriendsModel {
         Ok(())
     }
 
-    fn render_search_result(&self) -> rusqlite::Result<()> {
+    fn render_search_result(&self, keyword: String) -> rusqlite::Result<()> {
         let mut search_list = self.search_list.as_ref().unwrap().borrow_mut();
         search_list.clear();
 
-        let keyword = self.keyword.to_lowercase();
+        let keyword = keyword.to_lowercase();
 
         let conn = get_db();
 
@@ -130,12 +129,13 @@ pub struct FriendsWidgets {
     scrolled_window: ScrolledWindow,
 }
 
-impl SimpleComponent for FriendsModel {
+impl Component for FriendsModel {
     type Input = FriendsMsg;
     type Output = ContactMsg;
     type Widgets = FriendsWidgets;
     type InitParams = ();
     type Root = Box;
+    type CommandOutput = ();
 
     fn init_root() -> Box {
         Box::new(Orientation::Vertical, 0)
@@ -150,7 +150,6 @@ impl SimpleComponent for FriendsModel {
             friends_list: None,
             search_list: None,
             is_refresh_button_enabled: true,
-            keyword: String::new(),
         };
 
         relm4::view! {
@@ -219,7 +218,12 @@ impl SimpleComponent for FriendsModel {
         }
     }
 
-    fn update(&mut self, msg: FriendsMsg, sender: &ComponentSender<Self>) {
+    fn update_with_view(
+        &mut self,
+        widgets: &mut Self::Widgets,
+        msg: Self::Input,
+        sender: &ComponentSender<Self>,
+    ) {
         use FriendsMsg::*;
         match msg {
             SelectChatroom(account, is_group) => {
@@ -249,25 +253,19 @@ impl SimpleComponent for FriendsModel {
                 self.is_refresh_button_enabled = true;
             }
             Search(keyword) => {
-                self.keyword = keyword.clone();
-                if !keyword.is_empty() {
-                    if let Err(err) = self.render_search_result() {
+                if keyword.is_empty() {
+                    widgets
+                        .scrolled_window
+                        .set_child(Some(&widgets.friend_list));
+                } else {
+                    if let Err(err) = self.render_search_result(keyword) {
                         sender.output(ContactMsg::PushToast(err.to_string()))
                     }
+                    widgets
+                        .scrolled_window
+                        .set_child(Some(&widgets.search_list));
                 }
             }
-        }
-    }
-
-    fn update_view(&self, widgets: &mut Self::Widgets, _sender: &ComponentSender<Self>) {
-        if self.keyword.is_empty() {
-            widgets
-                .scrolled_window
-                .set_child(Some(&widgets.friend_list));
-        } else {
-            widgets
-                .scrolled_window
-                .set_child(Some(&widgets.search_list));
         }
     }
 }
