@@ -52,7 +52,7 @@ pub(crate) async fn login(account: i64, password: String) {
     handle_login_response(res, account, password, client).await;
 }
 
-async fn handle_login_response(
+pub(crate) async fn handle_login_response(
     res: LoginResponse,
     account: i64,
     password: String,
@@ -123,22 +123,6 @@ async fn handle_login_response(
         }
         LoginResponse::UnknownStatus(LoginUnknownStatus { message, .. }) => {
             sender.input(LoginFailed(message));
-        }
-    }
-}
-
-pub(crate) async fn submit_ticket(
-    client: Arc<Client>,
-    ticket: String,
-    account: i64,
-    password: String,
-) {
-    let sender = LOGIN_SENDER.get().unwrap();
-
-    match client.submit_ticket(&ticket).await {
-        Ok(res) => handle_login_response(res, account, password, client).await,
-        Err(err) => {
-            sender.input(LoginPageMsg::LoginFailed(err.to_string()));
         }
     }
 }

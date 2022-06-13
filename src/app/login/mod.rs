@@ -24,7 +24,7 @@ use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::global::WINDOW;
 use crate::utils::avatar::loader::{AvatarLoader, User};
 
-use self::service::{get_login_info, login, submit_ticket};
+use self::service::{get_login_info, login};
 
 type SmsPhone = Option<String>;
 type VerifyUrl = String;
@@ -48,7 +48,6 @@ pub enum LoginPageMsg {
     AccountChange(String),
     PasswordChange(String),
     NeedCaptcha(String, Arc<Client>, UserId, Password),
-    SubmitTicket(String, Arc<Client>, UserId, Password),
     DeviceLock(VerifyUrl, SmsPhone),
     ConfirmVerification,
     LinkCopied,
@@ -142,28 +141,23 @@ impl SimpleComponent for LoginPageModel {
                     .transient_for(&WINDOW.get().unwrap().window)
                     .default_width(640)
                     .build();
-                    
+
                 window.connect_destroy(|_| println!("closed window"));
 
                 let verify_url = verify_url.replace('&', "&amp;");
 
                 let captcha = captcha::CaptchaModel::builder()
                     .launch(captcha::PayLoad {
+                        client: Arc::clone(&client),
                         verify_url,
                         window: window.clone(),
+                        account,
+                        password: password.clone(),
                     })
-                    .forward(sender.input_sender(), move |out| match out {
-                        captcha::Output::Submit { ticket } => {
-                            SubmitTicket(ticket, Arc::clone(&client), account, password.clone())
-                        }
-                        captcha::Output::LinkCopied => LinkCopied,
-                    });
+                    .forward(sender.input_sender(), |output| output);
 
                 window.set_content(Some(captcha.widget()));
                 window.present();
-            }
-            SubmitTicket(t, c, account, pwd) => {
-                task::spawn(submit_ticket(c, t, account, pwd));
             }
             LinkCopied => {
                 self.toast.replace("Link Copied".into());

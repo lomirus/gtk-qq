@@ -1,28 +1,47 @@
+use std::sync::Arc;
+
 use relm4::gtk::glib::clone;
 use relm4::gtk::Align;
-use relm4::{adw, gtk, Component, ComponentController, SimpleComponent, WidgetPlus};
+use relm4::{
+    adw, gtk, Component, ComponentController, ComponentSender, SimpleComponent, WidgetPlus,
+};
 
 use adw::{HeaderBar, Window};
 use gtk::prelude::*;
 use gtk::{Box, Button, Entry, Label, Orientation, Picture};
 
+use ricq::Client;
+use tokio::task;
 use widgets::link_copier::{self, LinkCopierModel};
 
-pub struct CaptchaModel;
+use super::service::handle_login_response;
+use super::LoginPageMsg;
 
-pub enum Output {
-    Submit { ticket: String },
-    LinkCopied,
+#[derive(Clone)]
+pub struct CaptchaModel {
+    pub(crate) client: Arc<Client>,
+    pub(crate) account: i64,
+    pub(crate) password: String,
+    pub(crate) window: Window,
+    pub(crate) ticket: String,
+}
+
+pub enum Input {
+    UpdateTicket(String),
+    Submit,
 }
 
 pub struct PayLoad {
+    pub(crate) client: Arc<Client>,
+    pub(crate) account: i64,
+    pub(crate) password: String,
     pub(crate) window: Window,
     pub(crate) verify_url: String,
 }
 
 impl SimpleComponent for CaptchaModel {
-    type Input = ();
-    type Output = Output;
+    type Input = Input;
+    type Output = LoginPageMsg;
     type InitParams = PayLoad;
     type Root = Box;
     type Widgets = ();
@@ -53,21 +72,19 @@ impl SimpleComponent for CaptchaModel {
                     .build(),
             )
             .forward(&sender.output, |msg| match msg {
-                link_copier::Output::LinkCopied => Output::LinkCopied,
+                link_copier::Output::LinkCopied => LoginPageMsg::LinkCopied,
             });
 
         let verify_link = LinkCopierModel::builder()
             .launch(
                 link_copier::Payload::builder()
-                    .url(params.verify_url)
+                    .url(params.verify_url.clone())
                     .label("Verification Link".into())
                     .build(),
             )
             .forward(&sender.output, |msg| match msg {
-                link_copier::Output::LinkCopied => Output::LinkCopied,
+                link_copier::Output::LinkCopied => LoginPageMsg::LinkCopied,
             });
-
-        let cloned_window = params.window.clone();
 
         relm4::view! {
             #[name = "body"]
@@ -100,12 +117,13 @@ impl SimpleComponent for CaptchaModel {
                             set_placeholder_text: Some("Paste the ticket here..."),
                             set_margin_end: 8,
                             set_activates_default: true,
-                            connect_activate[sender] => move |entry|{
-                                sender.output(Output::Submit {
-                                    ticket: entry.buffer().text(),
-                                });
-                                cloned_window.close();
-                            }
+                            connect_activate[sender] => move |_|{
+                                sender.input(Input::Submit);
+                            },
+                            connect_changed[sender] => move |entry|{
+                                let ticket = entry.buffer().text();
+                                sender.input(Input::UpdateTicket(ticket));
+                            },
                         },
                         #[name = "ticket_submit_button"]
                         Button {
@@ -147,17 +165,49 @@ impl SimpleComponent for CaptchaModel {
         }
 
         ticket_submit_button.connect_clicked(clone!(@strong sender => move |_| {
-            sender.output(Output::Submit {
-                ticket: ticket_input.buffer().text(),
-            });
-            params.window.close();
+            sender.input(Input::Submit);
         }));
 
         root.append(&body);
 
         relm4::ComponentParts {
-            model: Self,
+            model: CaptchaModel {
+                client: params.client,
+                account: params.account,
+                password: params.password,
+                window: params.window,
+                ticket: String::new(),
+            },
             widgets: (),
         }
     }
+
+    fn update(&mut self, message: Input, sender: &ComponentSender<Self>) {
+        match message {
+            Input::Submit => {
+                task::spawn_local(submit_ticket(self.clone(), sender.clone()));
+            }
+            Input::UpdateTicket(new_ticket) => {
+                self.ticket = new_ticket;
+            }
+        }
+    }
+}
+
+async fn submit_ticket(model: CaptchaModel, sender: ComponentSender<CaptchaModel>) {
+    match model.client.submit_ticket(&model.ticket).await {
+        Ok(res) => {
+            handle_login_response(
+                res,
+                model.account,
+                model.password.clone(),
+                model.client.clone(),
+            )
+            .await
+        }
+        Err(err) => {
+            sender.output(LoginPageMsg::LoginFailed(err.to_string()));
+        }
+    }
+    model.window.close();
 }
