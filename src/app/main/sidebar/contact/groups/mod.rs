@@ -150,10 +150,7 @@ impl SimpleComponent for GroupsModel {
                 }
                 self.is_refresh_button_enabled = true;
             }
-            Search(keywords) => {
-                println!("{keywords}");
-                self.keywords = keywords;
-            }
+            Search(keywords) => self.keywords = keywords,
         }
     }
 }

@@ -117,22 +117,44 @@ async fn refresh_friends(sender: ComponentSender<FriendsModel>) {
 #[derive(Debug)]
 pub enum FriendsMsg {
     SelectChatroom(i64, bool),
+    SelectSearchItem(i32),
     Search(String),
     Refresh,
     Render,
 }
 
-#[relm4::component(pub)]
+#[derive(Debug)]
+pub struct FriendsWidgets {
+    friend_list: Box,
+    search_list: ListBox,
+    scrolled_window: ScrolledWindow,
+}
+
 impl SimpleComponent for FriendsModel {
     type Input = FriendsMsg;
     type Output = ContactMsg;
     type Widgets = FriendsWidgets;
     type InitParams = ();
+    type Root = Box;
 
-    view! {
-        #[root]
-        contact_friends = Box {
-            set_orientation: Orientation::Vertical,
+    fn init_root() -> Box {
+        Box::new(Orientation::Vertical, 0)
+    }
+
+    fn init(
+        _init_params: (),
+        root: &Self::Root,
+        sender: &ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        let mut model = FriendsModel {
+            friends_list: None,
+            search_list: None,
+            is_refresh_button_enabled: true,
+            keyword: String::new(),
+        };
+
+        relm4::view! {
+            #[name = "header_bar"]
             Box {
                 set_margin_all: 8,
                 Button {
@@ -158,43 +180,43 @@ impl SimpleComponent for FriendsModel {
             },
             #[name = "scrolled_window"]
             ScrolledWindow {
-                set_child: Some(&friends_list)
+                set_child: Some(&friend_list)
+            },
+            friend_list = Box {
+                set_vexpand: true,
+                set_orientation: Orientation::Vertical,
+            },
+            search_list = ListBox {
+                set_vexpand: true,
+                set_css_classes: &["navigation-sidebar"],
+                connect_row_activated[sender] => move |_, selected_row| {
+                    let index = selected_row.index();
+                    sender.input(FriendsMsg::SelectSearchItem(index));
+                },
             }
-        },
-        friends_list = Box {
-            set_vexpand: true,
-            set_orientation: Orientation::Vertical,
-        },
-        search_result = ListBox {
-            set_vexpand: true,
-            set_css_classes: &["navigation-sidebar"],
         }
-    }
 
-    fn init(
-        _init_params: (),
-        root: &Self::Root,
-        sender: &ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
-        let mut model = FriendsModel {
-            friends_list: None,
-            search_list: None,
-            is_refresh_button_enabled: true,
-            keyword: String::new(),
-        };
-        let widgets = view_output!();
+        root.append(&header_bar);
+        root.append(&scrolled_window);
 
-        let friends_list: FactoryVecDeque<Box, FriendsGroup, FriendsMsg> =
-            FactoryVecDeque::new(widgets.friends_list.clone(), &sender.input);
-        let search_result: FactoryVecDeque<ListBox, Friend, FriendsMsg> =
-            FactoryVecDeque::new(widgets.search_result.clone(), &sender.input);
+        let friend_list_factory: FactoryVecDeque<Box, FriendsGroup, FriendsMsg> =
+            FactoryVecDeque::new(friend_list.clone(), &sender.input);
+        let search_list_factory: FactoryVecDeque<ListBox, Friend, FriendsMsg> =
+            FactoryVecDeque::new(search_list.clone(), &sender.input);
 
-        model.friends_list = Some(RefCell::new(friends_list));
-        model.search_list = Some(RefCell::new(search_result));
+        model.friends_list = Some(RefCell::new(friend_list_factory));
+        model.search_list = Some(RefCell::new(search_list_factory));
 
         model.render_friends().unwrap();
 
-        ComponentParts { model, widgets }
+        ComponentParts {
+            model,
+            widgets: FriendsWidgets {
+                friend_list,
+                search_list,
+                scrolled_window,
+            },
+        }
     }
 
     fn update(&mut self, msg: FriendsMsg, sender: &ComponentSender<Self>) {
@@ -202,6 +224,16 @@ impl SimpleComponent for FriendsModel {
         match msg {
             SelectChatroom(account, is_group) => {
                 sender.output(ContactMsg::SelectChatroom(account, is_group));
+            }
+            SelectSearchItem(index) => {
+                let account = self
+                    .search_list
+                    .as_ref()
+                    .unwrap()
+                    .borrow()
+                    .get(index as usize)
+                    .id;
+                sender.input(SelectChatroom(account, false));
             }
             Refresh => {
                 self.is_refresh_button_enabled = false;
@@ -227,15 +259,15 @@ impl SimpleComponent for FriendsModel {
         }
     }
 
-    fn pre_view() {
+    fn update_view(&self, widgets: &mut Self::Widgets, _sender: &ComponentSender<Self>) {
         if self.keyword.is_empty() {
             widgets
                 .scrolled_window
-                .set_child(Some(&widgets.friends_list));
+                .set_child(Some(&widgets.friend_list));
         } else {
             widgets
                 .scrolled_window
-                .set_child(Some(&widgets.search_result));
+                .set_child(Some(&widgets.search_list));
         }
     }
 }

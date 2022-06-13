@@ -1,4 +1,5 @@
 #![feature(async_closure)]
+#![feature(strict_provenance)]
 
 mod actions;
 mod app;
