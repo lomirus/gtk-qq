@@ -1,12 +1,8 @@
 use std::sync::Arc;
 
-use relm4::{
-    gtk::{
-        self,
-        traits::{BoxExt, ButtonExt, WidgetExt},
-    },
-    ComponentParts,
-};
+use relm4::{gtk, ComponentParts};
+
+use gtk::prelude::*;
 
 use super::{widgets::LinkCopierWidgets, Input, Output, Payload, State};
 

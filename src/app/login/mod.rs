@@ -152,7 +152,7 @@ impl SimpleComponent for LoginPageModel {
                         verify_url,
                         window: window.clone(),
                         account,
-                        password: password.clone(),
+                        password,
                     })
                     .forward(sender.input_sender(), |output| output);
 

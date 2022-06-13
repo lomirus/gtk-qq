@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 
 pub enum State {
@@ -9,7 +8,6 @@ pub enum State {
     BtnOnly,
 }
 
-#[allow(dead_code)]
 pub enum Input {
     Link(Cow<'static, String>),
     Label(Cow<'static, String>),
