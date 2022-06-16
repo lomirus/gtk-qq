@@ -2,7 +2,6 @@ mod chat_item;
 
 use relm4::factory::FactoryVecDeque;
 use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent};
-use std::cell::RefCell;
 
 use adw::prelude::*;
 use gtk::{ListBox, ScrolledWindow};
@@ -12,28 +11,27 @@ use chat_item::ChatItem;
 
 #[derive(Debug)]
 pub struct ChatsModel {
-    chats_list: RefCell<FactoryVecDeque<ListBox, ChatItem, ChatsMsg>>,
+    chats_list: FactoryVecDeque<ListBox, ChatItem, ChatsMsg>,
 }
 
 impl ChatsModel {
-    fn update_chat_item(&self, account: i64, is_group: bool, last_message: String) {
-        let mut chats_list = self.chats_list.borrow_mut();
-        for i in 0..chats_list.len() {
-            let this_account = chats_list.get(i).account;
-            let is_this_group = chats_list.get(i).is_group;
+    fn update_chat_item(&mut self, account: i64, is_group: bool, last_message: String) {
+        for i in 0..self.chats_list.len() {
+            let this_account = self.chats_list.get(i).account;
+            let is_this_group = self.chats_list.get(i).is_group;
             if this_account == account && is_this_group == is_group {
-                chats_list.swap(0, i);
-                chats_list.front_mut().unwrap().last_message = last_message;
+                self.chats_list.swap(0, i);
+                self.chats_list.front_mut().unwrap().last_message = last_message;
                 break;
             }
         }
-        chats_list.render_changes();
+        self.chats_list.render_changes();
     }
 
-    fn insert_chat_item(&self, account: i64, is_group: bool, last_message: String) {
-        let mut chats_list = self.chats_list.borrow_mut();
-        chats_list.push_front((account, is_group, last_message));
-        chats_list.render_changes();
+    fn insert_chat_item(&mut self, account: i64, is_group: bool, last_message: String) {
+        self.chats_list
+            .push_front((account, is_group, last_message));
+        self.chats_list.render_changes();
     }
 }
 
@@ -75,7 +73,7 @@ impl SimpleComponent for ChatsModel {
             FactoryVecDeque::new(widgets.sidebar_chats.clone(), &sender.input);
 
         let model = ChatsModel {
-            chats_list: RefCell::new(chats_list),
+            chats_list,
         };
 
         ComponentParts { model, widgets }
@@ -85,8 +83,7 @@ impl SimpleComponent for ChatsModel {
         use ChatsMsg::*;
         match msg {
             SelectChatroom(index) => {
-                let chat_item = self.chats_list.borrow();
-                let chat_item = chat_item.get(index as usize);
+                let chat_item = self.chats_list.get(index as usize);
                 let account = chat_item.account;
                 let is_group = chat_item.is_group;
                 sender.output(SidebarMsg::SelectChatroom(account, is_group));

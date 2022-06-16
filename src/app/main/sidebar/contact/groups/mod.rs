@@ -1,7 +1,5 @@
 mod group_item;
 
-use std::cell::RefCell;
-
 use relm4::factory::FactoryVecDeque;
 use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent, WidgetPlus};
 
@@ -15,13 +13,13 @@ use crate::db::sql::{get_db, refresh_groups_list, Group};
 
 #[derive(Debug)]
 pub struct GroupsModel {
-    group_list: Option<RefCell<FactoryVecDeque<ListBox, Group, GroupsMsg>>>,
+    group_list: Option<FactoryVecDeque<ListBox, Group, GroupsMsg>>,
     is_refresh_button_enabled: bool,
 }
 
 impl GroupsModel {
-    fn render_groups(&self) -> rusqlite::Result<()> {
-        let mut group_list = self.group_list.as_ref().unwrap().borrow_mut();
+    fn render_groups(&mut self) -> rusqlite::Result<()> {
+        let group_list = self.group_list.as_mut().unwrap();
         group_list.clear();
 
         let conn = get_db();
@@ -44,8 +42,8 @@ impl GroupsModel {
         Ok(())
     }
 
-    fn search(&self, keyword: String) -> rusqlite::Result<()> {
-        let mut group_list = self.group_list.as_ref().unwrap().borrow_mut();
+    fn search(&mut self, keyword: String) -> rusqlite::Result<()> {
+        let group_list = self.group_list.as_mut().unwrap();
         group_list.clear();
 
         let conn = get_db();
@@ -158,7 +156,7 @@ impl SimpleComponent for GroupsModel {
         let groups_list: FactoryVecDeque<ListBox, Group, GroupsMsg> =
             FactoryVecDeque::new(widgets.groups_list.clone(), &sender.input);
 
-        model.group_list = Some(RefCell::new(groups_list));
+        model.group_list = Some(groups_list);
 
         model.render_groups().unwrap();
 
@@ -169,7 +167,7 @@ impl SimpleComponent for GroupsModel {
         use GroupsMsg::*;
         match msg {
             Select(index) => {
-                let group_list = self.group_list.as_ref().unwrap().borrow();
+                let group_list = self.group_list.as_ref().unwrap();
                 let account = group_list.get(index as usize).id;
                 sender.output(ContactMsg::SelectChatroom(account, true));
             }

@@ -1,7 +1,6 @@
 mod chatroom;
 mod sidebar;
 
-use std::cell::RefCell;
 use std::collections::VecDeque;
 
 use once_cell::sync::OnceCell;
@@ -23,15 +22,13 @@ pub static MAIN_SENDER: OnceCell<ComponentSender<MainPageModel>> = OnceCell::new
 #[derive(Debug)]
 pub struct MainPageModel {
     sidebar: Controller<SidebarModel>,
-    chatrooms: RefCell<FactoryVecDeque<Stack, Chatroom, MainMsg>>,
+    chatrooms: FactoryVecDeque<Stack, Chatroom, MainMsg>,
 }
 
 impl MainPageModel {
     fn is_item_in_list(&self, account: i64, is_group: bool) -> bool {
-        let chatrooms = self.chatrooms.borrow();
-
-        for i in 0..chatrooms.len() {
-            let chatroom = chatrooms.get(i);
+        for i in 0..self.chatrooms.len() {
+            let chatroom = self.chatrooms.get(i);
             if chatroom.account == account && chatroom.is_group == is_group {
                 return true;
             }
@@ -40,23 +37,21 @@ impl MainPageModel {
         false
     }
 
-    fn insert_chatroom(&self, account: i64, is_group: bool) {
+    fn insert_chatroom(&mut self, account: i64, is_group: bool) {
         // TODO: Get history messages
         let messages = VecDeque::new();
-        let mut chatrooms = self.chatrooms.borrow_mut();
-        chatrooms.push_front(ChatroomInitParams {
+        self.chatrooms.push_front(ChatroomInitParams {
             account,
             is_group,
             messages,
         });
 
-        chatrooms.render_changes();
+        self.chatrooms.render_changes();
     }
 
-    fn push_friend_message(&self, friend_id: i64, message: Message) {
-        let mut chatrooms = self.chatrooms.borrow_mut();
-        for i in 0..chatrooms.len() {
-            let mut chatroom = chatrooms.get_mut(i);
+    fn push_friend_message(&mut self, friend_id: i64, message: Message) {
+        for i in 0..self.chatrooms.len() {
+            let mut chatroom = self.chatrooms.get_mut(i);
             if chatroom.account == friend_id && !chatroom.is_group {
                 chatroom.push_message(message);
                 break;
@@ -64,10 +59,9 @@ impl MainPageModel {
         }
     }
 
-    fn push_group_message(&self, group_id: i64, message: Message) {
-        let mut chatrooms = self.chatrooms.borrow_mut();
-        for i in 0..chatrooms.len() {
-            let mut chatroom = chatrooms.get_mut(i);
+    fn push_group_message(&mut self, group_id: i64, message: Message) {
+        for i in 0..self.chatrooms.len() {
+            let mut chatroom = self.chatrooms.get_mut(i);
             if chatroom.account == group_id && chatroom.is_group {
                 chatroom.push_message(message);
                 break;
@@ -184,7 +178,7 @@ impl Component for MainPageModel {
         ComponentParts {
             model: MainPageModel {
                 sidebar: sidebar_controller,
-                chatrooms: RefCell::new(chatrooms),
+                chatrooms,
             },
             widgets: MainPageWidgets {
                 root: root.clone(),
@@ -260,7 +254,7 @@ impl Component for MainPageModel {
                     self.insert_chatroom(friend_id, false);
                     // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
                     // 以触发自动更新 chatroom 的标题与副标题。
-                    if self.chatrooms.borrow().len() == 1 {
+                    if self.chatrooms.len() == 1 {
                         let child_name = &format!("{} friend", friend_id);
                         widgets.chatroom_stack.set_visible_child_name(child_name);
 
@@ -297,7 +291,7 @@ impl Component for MainPageModel {
                     self.insert_chatroom(group_id, true);
                     // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
                     // 以触发自动更新 chatroom 的标题与副标题。
-                    if self.chatrooms.borrow().len() == 1 {
+                    if self.chatrooms.len() == 1 {
                         let child_name = &format!("{} group", group_id);
                         widgets.chatroom_stack.set_visible_child_name(child_name);
 

@@ -1,13 +1,13 @@
 mod friends_group;
 mod search_item;
 
+use tokio::task;
+
 use relm4::factory::FactoryVecDeque;
 use relm4::{adw, gtk, Component, ComponentParts, ComponentSender, WidgetPlus};
-use std::cell::RefCell;
 
 use adw::prelude::*;
 use gtk::{Box, Button, Entry, EntryIconPosition, ListBox, Orientation, ScrolledWindow};
-use tokio::task;
 
 use super::ContactMsg;
 use crate::db::sql::{get_db, refresh_friends_list, Friend};
@@ -15,14 +15,14 @@ use friends_group::FriendsGroup;
 
 #[derive(Debug)]
 pub struct FriendsModel {
-    friends_list: Option<RefCell<FactoryVecDeque<Box, FriendsGroup, FriendsMsg>>>,
-    search_list: Option<RefCell<FactoryVecDeque<ListBox, Friend, FriendsMsg>>>,
+    friends_list: Option<FactoryVecDeque<Box, FriendsGroup, FriendsMsg>>,
+    search_list: Option<FactoryVecDeque<ListBox, Friend, FriendsMsg>>,
     is_refresh_button_enabled: bool,
 }
 
 impl FriendsModel {
-    fn render_friends(&self) -> rusqlite::Result<()> {
-        let mut friends_list = self.friends_list.as_ref().unwrap().borrow_mut();
+    fn render_friends(&mut self) -> rusqlite::Result<()> {
+        let friends_list = self.friends_list.as_mut().unwrap();
         friends_list.clear();
 
         let conn = get_db();
@@ -66,8 +66,8 @@ impl FriendsModel {
         Ok(())
     }
 
-    fn render_search_result(&self, keyword: String) -> rusqlite::Result<()> {
-        let mut search_list = self.search_list.as_ref().unwrap().borrow_mut();
+    fn render_search_result(&mut self, keyword: String) -> rusqlite::Result<()> {
+        let search_list = self.search_list.as_mut().unwrap();
         search_list.clear();
 
         let keyword = keyword.to_lowercase();
@@ -202,8 +202,8 @@ impl Component for FriendsModel {
         let search_list_factory: FactoryVecDeque<ListBox, Friend, FriendsMsg> =
             FactoryVecDeque::new(search_list.clone(), &sender.input);
 
-        model.friends_list = Some(RefCell::new(friend_list_factory));
-        model.search_list = Some(RefCell::new(search_list_factory));
+        model.friends_list = Some(friend_list_factory);
+        model.search_list = Some(search_list_factory);
 
         model.render_friends().unwrap();
 
@@ -229,13 +229,7 @@ impl Component for FriendsModel {
                 sender.output(ContactMsg::SelectChatroom(account, is_group));
             }
             SelectSearchItem(index) => {
-                let account = self
-                    .search_list
-                    .as_ref()
-                    .unwrap()
-                    .borrow()
-                    .get(index as usize)
-                    .id;
+                let account = self.search_list.as_ref().unwrap().get(index as usize).id;
                 sender.input(SelectChatroom(account, false));
             }
             Refresh => {
