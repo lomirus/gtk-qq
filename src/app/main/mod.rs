@@ -49,6 +49,8 @@ impl MainPageModel {
             is_group,
             messages,
         });
+
+        chatrooms.render_changes();
     }
 
     fn push_friend_message(&self, friend_id: i64, message: Message) {
@@ -259,7 +261,7 @@ impl Component for MainPageModel {
                     // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
                     // 以触发自动更新 chatroom 的标题与副标题。
                     if self.chatrooms.borrow().len() == 1 {
-                        let child_name = &format!("{} {}", friend_id, "friend");
+                        let child_name = &format!("{} friend", friend_id);
                         widgets.chatroom_stack.set_visible_child_name(child_name);
 
                         let (user_name, user_remark): (String, String) = get_db()
@@ -313,6 +315,5 @@ impl Component for MainPageModel {
                 widgets.root.add_toast(&Toast::new(&content));
             }
         }
-        self.chatrooms.borrow().render_changes();
     }
 }
