@@ -8,7 +8,6 @@ use once_cell::sync::OnceCell;
 use relm4::factory::FactoryVecDeque;
 use relm4::{
     adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller,
-    SimpleComponent,
 };
 
 use adw::{prelude::*, HeaderBar, Leaflet, Toast, ToastOverlay};
@@ -23,7 +22,6 @@ pub static MAIN_SENDER: OnceCell<ComponentSender<MainPageModel>> = OnceCell::new
 
 #[derive(Debug)]
 pub struct MainPageModel {
-    message: Option<ViewMsg>,
     sidebar: Controller<SidebarModel>,
     chatrooms: RefCell<FactoryVecDeque<Stack, Chatroom, MainMsg>>,
 }
@@ -92,28 +90,54 @@ pub enum MainMsg {
     PushToast(String),
 }
 
-#[derive(Debug)]
-enum ViewMsg {
-    WindowFolded,
-    SelectChatroom(i64, bool),
-    PushToast(String),
+pub struct MainPageWidgets {
+    root: ToastOverlay,
+    main_page: Leaflet,
+    chatroom: Box,
+    chatroom_title: Label,
+    chatroom_subtitle: Label,
+    chatroom_stack: Stack,
 }
 
 relm4::new_action_group!(WindowActionGroup, "menu");
 relm4::new_stateless_action!(ShortcutsAction, WindowActionGroup, "shortcuts");
 relm4::new_stateless_action!(AboutAction, WindowActionGroup, "about");
 
-#[relm4::component(pub)]
-impl SimpleComponent for MainPageModel {
+impl Component for MainPageModel {
     type Input = MainMsg;
     type Output = ();
     type Widgets = MainPageWidgets;
     type InitParams = ();
+    type Root = ToastOverlay;
+    type CommandOutput = ();
 
-    view! {
-        #[root]
-        toast_overlay = ToastOverlay {
-            set_child: main_page = Some(&Leaflet) {
+    fn init_root() -> Self::Root {
+        ToastOverlay::new()
+    }
+
+    fn init(
+        _init_params: Self::InitParams,
+        root: &Self::Root,
+        sender: &ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        MAIN_SENDER
+            .set(sender.clone())
+            .expect("failed to initialize main sender");
+
+        let sidebar_controller = SidebarModel::builder()
+            .launch(())
+            .forward(&sender.input, |message| message);
+
+        relm4::menu! {
+            main_menu: {
+                "Keyboard Shortcuts" => ShortcutsAction,
+                "About Gtk QQ" => AboutAction
+            }
+        }
+
+        relm4::view! {
+            #[name = "main_page"]
+            Leaflet {
                 append: sidebar_controller.widget(),
                 append = &Separator::new(Orientation::Horizontal),
                 #[name = "chatroom"]
@@ -149,47 +173,39 @@ impl SimpleComponent for MainPageModel {
                 },
             }
         }
-    }
 
-    menu! {
-        main_menu: {
-            "Keyboard Shortcuts" => ShortcutsAction,
-            "About Gtk QQ" => AboutAction
-        }
-    }
-
-    fn init(
-        _init_params: Self::InitParams,
-        root: &Self::Root,
-        sender: &ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
-        MAIN_SENDER
-            .set(sender.clone())
-            .expect("failed to initialize main sender");
-
-        let sidebar_controller = SidebarModel::builder()
-            .launch(())
-            .forward(&sender.input, |message| message);
-
-        let widgets = view_output!();
+        root.set_child(Some(&main_page));
 
         let chatrooms: FactoryVecDeque<Stack, Chatroom, MainMsg> =
-            FactoryVecDeque::new(widgets.chatroom_stack.clone(), &sender.input);
+            FactoryVecDeque::new(chatroom_stack.clone(), &sender.input);
 
         ComponentParts {
             model: MainPageModel {
-                message: None,
                 sidebar: sidebar_controller,
                 chatrooms: RefCell::new(chatrooms),
             },
-            widgets,
+            widgets: MainPageWidgets {
+                root: root.clone(),
+                main_page,
+                chatroom,
+                chatroom_title,
+                chatroom_subtitle,
+                chatroom_stack,
+            },
         }
     }
 
-    fn update(&mut self, msg: MainMsg, _sender: &ComponentSender<Self>) {
+    fn update_with_view(
+        &mut self,
+        widgets: &mut Self::Widgets,
+        msg: Self::Input,
+        _sender: &ComponentSender<Self>,
+    ) {
         use MainMsg::*;
         match msg {
-            WindowFolded => self.message = Some(ViewMsg::WindowFolded),
+            WindowFolded => {
+                widgets.main_page.set_visible_child(&widgets.chatroom);
+            }
             SelectChatroom(account, is_group) => {
                 if !self.is_item_in_list(account, is_group) {
                     // TODO: Get last_message from history or some other places
@@ -201,7 +217,29 @@ impl SimpleComponent for MainPageModel {
                     self.insert_chatroom(account, is_group);
                 }
 
-                self.message = Some(ViewMsg::SelectChatroom(account, is_group));
+                let child_name =
+                    &format!("{} {}", account, if is_group { "group" } else { "friend" });
+                widgets.chatroom_stack.set_visible_child_name(child_name);
+
+                if is_group {
+                    let group_name: String = get_group_name(account);
+                    let title = group_name;
+                    let subtitle = account.to_string();
+                    widgets.chatroom_title.set_label(&title);
+                    widgets.chatroom_subtitle.set_label(&subtitle);
+                } else {
+                    let (user_name, user_remark): (String, String) = get_db()
+                        .query_row(
+                            "Select name, remark from friends where id=?1",
+                            [account],
+                            |row| Ok((row.get(0).unwrap(), row.get(1).unwrap())),
+                        )
+                        .unwrap();
+                    let title = &user_name;
+                    let subtitle = format!("{} ({})", user_remark, account);
+                    widgets.chatroom_title.set_label(title);
+                    widgets.chatroom_subtitle.set_label(&subtitle);
+                }
             }
             FriendMessage { friend_id, message } => {
                 use SidebarMsg::*;
@@ -221,7 +259,20 @@ impl SimpleComponent for MainPageModel {
                     // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
                     // 以触发自动更新 chatroom 的标题与副标题。
                     if self.chatrooms.borrow().len() == 1 {
-                        self.message = Some(ViewMsg::SelectChatroom(friend_id, false));
+                        let child_name = &format!("{} {}", friend_id, "friend");
+                        widgets.chatroom_stack.set_visible_child_name(child_name);
+
+                        let (user_name, user_remark): (String, String) = get_db()
+                            .query_row(
+                                "Select name, remark from friends where id=?1",
+                                [friend_id],
+                                |row| Ok((row.get(0).unwrap(), row.get(1).unwrap())),
+                            )
+                            .unwrap();
+                        let title = &user_name;
+                        let subtitle = format!("{} ({})", user_remark, friend_id);
+                        widgets.chatroom_title.set_label(title);
+                        widgets.chatroom_subtitle.set_label(&subtitle);
                     }
                 }
 
@@ -245,52 +296,23 @@ impl SimpleComponent for MainPageModel {
                     // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
                     // 以触发自动更新 chatroom 的标题与副标题。
                     if self.chatrooms.borrow().len() == 1 {
-                        self.message = Some(ViewMsg::SelectChatroom(group_id, true));
+                        let child_name = &format!("{} group", group_id);
+                        widgets.chatroom_stack.set_visible_child_name(child_name);
+
+                        let group_name: String = get_group_name(group_id);
+                        let title = group_name;
+                        let subtitle = group_id.to_string();
+                        widgets.chatroom_title.set_label(&title);
+                        widgets.chatroom_subtitle.set_label(&subtitle);
                     }
                 }
 
                 self.push_group_message(group_id, message);
             }
             PushToast(content) => {
-                self.message = Some(ViewMsg::PushToast(content));
+                widgets.root.add_toast(&Toast::new(&content));
             }
         }
         self.chatrooms.borrow().render_changes();
-    }
-
-    fn pre_view() {
-        if let Some(message) = &model.message {
-            use ViewMsg::*;
-            match message {
-                WindowFolded => widgets.main_page.set_visible_child(&widgets.chatroom),
-                SelectChatroom(account, is_group) => {
-                    let child_name =
-                        &format!("{} {}", account, if *is_group { "group" } else { "friend" });
-                    chatroom_stack.set_visible_child_name(child_name);
-                    if *is_group {
-                        let group_name: String = get_group_name(*account);
-                        let title = group_name;
-                        let subtitle = account.to_string();
-                        chatroom_title.set_label(&title);
-                        chatroom_subtitle.set_label(&subtitle);
-                    } else {
-                        let (user_name, user_remark): (String, String) = get_db()
-                            .query_row(
-                                "Select name, remark from friends where id=?1",
-                                [account],
-                                |row| Ok((row.get(0).unwrap(), row.get(1).unwrap())),
-                            )
-                            .unwrap();
-                        let title = &user_name;
-                        let subtitle = format!("{} ({})", user_remark, account);
-                        chatroom_title.set_label(title);
-                        chatroom_subtitle.set_label(&subtitle);
-                    }
-                }
-                PushToast(content) => {
-                    widgets.toast_overlay.add_toast(&Toast::new(content));
-                }
-            }
-        }
     }
 }
