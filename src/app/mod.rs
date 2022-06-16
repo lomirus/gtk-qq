@@ -38,6 +38,7 @@ impl SimpleComponent for AppModel {
     type InitParams = ();
     type Input = AppMessage;
     type Output = ();
+
     view! {
         window = ApplicationWindow {
             add_css_class: "devel",

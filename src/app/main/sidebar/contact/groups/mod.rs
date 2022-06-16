@@ -94,7 +94,7 @@ pub enum GroupsMsg {
     Refresh,
     Render,
     Search(String),
-    Select(i32)
+    Select(i32),
 }
 
 #[relm4::component(pub)]
