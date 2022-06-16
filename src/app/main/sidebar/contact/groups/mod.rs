@@ -1,11 +1,13 @@
 mod group_item;
 
+use std::cell::RefCell;
+
 use relm4::factory::FactoryVecDeque;
 use relm4::{adw, gtk, ComponentParts, ComponentSender, SimpleComponent, WidgetPlus};
-use std::cell::RefCell;
 
 use adw::prelude::*;
 use gtk::{Box, Button, Entry, EntryIconPosition, ListBox, Orientation, ScrolledWindow};
+
 use tokio::task;
 
 use super::ContactMsg;
@@ -13,15 +15,14 @@ use crate::db::sql::{get_db, refresh_groups_list, Group};
 
 #[derive(Debug)]
 pub struct GroupsModel {
-    groups_list: Option<RefCell<FactoryVecDeque<ListBox, Group, GroupsMsg>>>,
+    group_list: Option<RefCell<FactoryVecDeque<ListBox, Group, GroupsMsg>>>,
     is_refresh_button_enabled: bool,
-    keywords: String,
 }
 
 impl GroupsModel {
     fn render_groups(&self) -> rusqlite::Result<()> {
-        let mut groups_list = self.groups_list.as_ref().unwrap().borrow_mut();
-        groups_list.clear();
+        let mut group_list = self.group_list.as_ref().unwrap().borrow_mut();
+        group_list.clear();
 
         let conn = get_db();
 
@@ -36,10 +37,44 @@ impl GroupsModel {
             .map(|result| result.unwrap());
 
         for group in groups {
-            groups_list.push_back(group);
+            group_list.push_back(group);
         }
 
-        groups_list.render_changes();
+        group_list.render_changes();
+        Ok(())
+    }
+
+    fn search(&self, keyword: String) -> rusqlite::Result<()> {
+        let mut group_list = self.group_list.as_ref().unwrap().borrow_mut();
+        group_list.clear();
+
+        let conn = get_db();
+
+        let mut stmt = conn.prepare("Select id, name from groups")?;
+        let groups = stmt
+            .query_map([], |row| {
+                Ok(Group {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                })
+            })?
+            .map(|result| result.unwrap());
+
+        if keyword.is_empty() {
+            for group in groups {
+                group_list.push_back(group);
+            }
+        } else {
+            let keyword = keyword.to_lowercase();
+            let groups =
+                groups.filter(|group: &Group| group.name.to_lowercase().contains(&keyword));
+            for group in groups {
+                group_list.push_back(group);
+            }
+        }
+
+        group_list.render_changes();
+
         Ok(())
     }
 }
@@ -59,6 +94,7 @@ pub enum GroupsMsg {
     Refresh,
     Render,
     Search(String),
+    Select(i32)
 }
 
 #[relm4::component(pub)]
@@ -101,11 +137,7 @@ impl SimpleComponent for GroupsModel {
                     set_vexpand: true,
                     connect_row_activated[sender] => move |_, selected_row| {
                         let index = selected_row.index();
-                        let conn = get_db();
-                        let mut stmt = conn.prepare("Select id from groups order by name").unwrap();
-                        let mut group_iter = stmt.query_map([], |row| { row.get(0) }).unwrap();
-                        let account = group_iter.nth(index as usize).unwrap().unwrap();
-                        sender.output(ContactMsg::SelectChatroom(account, true));
+                        sender.input(GroupsMsg::Select(index));
                     },
                 }
             }
@@ -118,16 +150,15 @@ impl SimpleComponent for GroupsModel {
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let mut model = GroupsModel {
-            groups_list: None,
+            group_list: None,
             is_refresh_button_enabled: true,
-            keywords: String::new(),
         };
         let widgets = view_output!();
 
         let groups_list: FactoryVecDeque<ListBox, Group, GroupsMsg> =
             FactoryVecDeque::new(widgets.groups_list.clone(), &sender.input);
 
-        model.groups_list = Some(RefCell::new(groups_list));
+        model.group_list = Some(RefCell::new(groups_list));
 
         model.render_groups().unwrap();
 
@@ -137,6 +168,11 @@ impl SimpleComponent for GroupsModel {
     fn update(&mut self, msg: GroupsMsg, sender: &ComponentSender<Self>) {
         use GroupsMsg::*;
         match msg {
+            Select(index) => {
+                let group_list = self.group_list.as_ref().unwrap().borrow();
+                let account = group_list.get(index as usize).id;
+                sender.output(ContactMsg::SelectChatroom(account, true));
+            }
             Refresh => {
                 self.is_refresh_button_enabled = false;
                 task::spawn(refresh_groups(sender.clone()));
@@ -150,7 +186,7 @@ impl SimpleComponent for GroupsModel {
                 }
                 self.is_refresh_button_enabled = true;
             }
-            Search(keywords) => self.keywords = keywords,
+            Search(keyword) => self.search(keyword).unwrap(),
         }
     }
 }

@@ -71,7 +71,6 @@ impl FriendsModel {
         search_list.clear();
 
         let keyword = keyword.to_lowercase();
-
         let conn = get_db();
 
         let mut stmt = conn.prepare("Select id, name, remark, group_id from friends")?;
