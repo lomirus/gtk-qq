@@ -72,9 +72,7 @@ impl SimpleComponent for ChatsModel {
         let chats_list: FactoryVecDeque<ListBox, ChatItem, ChatsMsg> =
             FactoryVecDeque::new(widgets.sidebar_chats.clone(), &sender.input);
 
-        let model = ChatsModel {
-            chats_list,
-        };
+        let model = ChatsModel { chats_list };
 
         ComponentParts { model, widgets }
     }
