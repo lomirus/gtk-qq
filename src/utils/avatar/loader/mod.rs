@@ -1,16 +1,16 @@
 mod group;
 mod user;
 
-use std::{borrow::Cow, future::Future, io, path::PathBuf, pin::Pin};
+use std::{borrow::Cow, future::Future, io, path::{PathBuf, Path}, pin::Pin};
 
 use super::error::AvatarError;
 use crate::utils::DirAction;
 pub use group::Group;
-use relm4::gtk::gdk_pixbuf::Pixbuf;
+use relm4::gtk::{gdk_pixbuf::Pixbuf};
 pub use user::User;
 
 pub trait AvatarLoader {
-    fn get_avatar_location_dir(action: DirAction) -> io::Result<PathBuf>;
+    fn get_avatar_location_dir(action: DirAction) -> io::Result<&'static Path>;
     fn avatar_download_url(id: i64) -> Cow<'static, String>;
 
     fn download_avatar(

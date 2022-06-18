@@ -20,6 +20,9 @@ rev = "38fff7007cb51bc39acc30087c3f042031a38eda"
 [dependencies.widgets]
 path = "./libs/widgets"
 
+[dependencies.resource-loader]
+path = "./libs/resource-loader"
+
 [dependencies]
 tokio = "1.18.2"
 rand = "0.8.5"

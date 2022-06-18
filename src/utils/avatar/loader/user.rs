@@ -1,13 +1,15 @@
-use std::{borrow::Cow, io, path::PathBuf};
+use std::{borrow::Cow, io, path::Path};
+
+use resource_loader::{AvatarUser, GetPath};
 
 use super::AvatarLoader;
-use crate::utils::{avatar::open_avatar_dir, DirAction};
+use crate::utils::DirAction;
 
 pub struct User;
 
 impl AvatarLoader for User {
-    fn get_avatar_location_dir(action: DirAction) -> io::Result<PathBuf> {
-        open_avatar_dir("users", action)
+    fn get_avatar_location_dir(action: DirAction) -> io::Result<&'static Path> {
+        AvatarUser::get_and_do_action(action)
     }
 
     fn avatar_download_url(id: i64) -> Cow<'static, String> {

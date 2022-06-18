@@ -996,6 +996,7 @@ dependencies = [
  "rand",
  "relm4",
  "reqwest",
+ "resource-loader",
  "ricq",
  "rusqlite",
  "tokio",
