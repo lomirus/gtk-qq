@@ -32,3 +32,21 @@ pub struct InnerConfig {
     pub avatar: InnerAvatarConfig,
     pub local: InnerDbConfig,
 }
+
+impl Drop for InnerAvatarConfig {
+    fn drop(&mut self) {
+        free_path_ref(self.group);
+        free_path_ref(self.user);
+    }
+}
+
+impl Drop for InnerDbConfig {
+    fn drop(&mut self) {
+        free_path_ref(self.local)
+    }
+}
+
+fn free_path_ref(path: &'static Path) {
+    let box_path = unsafe { Box::from_raw(path as *const _ as *mut Path) };
+    drop(box_path)
+}
