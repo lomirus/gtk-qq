@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use resource_loader::{GetPath, SqlDataBase};
+use resource_loader::{GetPath, SqlDataBase, SyncCreatePath};
 use ricq::structs::{FriendGroupInfo, FriendInfo, GroupInfo};
 use rusqlite::{params, Connection};
 

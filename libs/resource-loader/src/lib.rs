@@ -12,5 +12,8 @@ pub use ops::{
     avatar::{Group as AvatarGroup, User as AvatarUser},
     database::SqlDataBase,
     template::Template,
-    DirAction, GetPath,
+    DirAction, GetPath, SyncCreatePath,
 };
+
+#[cfg(feature = "async-ops")]
+pub use ops::AsyncCreatePath;

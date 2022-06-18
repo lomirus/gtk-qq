@@ -1,6 +1,6 @@
 use std::{borrow::Cow, io, path::Path};
 
-use resource_loader::{AvatarUser, GetPath};
+use resource_loader::{AvatarUser, SyncCreatePath};
 
 use super::AvatarLoader;
 use crate::utils::DirAction;

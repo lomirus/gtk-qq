@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use qrcode_png::{Color, QrCode, QrCodeEcc};
 use rand::prelude::*;
-use resource_loader::{GetPath, Template};
+use resource_loader::{SyncCreatePath, Template};
 use ricq::{
     device::Device,
     ext::common::after_login,
