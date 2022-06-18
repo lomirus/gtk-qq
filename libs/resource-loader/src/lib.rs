@@ -13,4 +13,5 @@ pub use ops::{
     database::SqlDataBase,
     template::Template,
     GetPath,
+    DirAction
 };
