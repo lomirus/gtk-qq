@@ -9,14 +9,14 @@ default_string! {
     SqlData=>"sql_db.db"
 }
 
-#[derive(Debug, Serialize, Deserialize,Derivative)]
+#[derive(Debug, Serialize, Deserialize, Derivative)]
 #[derivative(Default)]
 pub struct DbConfig {
     #[derivative(Default(value = "BaseDir::get_default()"))]
     #[serde(default = "BaseDir::get_default")]
     #[serde(alias = "base")]
     base_dir: String,
-    
+
     #[derivative(Default(value = "SqlData::get_default()"))]
     #[serde(default = "SqlData::get_default")]
     #[serde(alias = "app_db")]
@@ -39,7 +39,6 @@ impl DbConfig {
 
 impl Drop for InnerDbConfig {
     fn drop(&mut self) {
-
         free_path_ref(self.sql_data)
     }
 }

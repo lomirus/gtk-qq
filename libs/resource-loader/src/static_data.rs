@@ -15,8 +15,7 @@ pub(crate) fn load_cfg() -> &'static InnerConfig {
 }
 
 pub fn set_config(cfg: Config) {
-    if !CONFIGURATION.set(cfg.into_inner()){
+    if !CONFIGURATION.set(cfg.into_inner()) {
         panic!("Config had been set")
     }
 }
-

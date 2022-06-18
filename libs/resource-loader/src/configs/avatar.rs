@@ -27,9 +27,9 @@ pub struct AvatarConfig {
 
 /// # Panic
 /// using string literal construct this struct will cause  
-/// ***STATUS_HEAP_CORRUPTION***, 
-/// 
-/// the internal `& 'static Path` comes from `Box::leak` 
+/// ***STATUS_HEAP_CORRUPTION***,
+///
+/// the internal `& 'static Path` comes from `Box::leak`
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct InnerAvatarConfig {
     pub group: &'static Path,
