@@ -990,7 +990,6 @@ name = "gtk-qq"
 version = "0.2.0"
 dependencies = [
  "async-trait",
- "dirs",
  "once_cell",
  "qrcode-png",
  "rand",
