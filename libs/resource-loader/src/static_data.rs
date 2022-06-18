@@ -2,7 +2,7 @@
 
 use state::Storage;
 
-use crate::model::{Config, InnerConfig};
+use crate::configs::{Config, InnerConfig};
 
 static CONFIGURATION: Storage<InnerConfig> = Storage::new();
 
