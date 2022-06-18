@@ -35,7 +35,7 @@ pub struct Group {
 }
 
 pub fn init_sqlite() {
-    let db_path = SqlDataBase::get_and_create_path().expect("cannot get Db file");
+    let db_path = SqlDataBase::get_and_create().expect("cannot get Db file");
 
     let conn = Connection::open(db_path).unwrap();
 

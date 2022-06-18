@@ -1,4 +1,4 @@
-use std::{fs::create_dir_all, io, path::Path};
+use std::path::Path;
 
 use crate::static_data::load_cfg;
 
@@ -13,13 +13,7 @@ impl GetPath for SqlDataBase {
         cfg.database.sql_data
     }
 
-    fn get_and_create_path() -> io::Result<&'static Path> {
-        let path = <Self as GetPath>::get_path();
-
-        if let Some(path) = path.parent() {
-            create_dir_all(path)?;
-        }
-
-        Ok(path)
+    fn create_path() -> Option<&'static Path> {
+        <Self as GetPath>::get_path().parent()
     }
 }
