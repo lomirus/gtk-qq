@@ -3,12 +3,16 @@ name = "resource-loader"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+logger = ["log"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 state = "0.5"
 derivative = "2.2.0"
 dirs = "4.0.0"
+log = { version = "0.4", optional = true }
 
 [dev-dependencies]
 serde_json = "1"
