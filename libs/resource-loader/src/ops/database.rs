@@ -1,4 +1,4 @@
-use std::{io, path::Path, fs::create_dir_all};
+use std::{fs::create_dir_all, io, path::Path};
 
 use crate::static_data::load_cfg;
 

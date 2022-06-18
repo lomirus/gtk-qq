@@ -12,6 +12,5 @@ pub use ops::{
     avatar::{Group as AvatarGroup, User as AvatarUser},
     database::SqlDataBase,
     template::Template,
-    GetPath,
-    DirAction
+    DirAction, GetPath,
 };
