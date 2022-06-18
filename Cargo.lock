@@ -2108,7 +2108,9 @@ name = "resource-loader"
 version = "0.1.0"
 dependencies = [
  "derivative",
+ "dirs",
  "serde",
+ "serde_json",
  "state",
 ]
 
