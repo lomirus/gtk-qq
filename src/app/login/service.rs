@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use qrcode_png::{Color, QrCode, QrCodeEcc};
 use rand::prelude::*;
-use resource_loader::{SyncCreatePath, Template};
+use resource_loader::{AsyncCreatePath, Template};
 use ricq::{
     device::Device,
     ext::common::after_login,
@@ -64,7 +64,7 @@ pub(crate) async fn handle_login_response(
         }
         LoginResponse::NeedCaptcha(LoginNeedCaptcha { verify_url, .. }) => {
             // Get the captcha url qrcode image path
-            let path = match Template::get_and_create() {
+            let path = match Template::get_and_create_async().await {
                 Ok(path) => path,
                 Err(err) => {
                     sender.input(LoginFailed(err.to_string()));
