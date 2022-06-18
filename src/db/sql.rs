@@ -1,5 +1,6 @@
 use std::error::Error;
 
+use resource_loader::{GetPath, SqlDataBase};
 use ricq::structs::{FriendGroupInfo, FriendInfo, GroupInfo};
 use rusqlite::{params, Connection};
 
@@ -34,13 +35,8 @@ pub struct Group {
 }
 
 pub fn init_sqlite() {
-    // Initialize `~/.gtk-qq/` directory
-    let mut db_path = dirs::home_dir().unwrap();
-    db_path.push(".gtk-qq");
-    std::fs::create_dir_all(db_path.clone()).unwrap();
+    let db_path = SqlDataBase::get_and_create_path().expect("cannot get Db file");
 
-    // Create or read from `~/.gtk-qq/data.db`
-    db_path.push("data.db");
     let conn = Connection::open(db_path).unwrap();
 
     conn.execute(
@@ -86,9 +82,7 @@ pub fn init_sqlite() {
 }
 
 pub fn get_db() -> Connection {
-    let mut db_path = dirs::home_dir().unwrap();
-    db_path.push(".gtk-qq");
-    db_path.push("data.db");
+    let db_path = SqlDataBase::get_path();
     Connection::open(db_path).unwrap()
 }
 
