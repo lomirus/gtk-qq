@@ -2,9 +2,7 @@ use std::sync::Arc;
 
 use relm4::gtk::glib::clone;
 use relm4::gtk::Align;
-use relm4::{
-    adw, gtk, Component, ComponentController, ComponentSender, SimpleComponent, WidgetPlus,
-};
+use relm4::{adw, gtk, Component, ComponentController, ComponentSender, WidgetPlus};
 
 use adw::{HeaderBar, Window};
 use gtk::prelude::*;
@@ -22,13 +20,17 @@ pub struct CaptchaModel {
     pub(crate) client: Arc<Client>,
     pub(crate) account: i64,
     pub(crate) password: String,
-    pub(crate) window: Window,
     pub(crate) ticket: String,
+}
+
+pub struct CaptchaWidgets {
+    window: Window,
 }
 
 pub enum Input {
     UpdateTicket(String),
     Submit,
+    CloseWindow,
 }
 
 pub struct PayLoad {
@@ -39,12 +41,13 @@ pub struct PayLoad {
     pub(crate) verify_url: String,
 }
 
-impl SimpleComponent for CaptchaModel {
+impl Component for CaptchaModel {
     type Input = Input;
     type Output = LoginPageMsg;
     type InitParams = PayLoad;
     type Root = Box;
-    type Widgets = ();
+    type Widgets = CaptchaWidgets;
+    type CommandOutput = ();
 
     fn init_root() -> Self::Root {
         relm4::view! {
@@ -175,39 +178,50 @@ impl SimpleComponent for CaptchaModel {
                 client: params.client,
                 account: params.account,
                 password: params.password,
-                window: params.window,
                 ticket: String::new(),
             },
-            widgets: (),
+            widgets: CaptchaWidgets {
+                window: params.window,
+            },
         }
     }
 
-    fn update(&mut self, message: Input, sender: &ComponentSender<Self>) {
+    fn update_with_view(
+        &mut self,
+        widgets: &mut Self::Widgets,
+        message: Self::Input,
+        sender: &ComponentSender<Self>,
+    ) {
         match message {
             Input::Submit => {
-                task::spawn_local(submit_ticket(self.clone(), sender.clone()));
+                task::spawn(self.clone().submit_ticket(sender.clone()));
             }
             Input::UpdateTicket(new_ticket) => {
                 self.ticket = new_ticket;
+            }
+            Input::CloseWindow => {
+                widgets.window.close();
             }
         }
     }
 }
 
-async fn submit_ticket(model: CaptchaModel, sender: ComponentSender<CaptchaModel>) {
-    match model.client.submit_ticket(&model.ticket).await {
-        Ok(res) => {
-            handle_login_response(
-                res,
-                model.account,
-                model.password.clone(),
-                model.client.clone(),
-            )
-            .await
+impl CaptchaModel {
+    async fn submit_ticket(self, sender: ComponentSender<CaptchaModel>) {
+        match self.client.submit_ticket(&self.ticket).await {
+            Ok(res) => {
+                handle_login_response(
+                    res,
+                    self.account,
+                    self.password.clone(),
+                    self.client.clone(),
+                )
+                .await
+            }
+            Err(err) => {
+                sender.output(LoginPageMsg::LoginFailed(err.to_string()));
+            }
         }
-        Err(err) => {
-            sender.output(LoginPageMsg::LoginFailed(err.to_string()));
-        }
+        sender.input(Input::CloseWindow);
     }
-    model.window.close();
 }
