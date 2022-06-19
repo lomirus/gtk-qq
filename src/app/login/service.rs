@@ -80,7 +80,7 @@ pub(crate) async fn handle_login_response(
 
             // Write the image
             let buf = qrcode.generate(Color::Grayscale(0, 255)).unwrap();
-            if let Err(err) = fs::write(path.clone(), buf).await {
+            if let Err(err) = fs::write(path, buf).await {
                 sender.input(LoginFailed(err.to_string()));
                 return;
             };
