@@ -10,7 +10,7 @@ use adw::{HeaderBar, Window};
 use gtk::prelude::*;
 use gtk::{Box, Button, Entry, Label, Orientation, Picture};
 
-use resource_loader::{GetPath, Template};
+use resource_loader::{CaptchaQrCode, GetPath};
 use ricq::Client;
 use tokio::task;
 use widgets::link_copier::{self, LinkCopierModel};
@@ -155,7 +155,7 @@ impl SimpleComponent for CaptchaModel {
                 Picture {
                     set_width_request: 240,
                     set_can_shrink: true,
-                    set_filename: Some(&Template::get_path().join("captcha_url.png"))
+                    set_filename: Some(&CaptchaQrCode::get_path())
                 }
             }
         }
