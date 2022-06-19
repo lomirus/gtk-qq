@@ -46,10 +46,8 @@ mod sync_ops {
     impl<T> SyncCreatePath for T where T: GetPath {}
 }
 
-#[cfg(feature = "async-ops")]
 pub use async_ops::AsyncCreatePath;
 
-#[cfg(feature = "async-ops")]
 mod async_ops {
     use std::{future::Future, io, path::Path, pin::Pin};
 

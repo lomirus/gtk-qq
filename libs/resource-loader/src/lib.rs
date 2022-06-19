@@ -15,5 +15,4 @@ pub use ops::{
     DirAction, GetPath, SyncCreatePath,
 };
 
-#[cfg(feature = "async-ops")]
 pub use ops::AsyncCreatePath;
