@@ -17,7 +17,7 @@ pub enum DirAction {
     None,
 }
 
-pub use sync_ops::{SyncCreatePath,SyncLoadResource};
+pub use sync_ops::{SyncCreatePath, SyncLoadResource};
 
 mod sync_ops {
     use std::{fs::create_dir_all, io, path::Path};
@@ -52,7 +52,7 @@ mod sync_ops {
     }
 }
 
-pub use async_ops::{AsyncCreatePath,AsyncLoadResource};
+pub use async_ops::{AsyncCreatePath, AsyncLoadResource};
 
 mod async_ops {
     use std::{future::Future, io, path::Path, pin::Pin};
