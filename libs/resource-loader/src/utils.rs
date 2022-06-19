@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 macro_rules! default_string {
     ($name:ident=> $default:literal) => {
         struct $name;
@@ -16,4 +18,10 @@ macro_rules! default_string {
             default_string!($name => $default);
         )*
     }
+}
+
+pub(crate) fn resource_root() -> PathBuf {
+    dirs::home_dir()
+        .expect("User Home directory not exist")
+        .join(".gtk-qq")
 }

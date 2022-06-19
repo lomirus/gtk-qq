@@ -10,6 +10,8 @@ use super::{
     InnerAvatarConfig, InnerDbConfig,
 };
 
+use crate::utils::resource_root;
+
 #[derive(Debug, Serialize, Deserialize, Derivative)]
 #[derivative(Default)]
 pub struct Config {
@@ -42,10 +44,4 @@ impl Config {
             temporary: self.temporary.into_inner(),
         }
     }
-}
-
-fn resource_root() -> PathBuf {
-    dirs::home_dir()
-        .expect("User Home directory not exist")
-        .join(".gtk-qq")
 }
