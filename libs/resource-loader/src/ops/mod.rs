@@ -17,7 +17,7 @@ pub enum DirAction {
     None,
 }
 
-pub use sync_ops::SyncCreatePath;
+pub use sync_ops::{SyncCreatePath,SyncLoadResource};
 
 mod sync_ops {
     use std::{fs::create_dir_all, io, path::Path};
@@ -44,9 +44,15 @@ mod sync_ops {
     }
 
     impl<T> SyncCreatePath for T where T: GetPath {}
+
+    pub trait SyncLoadResource<Res>: GetPath {
+        type Args;
+        type Error: std::error::Error;
+        fn load_resource(args: Self::Args) -> Result<Res, Self::Error>;
+    }
 }
 
-pub use async_ops::AsyncCreatePath;
+pub use async_ops::{AsyncCreatePath,AsyncLoadResource};
 
 mod async_ops {
     use std::{future::Future, io, path::Path, pin::Pin};
@@ -81,4 +87,12 @@ mod async_ops {
     }
 
     impl<T> AsyncCreatePath for T where T: GetPath {}
+
+    pub trait AsyncLoadResource<Res>: GetPath {
+        type Fut: Future<Output = Result<Res, Self::Error>> + Send + Sync;
+        type Error: std::error::Error;
+        type Args;
+
+        fn load_resource_async(args: Self::Args) -> Self::Fut;
+    }
 }
