@@ -6,7 +6,7 @@ mod static_data;
 
 pub use configs::Config;
 
-pub use static_data::set_config;
+pub use static_data::{load_from_file, save_config, set_config};
 
 pub use ops::{
     avatar::{Group as AvatarGroup, User as AvatarUser},

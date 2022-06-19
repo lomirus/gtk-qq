@@ -19,6 +19,7 @@ use global::{SharedApplication, APP};
 
 #[tokio::main]
 async fn main() {
+    resource_loader::load_from_file().expect("Failure Load Configuration");
     init_resources();
     init_sqlite();
 

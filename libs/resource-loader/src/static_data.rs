@@ -42,7 +42,6 @@ pub fn load_from_file() -> io::Result<()> {
     Ok(())
 }
 
-#[allow(dead_code)]
 pub fn save_config(cfg: Config) -> io::Result<()> {
     let config_file = get_and_create_config()?;
 
