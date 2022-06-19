@@ -1,6 +1,6 @@
 pub mod avatar;
 pub mod database;
-pub mod template;
+pub mod temporary;
 use std::path::Path;
 
 pub trait GetPath {

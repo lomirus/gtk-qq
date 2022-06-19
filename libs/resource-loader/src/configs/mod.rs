@@ -3,7 +3,7 @@ use std::path::Path;
 
 mod avatar;
 mod local_db;
-mod temp;
+mod temporary;
 
 fn free_path_ref(path: &'static Path) {
     let box_path = unsafe { Box::from_raw(path as *const _ as *mut Path) };

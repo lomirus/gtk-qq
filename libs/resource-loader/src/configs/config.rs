@@ -1,11 +1,13 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use derivative::Derivative;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    avatar::AvatarConfig, free_path_ref, local_db::DbConfig, static_leak, InnerAvatarConfig,
-    InnerDbConfig,
+    avatar::AvatarConfig,
+    local_db::DbConfig,
+    temporary::{InnerTemporaryConfig, TemporaryConfig},
+    InnerAvatarConfig, InnerDbConfig,
 };
 
 #[derive(Debug, Serialize, Deserialize, Derivative)]
@@ -15,16 +17,17 @@ pub struct Config {
     #[serde(default = "resource_root")]
     #[serde(alias = "res", alias = "resource")]
     resource_root: PathBuf,
-    #[derivative(Default(value = "template_root()"))]
-    #[serde(default = "template_root")]
-    #[serde(alias = "template", alias = "temp")]
-    template_dir: PathBuf,
+    #[serde(default = "Default::default")]
+    #[serde(alias = "temp", alias = "temporary")]
+    temporary: TemporaryConfig,
+    #[serde(default = "Default::default")]
     avatar: AvatarConfig,
+    #[serde(default = "Default::default")]
     database: DbConfig,
 }
 
 pub struct InnerConfig {
-    pub(crate) template_dir: &'static Path,
+    pub(crate) temporary: InnerTemporaryConfig,
     pub(crate) avatar: InnerAvatarConfig,
     pub(crate) database: InnerDbConfig,
 }
@@ -32,30 +35,17 @@ pub struct InnerConfig {
 impl Config {
     pub(crate) fn into_inner(self) -> InnerConfig {
         let root = self.resource_root;
-        let template_dir = static_leak(self.template_dir.into_boxed_path());
 
         InnerConfig {
             avatar: self.avatar.into_inner(root.as_path()),
             database: self.database.into_inner(root.as_path()),
-            template_dir,
+            temporary: self.temporary.into_inner(),
         }
-    }
-}
-
-impl Drop for InnerConfig {
-    fn drop(&mut self) {
-        free_path_ref(self.template_dir);
     }
 }
 
 fn resource_root() -> PathBuf {
     dirs::home_dir()
         .expect("User Home directory not exist")
-        .join(".gtk-qq")
-}
-
-fn template_root() -> PathBuf {
-    dirs::template_dir()
-        .expect("Template Directory Not Exist")
         .join(".gtk-qq")
 }
