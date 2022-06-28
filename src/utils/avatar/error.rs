@@ -7,6 +7,8 @@ pub enum AvatarError {
     Glib(relm4::gtk::glib::Error),
 }
 
+impl std::error::Error for AvatarError {}
+
 impl std::fmt::Display for AvatarError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
