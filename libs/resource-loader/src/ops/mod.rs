@@ -45,7 +45,7 @@ mod sync_ops {
 
     impl<T> SyncCreatePath for T where T: GetPath {}
 
-    pub trait SyncLoadResource<Res>: GetPath {
+    pub trait SyncLoadResource<Res> {
         type Args;
         type Error: std::error::Error;
         fn load_resource(args: Self::Args) -> Result<Res, Self::Error>;
@@ -88,7 +88,7 @@ mod async_ops {
 
     impl<T> AsyncCreatePath for T where T: GetPath {}
 
-    pub trait AsyncLoadResource<Res>: GetPath {
+    pub trait AsyncLoadResource<Res> {
         type Fut: Future<Output = Result<Res, Self::Error>> + Send + Sync;
         type Error: std::error::Error;
         type Args;
