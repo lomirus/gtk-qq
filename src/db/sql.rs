@@ -1,11 +1,28 @@
 use std::error::Error;
 
-use resource_loader::{GetPath, SqlDataBase, SyncCreatePath};
+use crate::config::DB_VERSION;
+use crate::handler::CLIENT;
+use resource_loader::{SqlDataBase, SyncCreatePath, SyncLoadResource};
 use ricq::structs::{FriendGroupInfo, FriendInfo, GroupInfo};
 use rusqlite::{params, Connection};
 
-use crate::config::DB_VERSION;
-use crate::handler::CLIENT;
+pub struct SqlDb;
+
+impl SyncLoadResource<rusqlite::Connection> for SqlDb {
+    type Args = ();
+
+    type Error = rusqlite::Error;
+
+    fn load_resource(_: Self::Args) -> Result<rusqlite::Connection, Self::Error> {
+        let db_file = SqlDataBase::get_and_create().expect("Failure Load DB information");
+
+        Connection::open(db_file)
+    }
+}
+
+pub fn get_db() -> Connection {
+    SqlDb::load_resource(()).expect("Load Sqlite Db Failure")
+}
 
 #[derive(Debug)]
 pub struct Config {
@@ -35,9 +52,7 @@ pub struct Group {
 }
 
 pub fn init_sqlite() {
-    let db_path = SqlDataBase::get_and_create().expect("cannot get Db file");
-
-    let conn = Connection::open(db_path).unwrap();
+    let conn = SqlDb::load_resource(()).expect("Load Sqlite Db Failure");
 
     conn.execute(
         "Create table if not exists configs (
@@ -79,11 +94,6 @@ pub fn init_sqlite() {
         [],
     )
     .unwrap();
-}
-
-pub fn get_db() -> Connection {
-    let db_path = SqlDataBase::get_path();
-    Connection::open(db_path).unwrap()
 }
 
 pub async fn refresh_friends_list() -> Result<(), Box<dyn Error>> {
