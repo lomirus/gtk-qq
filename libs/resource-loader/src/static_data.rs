@@ -16,7 +16,7 @@ pub struct ResourceConfig;
 pub(crate) fn load_cfg() -> &'static InnerConfig {
     CONFIGURATION.get_or_set(|| {
         #[cfg(feature = "logger")]
-        log::warn!("Config not set, Using Default Config");
+        log::warn!("Config not set. Using Default Config");
         Config::default().into_inner()
     })
 }
