@@ -79,7 +79,9 @@ mod async_ops {
         ) -> Pin<Box<dyn Future<Output = io::Result<&'static Path>> + Send + Sync>> {
             Box::pin(async move {
                 match action {
-                    DirAction::CreateAll => <Self as AsyncCreatePath>::create_and_get_path_async().await,
+                    DirAction::CreateAll => {
+                        <Self as AsyncCreatePath>::create_and_get_path_async().await
+                    }
                     DirAction::None => Ok(<Self as GetPath>::get_path()),
                 }
             })
