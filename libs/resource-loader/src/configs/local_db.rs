@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use super::{free_path_ref, static_leak};
 use derivative::Derivative;
 default_string! {
-    BaseDir=>"database"
-    SqlData=>"sql_db.db"
+    BaseDir => "database"
+    SqlData => "sql_db.db"
 }
 
 #[derive(Debug, Serialize, Deserialize, Derivative)]

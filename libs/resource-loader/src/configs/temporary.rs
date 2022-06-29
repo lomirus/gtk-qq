@@ -7,7 +7,7 @@ use tempfile::TempDir;
 use super::{free_path_ref, static_leak};
 
 default_string! {
-    CaptchaQrCode=>"captcha_url.png"
+    CaptchaQrCode => "captcha_url.png"
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Derivative)]

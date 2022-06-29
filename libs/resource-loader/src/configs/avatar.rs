@@ -5,9 +5,9 @@ use serde::{Deserialize, Serialize};
 use super::{free_path_ref, static_leak};
 
 default_string! {
-    BaseDir=>"avatars"
-    Group=>"groups"
-    User=>"users"
+    BaseDir => "avatars"
+    Group => "groups"
+    User => "users"
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize, derivative::Derivative)]
