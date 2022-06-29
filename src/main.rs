@@ -20,7 +20,7 @@ use resource_loader::ResourceConfig;
 
 #[tokio::main]
 async fn main() {
-    ResourceConfig::load_from_file().expect("Failure on loading configuration");
+    ResourceConfig::load_or_create_default().expect("Failure on loading configuration");
     init_resources();
     init_sqlite();
 

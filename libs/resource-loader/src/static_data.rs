@@ -20,6 +20,17 @@ pub(crate) fn load_cfg() -> &'static InnerConfig {
         Config::default().into_inner()
     })
 }
+
+fn create_and_get_config_path() -> io::Result<PathBuf> {
+    let res_root = resource_root();
+    std::fs::create_dir_all(&res_root)?;
+    Ok(res_root.join("config.toml"))
+}
+
+fn get_config_path() -> PathBuf {
+    resource_root().join("config.toml")
+}
+
 impl ResourceConfig {
     pub fn set_config(cfg: Config) {
         if !CONFIGURATION.set(cfg.into_inner()) {
@@ -27,14 +38,19 @@ impl ResourceConfig {
         }
     }
 
-    fn get_and_create_config() -> io::Result<PathBuf> {
-        let res_root = resource_root();
-        std::fs::create_dir_all(&res_root)?;
-        Ok(res_root.join("config.toml"))
+    pub fn load_or_create_default() -> io::Result<()> {
+        let cfg_file = get_config_path();
+        if !cfg_file.exists() || !cfg_file.is_file() {
+            Self::save_config(Default::default())?;
+            Self::set_config(Default::default());
+            Ok(())
+        } else {
+            Self::load_from_file()
+        }
     }
 
     pub fn load_from_file() -> io::Result<()> {
-        let config_file = Self::get_and_create_config()?;
+        let config_file = create_and_get_config_path()?;
         let file = std::fs::read(config_file)?;
 
         let cfg = toml::from_slice::<Config>(&file).expect("Bad Config File Format");
@@ -45,7 +61,7 @@ impl ResourceConfig {
     }
 
     pub fn save_config(cfg: Config) -> io::Result<()> {
-        let config_file = Self::get_and_create_config()?;
+        let config_file = create_and_get_config_path()?;
 
         let cfg = toml::to_string_pretty(&cfg).expect("Serde Config Error");
 
