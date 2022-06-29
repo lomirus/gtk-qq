@@ -9,7 +9,7 @@ pub struct User;
 
 impl AvatarLoader for User {
     fn get_avatar_location_dir(action: DirAction) -> io::Result<&'static Path> {
-        AvatarUser::get_and_do_action(action)
+        AvatarUser::do_action_and_get_path(action)
     }
 
     fn avatar_download_url(id: i64) -> Cow<'static, String> {

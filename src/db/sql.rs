@@ -14,7 +14,7 @@ impl SyncLoadResource<rusqlite::Connection> for SqlDb {
     type Error = rusqlite::Error;
 
     fn load_resource(_: Self::Args) -> Result<rusqlite::Connection, Self::Error> {
-        let db_file = SqlDataBase::get_and_create().expect("Failure Load DB information");
+        let db_file = SqlDataBase::create_and_get_path().expect("Failure Load DB information");
 
         Connection::open(db_file)
     }

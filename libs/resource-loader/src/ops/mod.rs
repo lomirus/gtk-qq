@@ -6,7 +6,7 @@ use std::path::Path;
 pub trait GetPath {
     fn get_path() -> &'static Path;
 
-    fn create_path() -> Option<&'static Path> {
+    fn path_for_create() -> Option<&'static Path> {
         <Self as GetPath>::get_path().into()
     }
 }
@@ -25,19 +25,19 @@ mod sync_ops {
     use crate::{DirAction, GetPath};
 
     pub trait SyncCreatePath: GetPath {
-        fn get_and_create() -> io::Result<&'static Path> {
+        fn create_and_get_path() -> io::Result<&'static Path> {
             #[cfg(feature = "logger")]
             log::debug!("get and create path {:?}", path);
 
-            if let Some(path) = <Self as GetPath>::create_path() {
+            if let Some(path) = <Self as GetPath>::path_for_create() {
                 create_dir_all(path)?;
             }
             Ok(<Self as GetPath>::get_path())
         }
 
-        fn get_and_do_action(action: DirAction) -> io::Result<&'static Path> {
+        fn do_action_and_get_path(action: DirAction) -> io::Result<&'static Path> {
             match action {
-                DirAction::CreateAll => <Self as SyncCreatePath>::get_and_create(),
+                DirAction::CreateAll => <Self as SyncCreatePath>::create_and_get_path(),
                 DirAction::None => Ok(<Self as GetPath>::get_path()),
             }
         }
@@ -62,9 +62,9 @@ mod async_ops {
     use crate::{DirAction, GetPath};
 
     pub trait AsyncCreatePath: GetPath {
-        fn get_and_create_async(
+        fn create_and_get_path_async(
         ) -> Pin<Box<dyn Future<Output = io::Result<&'static Path>> + Send + Sync>> {
-            let create_path = <Self as GetPath>::create_path();
+            let create_path = <Self as GetPath>::path_for_create();
             let path = <Self as GetPath>::get_path();
             Box::pin(async move {
                 if let Some(path) = create_path {
@@ -74,12 +74,12 @@ mod async_ops {
             })
         }
 
-        fn get_and_do_action_async(
+        fn do_action_and_get_path_async(
             action: DirAction,
         ) -> Pin<Box<dyn Future<Output = io::Result<&'static Path>> + Send + Sync>> {
             Box::pin(async move {
                 match action {
-                    DirAction::CreateAll => <Self as AsyncCreatePath>::get_and_create_async().await,
+                    DirAction::CreateAll => <Self as AsyncCreatePath>::create_and_get_path_async().await,
                     DirAction::None => Ok(<Self as GetPath>::get_path()),
                 }
             })

@@ -64,7 +64,7 @@ pub(crate) async fn handle_login_response(
         }
         LoginResponse::NeedCaptcha(LoginNeedCaptcha { verify_url, .. }) => {
             // Get the captcha url qrcode image path
-            let path = match CaptchaQrCode::get_and_create_async().await {
+            let path = match CaptchaQrCode::create_and_get_path_async().await {
                 Ok(path) => path,
                 Err(err) => {
                     sender.input(LoginFailed(err.to_string()));

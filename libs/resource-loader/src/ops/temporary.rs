@@ -11,7 +11,7 @@ impl GetPath for TempDir {
         load_cfg().temporary.temp_dir.path()
     }
 
-    fn create_path() -> Option<&'static Path> {
+    fn path_for_create() -> Option<&'static Path> {
         None
     }
 }
@@ -23,7 +23,7 @@ impl GetPath for CaptchaQrCode {
         load_cfg().temporary.captcha_file
     }
 
-    fn create_path() -> Option<&'static Path> {
+    fn path_for_create() -> Option<&'static Path> {
         None
     }
 }

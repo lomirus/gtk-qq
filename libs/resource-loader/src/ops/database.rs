@@ -13,7 +13,7 @@ impl GetPath for SqlDataBase {
         cfg.database.sql_data
     }
 
-    fn create_path() -> Option<&'static Path> {
+    fn path_for_create() -> Option<&'static Path> {
         <Self as GetPath>::get_path().parent()
     }
 }
