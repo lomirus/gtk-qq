@@ -7,8 +7,7 @@ mod temporary;
 
 fn free_path_ref(path: &'static Path) {
     let box_path = unsafe { Box::from_raw(path as *const _ as *mut Path) };
-    #[cfg(feature = "logger")]
-    log::trace!("dropping Path=> {:?}", &box_path);
+    logger!(trace "dropping Path=> {:?}", &box_path);
     drop(box_path)
 }
 

@@ -22,6 +22,7 @@ macro_rules! default_string {
     }
 }
 
+#[macro_export(crate)]
 macro_rules! logger {
     (info $l:literal $(, $v:expr)*) => {
            { 

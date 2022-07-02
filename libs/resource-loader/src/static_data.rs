@@ -14,16 +14,20 @@ static CONFIGURATION: OnceCell<InnerConfig> = OnceCell::new();
 pub struct ResourceConfig;
 
 pub(crate) fn load_cfg() -> &'static InnerConfig {
+    logger!(info "Loading Config");
     CONFIGURATION.get_or_init(|| {
-        #[cfg(feature = "logger")]
-        log::warn!("Config not set. Using Default Config");
+        logger!(warn "Config not set. Using Default Config");
         Config::default().into_inner()
     })
 }
 
 fn create_and_get_config_path() -> io::Result<PathBuf> {
     let res_root = resource_root();
-    std::fs::create_dir_all(&res_root)?;
+
+    if !res_root.exists() {
+        logger!(info "config location directory need create");
+        std::fs::create_dir_all(&res_root)?;
+    }
     Ok(res_root.join("config.toml"))
 }
 
@@ -33,6 +37,7 @@ fn get_config_path() -> PathBuf {
 
 impl ResourceConfig {
     pub fn set_config(cfg: Config) {
+        logger!(info "setting config");
         if let Err(_) = CONFIGURATION.set(cfg.into_inner()) {
             panic!("Config had been set")
         }
@@ -41,6 +46,7 @@ impl ResourceConfig {
     pub fn load_or_create_default() -> io::Result<()> {
         let cfg_file = get_config_path();
         if !cfg_file.exists() || !cfg_file.is_file() {
+            logger!(warn "Config file not exist, create file using default config");
             Self::save_config(Default::default())?;
             Self::set_config(Default::default());
             Ok(())
@@ -50,13 +56,14 @@ impl ResourceConfig {
     }
 
     pub fn load_from_file() -> io::Result<()> {
+        logger!(info "loading config from file");
         let config_file = create_and_get_config_path()?;
+        logger!(info "reading file stream into vector");
         let file = std::fs::read(config_file)?;
-
+        logger!(info "parse file stream as `TOML` file | file size : {} bytes", file.len());
         let cfg = toml::from_slice::<Config>(&file).expect("Bad Config File Format");
-
+        logger!(info "setting config loading from file");
         Self::set_config(cfg);
-
         Ok(())
     }
 
@@ -64,7 +71,7 @@ impl ResourceConfig {
         let config_file = create_and_get_config_path()?;
 
         let cfg = toml::to_string_pretty(&cfg).expect("Serde Config Error");
-
+        logger!(info "writing config into file {:?}", config_file);
         std::fs::write(config_file, cfg)?;
 
         Ok(())
@@ -75,6 +82,11 @@ mod test {
     use crate::{ops::avatar, Config, GetPath};
 
     use super::ResourceConfig;
+
+    #[test]
+    fn test_load_cfg() {
+        let _cfg = super::load_cfg();
+    }
 
     #[test]
     fn generate_conf() {

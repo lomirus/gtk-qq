@@ -22,20 +22,22 @@ pub use sync_ops::{SyncCreatePath, SyncLoadResource};
 mod sync_ops {
     use std::{fs::create_dir_all, io, path::Path};
 
-    use crate::{DirAction, GetPath};
+    use tap::Tap;
+
+    use crate::{logger, DirAction, GetPath};
 
     pub trait SyncCreatePath: GetPath {
         fn create_and_get_path() -> io::Result<&'static Path> {
-            #[cfg(feature = "logger")]
-            log::debug!("get and create path {:?}", path);
-
-            if let Some(path) = <Self as GetPath>::path_for_create() {
+            if let Some(path) = <Self as GetPath>::path_for_create()
+                .tap(|path| logger!(debug "create path {:?}", path))
+            {
                 create_dir_all(path)?;
             }
-            Ok(<Self as GetPath>::get_path())
+            Ok(<Self as GetPath>::get_path().tap(|path| logger!(info "get path: {:?}", path)))
         }
 
         fn do_action_and_get_path(action: DirAction) -> io::Result<&'static Path> {
+            logger!(info "Directory action : {:?}", action);
             match action {
                 DirAction::CreateAll => <Self as SyncCreatePath>::create_and_get_path(),
                 DirAction::None => Ok(<Self as GetPath>::get_path()),
@@ -59,13 +61,15 @@ mod async_ops {
 
     use tokio::fs::create_dir_all;
 
-    use crate::{DirAction, GetPath};
+    use crate::{logger, DirAction, GetPath};
 
     pub trait AsyncCreatePath: GetPath {
         fn create_and_get_path_async(
         ) -> Pin<Box<dyn Future<Output = io::Result<&'static Path>> + Send + Sync>> {
             let create_path = <Self as GetPath>::path_for_create();
+            logger!(debug "create path {:?}", create_path);
             let path = <Self as GetPath>::get_path();
+            logger!(info "get path: {:?}", path);
             Box::pin(async move {
                 if let Some(path) = create_path {
                     create_dir_all(path).await?;
@@ -77,6 +81,7 @@ mod async_ops {
         fn do_action_and_get_path_async(
             action: DirAction,
         ) -> Pin<Box<dyn Future<Output = io::Result<&'static Path>> + Send + Sync>> {
+            logger!(info "Directory action : {:?}", action);
             Box::pin(async move {
                 match action {
                     DirAction::CreateAll => {
