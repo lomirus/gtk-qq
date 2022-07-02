@@ -2,19 +2,19 @@
 
 use std::{io, path::PathBuf};
 
-use state::Storage;
+use once_cell::sync::OnceCell;
 
 use crate::{
     configs::{Config, InnerConfig},
     utils::resource_root,
 };
 
-static CONFIGURATION: Storage<InnerConfig> = Storage::new();
+static CONFIGURATION: OnceCell<InnerConfig> = OnceCell::new();
 
 pub struct ResourceConfig;
 
 pub(crate) fn load_cfg() -> &'static InnerConfig {
-    CONFIGURATION.get_or_set(|| {
+    CONFIGURATION.get_or_init(|| {
         #[cfg(feature = "logger")]
         log::warn!("Config not set. Using Default Config");
         Config::default().into_inner()
@@ -33,7 +33,7 @@ fn get_config_path() -> PathBuf {
 
 impl ResourceConfig {
     pub fn set_config(cfg: Config) {
-        if !CONFIGURATION.set(cfg.into_inner()) {
+        if let Err(_) = CONFIGURATION.set(cfg.into_inner()) {
             panic!("Config had been set")
         }
     }
