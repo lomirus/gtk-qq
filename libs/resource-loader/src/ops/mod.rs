@@ -58,7 +58,7 @@ mod sync_ops {
 pub use async_ops::{AsyncCreatePath, AsyncLoadResource};
 
 mod async_ops {
-    use std::{future::Future, io, path::Path, pin::Pin, any::type_name};
+    use std::{any::type_name, future::Future, io, path::Path, pin::Pin};
 
     use tokio::fs::create_dir_all;
 

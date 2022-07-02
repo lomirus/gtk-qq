@@ -25,7 +25,7 @@ macro_rules! default_string {
 #[macro_export(crate)]
 macro_rules! logger {
     (info $l:literal $(, $v:expr)*) => {
-           { 
+        {
             #[cfg(feature = "logger")]
             log::info!($l, $($v),*);
             #[cfg(not(feature = "logger"))]
@@ -66,10 +66,9 @@ macro_rules! logger {
     };
 }
 
-
 pub(crate) fn resource_root() -> PathBuf {
     dirs::home_dir()
         .expect("User Home directory not exist")
         .join(".gtk-qq")
-        .tap(|path|logger!(info "config local directory : {:?}", path))
+        .tap(|path| logger!(info "config local directory : {:?}", path))
 }

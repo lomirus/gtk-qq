@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::{static_data::load_cfg, logger};
+use crate::{logger, static_data::load_cfg};
 
 use super::GetPath;
 

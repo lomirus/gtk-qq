@@ -38,7 +38,7 @@ fn get_config_path() -> PathBuf {
 impl ResourceConfig {
     pub fn set_config(cfg: Config) {
         logger!(info "setting config");
-        if let Err(_) = CONFIGURATION.set(cfg.into_inner()) {
+        if CONFIGURATION.set(cfg.into_inner()).is_err() {
             panic!("Config had been set")
         }
     }
