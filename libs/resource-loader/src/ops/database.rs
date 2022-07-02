@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::static_data::load_cfg;
+use crate::{static_data::load_cfg, logger};
 
 use super::GetPath;
 
@@ -8,8 +8,9 @@ pub struct SqlDataBase;
 
 impl GetPath for SqlDataBase {
     fn get_path() -> &'static Path {
-        let cfg = load_cfg();
 
+        let cfg = load_cfg();
+        logger!(info "loading `Sql DataBase` path");
         cfg.database.sql_data
     }
 

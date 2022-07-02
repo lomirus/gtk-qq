@@ -29,7 +29,7 @@ macro_rules! logger {
             #[cfg(feature = "logger")]
             log::info!($l, $($v),*);
             #[cfg(not(feature = "logger"))]
-            println!($l, $($v),*);
+            println!("[INFO] {}",format!($l, $($v),*));
         }
     };
     (debug $l:literal $(, $v:expr)*) => {
@@ -37,7 +37,7 @@ macro_rules! logger {
             #[cfg(feature = "logger")]
             log::debug!($l , $($v),*);
             #[cfg(not(feature = "logger"))]
-            println!($l, $($v),*);
+            println!("[DEBUG] {}",format!($l, $($v),*));
         }
     };
     (warn $l:literal $(, $v:expr)*) => {
@@ -45,7 +45,7 @@ macro_rules! logger {
             #[cfg(feature = "logger")]
             log::warn!($l, $($v),*);
             #[cfg(not(feature = "logger"))]
-            println!($l,$($v),*);
+            println!("[WARN] {}",format!($l, $($v),*));
         }
     };
     (trace $l:literal $(, $v:expr)*) => {
@@ -53,7 +53,7 @@ macro_rules! logger {
             #[cfg(feature = "logger")]
             log::trace!($l, $($v),*);
             #[cfg(not(feature = "logger"))]
-            println!($l,$($v),*);
+            println!("[TRACE] {}",format!($l, $($v),*));
         }
     };
     (error $l:literal $(, $v:expr)*) => {
@@ -61,7 +61,7 @@ macro_rules! logger {
             #[cfg(feature = "logger")]
             log::error!($l, $($v),*);
             #[cfg(not(feature = "logger"))]
-            eprintln!($l,$($v),*);
+            eprintln!("[ERROR] {}",format!($l, $($v),*));
         }
     };
 }

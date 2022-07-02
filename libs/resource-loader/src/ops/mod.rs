@@ -20,7 +20,7 @@ pub enum DirAction {
 pub use sync_ops::{SyncCreatePath, SyncLoadResource};
 
 mod sync_ops {
-    use std::{fs::create_dir_all, io, path::Path};
+    use std::{any::type_name, fs::create_dir_all, io, path::Path};
 
     use tap::Tap;
 
@@ -29,15 +29,16 @@ mod sync_ops {
     pub trait SyncCreatePath: GetPath {
         fn create_and_get_path() -> io::Result<&'static Path> {
             if let Some(path) = <Self as GetPath>::path_for_create()
-                .tap(|path| logger!(debug "create path {:?}", path))
+                .tap(|path| logger!(debug "create path {:?} | {}", path, type_name::<Self>()))
             {
                 create_dir_all(path)?;
             }
-            Ok(<Self as GetPath>::get_path().tap(|path| logger!(info "get path: {:?}", path)))
+            Ok(<Self as GetPath>::get_path()
+                .tap(|path| logger!(info "get path: {:?} | {}", path, type_name::<Self>())))
         }
 
         fn do_action_and_get_path(action: DirAction) -> io::Result<&'static Path> {
-            logger!(info "Directory action : {:?}", action);
+            logger!(debug "Sync Directory action : {:?} | {}", action, type_name::<Self>());
             match action {
                 DirAction::CreateAll => <Self as SyncCreatePath>::create_and_get_path(),
                 DirAction::None => Ok(<Self as GetPath>::get_path()),
@@ -57,7 +58,7 @@ mod sync_ops {
 pub use async_ops::{AsyncCreatePath, AsyncLoadResource};
 
 mod async_ops {
-    use std::{future::Future, io, path::Path, pin::Pin};
+    use std::{future::Future, io, path::Path, pin::Pin, any::type_name};
 
     use tokio::fs::create_dir_all;
 
@@ -67,9 +68,9 @@ mod async_ops {
         fn create_and_get_path_async(
         ) -> Pin<Box<dyn Future<Output = io::Result<&'static Path>> + Send + Sync>> {
             let create_path = <Self as GetPath>::path_for_create();
-            logger!(debug "create path {:?}", create_path);
+            logger!(debug "create path {:?} | {}", create_path, type_name::<Self>());
             let path = <Self as GetPath>::get_path();
-            logger!(info "get path: {:?}", path);
+            logger!(info "get path: {:?} | {}", path, type_name::<Self>());
             Box::pin(async move {
                 if let Some(path) = create_path {
                     create_dir_all(path).await?;
@@ -81,7 +82,7 @@ mod async_ops {
         fn do_action_and_get_path_async(
             action: DirAction,
         ) -> Pin<Box<dyn Future<Output = io::Result<&'static Path>> + Send + Sync>> {
-            logger!(info "Directory action : {:?}", action);
+            logger!(debug "Async Directory action : {:?} | {}", action, type_name::<Self>());
             Box::pin(async move {
                 match action {
                     DirAction::CreateAll => {
