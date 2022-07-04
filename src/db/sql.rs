@@ -1,10 +1,28 @@
 use std::error::Error;
 
+use crate::config::DB_VERSION;
+use crate::handler::CLIENT;
+use resource_loader::{SqlDataBase, SyncCreatePath, SyncLoadResource};
 use ricq::structs::{FriendGroupInfo, FriendInfo, GroupInfo};
 use rusqlite::{params, Connection};
 
-use crate::config::DB_VERSION;
-use crate::handler::CLIENT;
+pub struct SqlDb;
+
+impl SyncLoadResource<rusqlite::Connection> for SqlDb {
+    type Args = ();
+
+    type Error = rusqlite::Error;
+
+    fn load_resource(_: Self::Args) -> Result<rusqlite::Connection, Self::Error> {
+        let db_file = SqlDataBase::create_and_get_path().expect("Failure Load DB information");
+
+        Connection::open(db_file)
+    }
+}
+
+pub fn get_db() -> Connection {
+    SqlDb::load_resource(()).expect("Load Sqlite Db Failure")
+}
 
 #[derive(Debug)]
 pub struct Config {
@@ -34,14 +52,7 @@ pub struct Group {
 }
 
 pub fn init_sqlite() {
-    // Initialize `~/.gtk-qq/` directory
-    let mut db_path = dirs::home_dir().unwrap();
-    db_path.push(".gtk-qq");
-    std::fs::create_dir_all(db_path.clone()).unwrap();
-
-    // Create or read from `~/.gtk-qq/data.db`
-    db_path.push("data.db");
-    let conn = Connection::open(db_path).unwrap();
+    let conn = SqlDb::load_resource(()).expect("Load Sqlite Db Failure");
 
     conn.execute(
         "Create table if not exists configs (
@@ -83,13 +94,6 @@ pub fn init_sqlite() {
         [],
     )
     .unwrap();
-}
-
-pub fn get_db() -> Connection {
-    let mut db_path = dirs::home_dir().unwrap();
-    db_path.push(".gtk-qq");
-    db_path.push("data.db");
-    Connection::open(db_path).unwrap()
 }
 
 pub async fn refresh_friends_list() -> Result<(), Box<dyn Error>> {

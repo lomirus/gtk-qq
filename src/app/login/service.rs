@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use qrcode_png::{Color, QrCode, QrCodeEcc};
 use rand::prelude::*;
+use resource_loader::{AsyncCreatePath, CaptchaQrCode};
 use ricq::{
     device::Device,
     ext::common::after_login,
@@ -9,11 +10,7 @@ use ricq::{
     Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse, LoginUnknownStatus,
 };
 use rusqlite::params;
-use tokio::{
-    fs::{self, create_dir_all},
-    net::TcpStream,
-    task,
-};
+use tokio::{fs, net::TcpStream, task};
 
 use crate::app::login::{LoginPageMsg, LOGIN_SENDER};
 use crate::db::sql::get_db;
@@ -67,13 +64,13 @@ pub(crate) async fn handle_login_response(
         }
         LoginResponse::NeedCaptcha(LoginNeedCaptcha { verify_url, .. }) => {
             // Get the captcha url qrcode image path
-            let mut path = dirs::home_dir().unwrap();
-            path.push(".gtk-qq");
-            if let Err(err) = create_dir_all(path.clone()).await {
-                sender.input(LoginFailed(err.to_string()));
-                return;
-            }
-            path.push("captcha_url.png");
+            let path = match CaptchaQrCode::create_and_get_path_async().await {
+                Ok(path) => path,
+                Err(err) => {
+                    sender.input(LoginFailed(err.to_string()));
+                    return;
+                }
+            };
 
             // Generate qrcode image
             let verify_url = verify_url.unwrap();
@@ -83,7 +80,7 @@ pub(crate) async fn handle_login_response(
 
             // Write the image
             let buf = qrcode.generate(Color::Grayscale(0, 255)).unwrap();
-            if let Err(err) = fs::write(path.clone(), buf).await {
+            if let Err(err) = fs::write(path, buf).await {
                 sender.input(LoginFailed(err.to_string()));
                 return;
             };

@@ -16,9 +16,11 @@ use relm4::{gtk, RelmApp};
 use app::AppModel;
 use db::sql::init_sqlite;
 use global::{SharedApplication, APP};
+use resource_loader::ResourceConfig;
 
 #[tokio::main]
 async fn main() {
+    ResourceConfig::load_or_create_default().expect("Failure on loading configuration");
     init_resources();
     init_sqlite();
 

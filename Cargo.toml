@@ -20,13 +20,15 @@ rev = "38fff7007cb51bc39acc30087c3f042031a38eda"
 [dependencies.widgets]
 path = "./libs/widgets"
 
+[dependencies.resource-loader]
+path = "./libs/resource-loader"
+
 [dependencies]
 tokio = "1.18.2"
 rand = "0.8.5"
 async-trait = "0.1.53"
 once_cell = "1.11.0"
 rusqlite = "0.27.0"
-dirs = "4.0.0"
 reqwest = "0.11.10"
 qrcode-png = "0.4.0"
 typed-builder = "0.10"

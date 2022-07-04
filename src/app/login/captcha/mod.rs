@@ -8,6 +8,7 @@ use adw::{HeaderBar, Window};
 use gtk::prelude::*;
 use gtk::{Box, Button, Entry, Label, Orientation, Picture};
 
+use resource_loader::{CaptchaQrCode, GetPath};
 use ricq::Client;
 use tokio::task;
 use widgets::link_copier::{self, LinkCopierModel};
@@ -157,12 +158,7 @@ impl Component for CaptchaModel {
                 Picture {
                     set_width_request: 240,
                     set_can_shrink: true,
-                    set_filename: Some(&{
-                        let mut path = dirs::home_dir().unwrap();
-                        path.push(".gtk-qq");
-                        path.push("captcha_url.png");
-                        path
-                    })
+                    set_filename: Some(&CaptchaQrCode::get_path())
                 }
             }
         }

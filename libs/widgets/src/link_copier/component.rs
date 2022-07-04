@@ -73,7 +73,7 @@ impl relm4::SimpleComponent for LinkCopierModel {
     }
 
     fn update_view(&self, widgets: &mut Self::Widgets, _sender: &relm4::ComponentSender<Self>) {
-        let label: Option<_> = (&self.label).into();
+        let label = <&Option<String> as Into<Option<&String>>>::into(&self.label);
         let label = label.unwrap_or(&self.link).as_str();
 
         widgets.link_btn.set_uri(&self.link);
