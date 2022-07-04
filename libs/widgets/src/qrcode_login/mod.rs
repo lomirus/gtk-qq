@@ -8,3 +8,4 @@ pub use payloads::{Input, Output, PayLoad};
 pub use widgets::QrCodeLoginWidgets;
 
 pub type QrCodeLogin = relm4::Controller<QrCodeLoginModel>;
+
