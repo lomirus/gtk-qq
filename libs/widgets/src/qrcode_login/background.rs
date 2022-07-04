@@ -11,7 +11,7 @@ pub(super) async fn qr_code_handler(client: Arc<Client>, sender: Sender<Input>, 
     let mut qrcode_state = match client.fetch_qrcode().await {
         Ok(qrcode) => qrcode,
         Err(err) => {
-            sender.send(Input::Error(err.into()));
+            sender.send(Input::Error(err));
             return;
         }
     };
@@ -35,7 +35,7 @@ pub(super) async fn qr_code_handler(client: Arc<Client>, sender: Sender<Input>, 
                     continue;
                 }
                 Err(err) => {
-                    sender.send(Input::Error(err.into()));
+                    sender.send(Input::Error(err));
                     return;
                 }
             },
@@ -48,8 +48,8 @@ pub(super) async fn qr_code_handler(client: Arc<Client>, sender: Sender<Input>, 
                     )
                     .await;
                 match login_respond {
-                    Ok(ok_respond) => sender.send(Input::FollowLogin(ok_respond)),
-                    Err(err) => sender.send(Input::Error(err.into())),
+                    Ok(ok_respond) => sender.send(Input::FollowLogin(ok_respond.into())),
+                    Err(err) => sender.send(Input::Error(err)),
                 }
                 return;
             }
@@ -58,12 +58,12 @@ pub(super) async fn qr_code_handler(client: Arc<Client>, sender: Sender<Input>, 
 
         timer.tick().await;
         let qrcode_sig = Into::<Option<&Bytes>>::into(&qrcode_sign)
-            .map(|byte| -> &[u8] { &byte })
+            .map(|byte| -> &[u8] { byte })
             .unwrap_or(&[]);
         qrcode_state = match client.query_qrcode_result(qrcode_sig).await {
             Ok(state) => state,
             Err(err) => {
-                sender.send(Input::Error(err.into()));
+                sender.send(Input::Error(err));
                 return;
             }
         }

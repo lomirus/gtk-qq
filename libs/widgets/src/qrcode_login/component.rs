@@ -83,7 +83,7 @@ impl relm4::SimpleComponent for QrCodeLoginModel {
     }
 
     fn update_view(&self, widgets: &mut Self::Widgets, sender: &ComponentSender<Self>) {
-        if let Some(_) = self.picture {
+        if self.picture.is_some() {
             widgets
                 .qr_code
                 .set_pixbuf(Into::<Option<&Pixbuf>>::into(&self.picture));

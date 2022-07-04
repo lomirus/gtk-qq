@@ -6,12 +6,12 @@ use ricq::{Client, LoginResponse, RQError};
 pub enum Input {
     UpdateQrCode,
     Updated,
-    FollowLogin(LoginResponse),
+    FollowLogin(Box<LoginResponse>),
     Error(RQError),
 }
 
 pub enum Output {
-    LoginGoAhead(LoginResponse),
+    LoginGoAhead(Box<LoginResponse>),
     Error(RQError),
 }
 
