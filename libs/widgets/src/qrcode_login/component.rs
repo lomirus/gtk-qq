@@ -69,7 +69,8 @@ impl relm4::SimpleComponent for QrCodeLoginModel {
                 self.picture.replace(qrcode);
             }
             payloads::Input::FollowLogin(login_resp) => {
-                sender.output(Output::LoginGoAhead(login_resp))
+                sender.output(Output::LoginGoAhead(login_resp));
+                self.widows.close();
             }
             payloads::Input::Error(err) => {
                 sender.output(Output::Error(err));
@@ -82,10 +83,12 @@ impl relm4::SimpleComponent for QrCodeLoginModel {
     }
 
     fn update_view(&self, widgets: &mut Self::Widgets, sender: &ComponentSender<Self>) {
-        widgets
-            .qr_code
-            .set_pixbuf(Into::<Option<&Pixbuf>>::into(&self.picture));
-        sender.input(Input::Updated);
+        if let Some(_) = self.picture {
+            widgets
+                .qr_code
+                .set_pixbuf(Into::<Option<&Pixbuf>>::into(&self.picture));
+            sender.input(Input::Updated);
+        }
     }
 
     fn shutdown(&mut self, _: &mut Self::Widgets, _: relm4::Sender<Self::Output>) {

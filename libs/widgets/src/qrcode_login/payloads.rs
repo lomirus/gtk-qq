@@ -1,6 +1,5 @@
 use std::{path::Path, sync::Arc};
 
-use bytes::Bytes;
 use relm4::adw::Window;
 use ricq::{Client, LoginResponse, RQError};
 
