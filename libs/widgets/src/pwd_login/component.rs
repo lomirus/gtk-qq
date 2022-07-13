@@ -34,7 +34,7 @@ impl relm4::SimpleComponent for PasswordLoginModel {
             .halign(gtk::Align::Center)
             .valign(gtk::Align::Center)
             .vexpand(true)
-            .spacing(10)
+            .spacing(12)
             .build()
     }
 

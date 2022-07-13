@@ -85,7 +85,7 @@ impl PwdLoginWidget {
         let op_box = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .halign(Align::End)
-            .spacing(5)
+            .spacing(24)
             .vexpand(true)
             .build();
 
@@ -93,7 +93,7 @@ impl PwdLoginWidget {
             .orientation(gtk::Orientation::Horizontal)
             .valign(Align::Center)
             .halign(Align::Center)
-            .spacing(5)
+            .spacing(8)
             .build();
 
         let remember_pwd = gtk::CheckButton::builder()
