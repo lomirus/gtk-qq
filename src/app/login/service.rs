@@ -1,4 +1,3 @@
-
 use resource_loader::SyncLoadResource;
 use std::{io, sync::Arc};
 

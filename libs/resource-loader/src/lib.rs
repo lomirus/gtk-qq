@@ -10,8 +10,8 @@ pub use static_data::ResourceConfig;
 
 pub use ops::{
     avatar::{Group as AvatarGroup, User as AvatarUser},
+    client::{Device, Protocol},
     database::SqlDataBase,
     temporary::{CaptchaQrCode, TempDir},
-    client::{Device,Protocol},
     AsyncCreatePath, AsyncLoadResource, DirAction, GetPath, SyncCreatePath, SyncLoadResource,
 };
