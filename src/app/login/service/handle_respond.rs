@@ -11,8 +11,6 @@ use tokio::fs;
 
 pub(in crate::app) async fn handle_login_response(
     res: LoginResponse,
-    account: i64,
-    password: String,
     client: Arc<Client>,
 ) {
     let sender = LOGIN_SENDER.get().unwrap();
@@ -20,7 +18,7 @@ pub(in crate::app) async fn handle_login_response(
     use LoginPageMsg::LoginFailed;
     match res {
         LoginResponse::Success(_) => {
-            finish_login(account, password, client).await;
+            finish_login(client).await;
         }
         LoginResponse::NeedCaptcha(LoginNeedCaptcha { verify_url, .. }) => {
             // Get the captcha url qrcode image path
@@ -47,8 +45,6 @@ pub(in crate::app) async fn handle_login_response(
             sender.input(LoginPageMsg::NeedCaptcha(
                 verify_url,
                 client.clone(),
-                account,
-                password,
             ));
         }
         LoginResponse::AccountFrozen => {
@@ -75,7 +71,7 @@ pub(in crate::app) async fn handle_login_response(
             if let Err(err) = client.device_lock_login().await {
                 sender.input(LoginFailed(err.to_string()));
             } else {
-                finish_login(account, password, client).await;
+                finish_login(client).await;
             }
         }
         LoginResponse::UnknownStatus(LoginUnknownStatus { message, .. }) => {

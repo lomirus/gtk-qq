@@ -17,6 +17,7 @@ use adw::{HeaderBar, Toast, ToastOverlay, Window};
 use gtk::gdk_pixbuf::Pixbuf;
 use gtk::{Box, Label, MenuButton, Orientation, Picture};
 
+use ricq::client::Token;
 use ricq::Client;
 use tokio::task;
 use widgets::pwd_login::{self, Input, PasswordLogin, PasswordLoginModel, Payload};
@@ -26,6 +27,7 @@ use crate::app::AppMessage;
 use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::global::WINDOW;
 
+use self::service::token::{token_login, LocalAccount};
 use self::service::{get_login_info, pwd_login::login};
 
 type SmsPhone = Option<String>;
@@ -45,10 +47,11 @@ pub struct LoginPageModel {
 pub enum LoginPageMsg {
     StartLogin,
     PwdLogin(i64, String),
+    TokenLogin(Token),
     EnableLogin(bool),
     LoginSuccessful,
     LoginFailed(String),
-    NeedCaptcha(String, Arc<Client>, UserId, Password),
+    NeedCaptcha(String, Arc<Client>),
     DeviceLock(VerifyUrl, SmsPhone),
     ConfirmVerification,
     LinkCopied,
@@ -69,18 +72,20 @@ impl SimpleComponent for LoginPageModel {
         if LOGIN_SENDER.set(sender.clone()).is_err() {
             panic!("failed to initialize login sender");
         }
-        let (account, password) = get_login_info();
-        let avatar = load_avatar(account.parse().ok(), true);
+        let account = LocalAccount::get_account();
+        let account_ref = Into::<Option<&LocalAccount>>::into(&account);
+        let avatar = load_avatar(account_ref.map(|a| a.account), true);
 
         let pwd_login = PasswordLoginModel::builder()
             .launch(Payload {
-                account: account.parse().ok(),
-                password: password.into(),
+                account: account_ref.map(|a| a.account),
                 avatar,
+                token: account.map(|a| a.token),
             })
             .forward(sender.input_sender(), |out| match out {
                 pwd_login::Output::Login { account, pwd } => LoginPageMsg::PwdLogin(account, pwd),
                 pwd_login::Output::EnableLogin(enable) => LoginPageMsg::EnableLogin(enable),
+                pwd_login::Output::TokenLogin(token) => LoginPageMsg::TokenLogin(token),
             });
 
         let widgets = view_output!();
@@ -96,6 +101,10 @@ impl SimpleComponent for LoginPageModel {
     fn update(&mut self, msg: LoginPageMsg, sender: &ComponentSender<Self>) {
         use LoginPageMsg::*;
         match msg {
+            TokenLogin(token) => {
+                let sender = sender.input_sender().clone();
+                task::spawn(token_login(token, sender));
+            }
             EnableLogin(enable) => {
                 self.enable_btn = enable;
             }
@@ -111,7 +120,7 @@ impl SimpleComponent for LoginPageModel {
             LoginFailed(msg) => {
                 self.toast = Some(msg);
             }
-            NeedCaptcha(verify_url, client, account, password) => {
+            NeedCaptcha(verify_url, client) => {
                 sender.input(LoginPageMsg::LoginFailed(
                     "Need Captcha. See more in the pop-up window.".to_string(),
                 ));
@@ -129,8 +138,6 @@ impl SimpleComponent for LoginPageModel {
                         client: Arc::clone(&client),
                         verify_url,
                         window: window.clone(),
-                        account,
-                        password,
                     })
                     .forward(sender.input_sender(), |output| output);
 

@@ -4,10 +4,10 @@ use std::{io, sync::Arc};
 use qrcode_png::{Color, QrCode};
 
 use ricq::{ext::common::after_login, Client, LoginUnknownStatus};
-use rusqlite::params;
 use tokio::{net::TcpStream, task};
 
 use crate::app::login::service::handle_respond::handle_login_response;
+use crate::app::login::service::token::LocalAccount;
 use crate::app::login::{LoginPageMsg, LOGIN_SENDER};
 use crate::db::sql::get_db;
 
@@ -33,31 +33,20 @@ pub(crate) async fn init_client() -> io::Result<Arc<Client>> {
     Ok(client)
 }
 
-pub(crate) async fn finish_login(account: i64, password: String, client: Arc<Client>) {
+pub(crate) async fn finish_login(client: Arc<Client>) {
     let sender = LOGIN_SENDER.get().unwrap();
+    let local = LocalAccount::new(&client).await;
 
-    use LoginPageMsg::{LoginFailed, LoginSuccessful};
+    use LoginPageMsg::LoginSuccessful;
     if CLIENT.set(client.clone()).is_err() {
         panic!("falied to store client");
     };
-    if ACCOUNT.set(account).is_err() {
+    if ACCOUNT.set(local.account).is_err() {
         panic!("falied to store account");
     };
-    // Store user account and password in local database
-    let db = get_db();
-    if let Err(err) = db.execute(
-        "REPLACE INTO configs (key, value) VALUES (?1, ?2)",
-        params!["account", account],
-    ) {
-        sender.input(LoginFailed(err.to_string()));
-    }
-    if let Err(err) = db.execute(
-        "REPLACE INTO configs (key, value) VALUES (?1, ?2)",
-        params!["password", password],
-    ) {
-        sender.input(LoginFailed(err.to_string()));
-    }
-    // Execute Ricq `after_login()`
+
+    local.save_account(sender.input_sender());
+
     after_login(&client).await;
     sender.input(LoginSuccessful);
 }
