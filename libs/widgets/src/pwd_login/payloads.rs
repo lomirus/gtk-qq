@@ -36,9 +36,6 @@ pub struct Payload {
 
 impl PwdEntry {
     pub(super) fn is_some(&self) -> bool {
-        match self {
-            PwdEntry::None => false,
-            _ => true,
-        }
+        !matches!(self, PwdEntry::None)
     }
 }

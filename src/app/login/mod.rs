@@ -27,13 +27,11 @@ use crate::app::AppMessage;
 use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::global::WINDOW;
 
+use self::service::pwd_login::login;
 use self::service::token::{token_login, LocalAccount};
-use self::service::{get_login_info, pwd_login::login};
 
 type SmsPhone = Option<String>;
 type VerifyUrl = String;
-type UserId = i64;
-type Password = String;
 
 pub static LOGIN_SENDER: OnceCell<ComponentSender<LoginPageModel>> = OnceCell::new();
 

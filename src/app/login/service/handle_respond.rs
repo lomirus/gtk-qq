@@ -9,10 +9,7 @@ use ricq::LoginDeviceLocked;
 use ricq::{Client, LoginNeedCaptcha, LoginResponse};
 use tokio::fs;
 
-pub(in crate::app) async fn handle_login_response(
-    res: LoginResponse,
-    client: Arc<Client>,
-) {
+pub(in crate::app) async fn handle_login_response(res: LoginResponse, client: Arc<Client>) {
     let sender = LOGIN_SENDER.get().unwrap();
 
     use LoginPageMsg::LoginFailed;
@@ -42,10 +39,7 @@ pub(in crate::app) async fn handle_login_response(
                 sender.input(LoginFailed(err.to_string()));
                 return;
             };
-            sender.input(LoginPageMsg::NeedCaptcha(
-                verify_url,
-                client.clone(),
-            ));
+            sender.input(LoginPageMsg::NeedCaptcha(verify_url, client.clone()));
         }
         LoginResponse::AccountFrozen => {
             sender.input(LoginFailed("Account Frozen".to_string()));

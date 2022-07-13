@@ -9,7 +9,6 @@ use tokio::{net::TcpStream, task};
 use crate::app::login::service::handle_respond::handle_login_response;
 use crate::app::login::service::token::LocalAccount;
 use crate::app::login::{LoginPageMsg, LOGIN_SENDER};
-use crate::db::sql::get_db;
 
 use crate::handler::{AppHandler, ACCOUNT, CLIENT};
 
@@ -49,27 +48,4 @@ pub(crate) async fn finish_login(client: Arc<Client>) {
 
     after_login(&client).await;
     sender.input(LoginSuccessful);
-}
-
-pub(crate) fn get_login_info() -> (String, String) {
-    let conn = get_db();
-    let mut stmt = conn
-        .prepare("SELECT value FROM configs where key='account'")
-        .unwrap();
-    let mut rows = stmt.query([]).unwrap();
-    let account = match rows.next().unwrap() {
-        Some(row) => row.get(0).unwrap(),
-        None => String::new(),
-    };
-
-    let mut stmt = conn
-        .prepare("SELECT value FROM configs where key='password'")
-        .unwrap();
-    let mut rows = stmt.query([]).unwrap();
-    let password = match rows.next().unwrap() {
-        Some(row) => row.get(0).unwrap(),
-        None => String::new(),
-    };
-
-    (account, password)
 }

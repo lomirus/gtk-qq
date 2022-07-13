@@ -88,7 +88,7 @@ impl relm4::SimpleComponent for PasswordLoginModel {
             }
             Input::Login => match (self.password.clone(), self.account) {
                 (PwdEntry::Password(pwd), Some(account)) => {
-                    sender.output(Output::Login { account, pwd: pwd })
+                    sender.output(Output::Login { account, pwd })
                 }
                 (PwdEntry::Token(token), _) => sender.output(Output::TokenLogin(token)),
                 (_, _) => sender.output(Output::EnableLogin(false)),

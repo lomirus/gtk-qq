@@ -1,6 +1,3 @@
-// TODO: temp tag waiting for other impl
-#![allow(dead_code)]
-
 use crate::app::login::LoginPageMsg::LoginFailed;
 use relm4::Sender;
 use ricq::{client::Token, Client};
@@ -64,9 +61,7 @@ impl LocalAccount {
         let next = rows.next().unwrap();
 
         let account: i64 = next
-            .and_then(|row| {
-                row.get::<_,String>(0).ok()
-            })
+            .and_then(|row| row.get::<_, String>(0).ok())
             .and_then(|v| v.parse().ok())?;
 
         let mut stmt = conn
