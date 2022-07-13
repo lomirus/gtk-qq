@@ -30,10 +30,11 @@ impl relm4::SimpleComponent for PasswordLoginModel {
 
     fn init_root() -> Self::Root {
         gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
             .halign(gtk::Align::Center)
             .valign(gtk::Align::Center)
             .vexpand(true)
-            .spacing(32)
+            .spacing(10)
             .build()
     }
 

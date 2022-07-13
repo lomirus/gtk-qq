@@ -73,6 +73,7 @@ impl SimpleComponent for LoginPageModel {
                 account: account.parse().ok(),
                 password: password.into(),
                 avatar,
+                icon_name: "go-next",
             })
             .forward(sender.input_sender(), |out| match out {
                 pwd_login::Output::Login { account, pwd } => LoginPageMsg::PwdLogin(account, pwd),

@@ -22,4 +22,5 @@ pub struct Payload {
     pub account: Option<i64>,
     pub password: Option<String>,
     pub avatar: Option<Paintable>,
+    pub icon_name: &'static str,
 }
