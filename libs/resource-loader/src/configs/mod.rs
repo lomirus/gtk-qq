@@ -1,3 +1,4 @@
+mod client;
 mod config;
 use std::path::Path;
 

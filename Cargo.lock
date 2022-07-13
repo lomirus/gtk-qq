@@ -2056,6 +2056,8 @@ dependencies = [
  "dirs",
  "log",
  "once_cell",
+ "rand",
+ "ricq",
  "serde",
  "serde_json",
  "tap",

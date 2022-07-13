@@ -18,6 +18,12 @@ tokio = { version = "1", features = ["fs"] }
 tempfile = "3.3"
 toml = "0.5.9"
 tap = "1"
+rand = "0.8.5"
 
 [dev-dependencies]
 serde_json = "1"
+
+[dependencies.ricq]
+git = "https://github.com/lz1998/ricq.git"
+# v0.1.10, master, 2022/06/08
+rev = "38fff7007cb51bc39acc30087c3f042031a38eda"

@@ -1,3 +1,4 @@
+pub mod client;
 pub mod avatar;
 pub mod database;
 pub mod temporary;
