@@ -19,8 +19,6 @@ use super::LoginPageMsg;
 #[derive(Clone)]
 pub struct CaptchaModel {
     pub(crate) client: Arc<Client>,
-    pub(crate) account: i64,
-    pub(crate) password: String,
     pub(crate) ticket: String,
 }
 
@@ -36,8 +34,6 @@ pub enum Input {
 
 pub struct PayLoad {
     pub(crate) client: Arc<Client>,
-    pub(crate) account: i64,
-    pub(crate) password: String,
     pub(crate) window: Window,
     pub(crate) verify_url: String,
 }
@@ -172,8 +168,6 @@ impl Component for CaptchaModel {
         relm4::ComponentParts {
             model: CaptchaModel {
                 client: params.client,
-                account: params.account,
-                password: params.password,
                 ticket: String::new(),
             },
             widgets: CaptchaWidgets {
@@ -208,8 +202,6 @@ impl CaptchaModel {
             Ok(res) => {
                 handle_login_response(
                     res,
-                    self.account,
-                    self.password.clone(),
                     self.client.clone(),
                 )
                 .await
