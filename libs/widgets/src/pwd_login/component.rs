@@ -1,7 +1,7 @@
 use relm4::gtk::{self, gdk::Paintable, traits::EditableExt};
 
 use super::{
-    payloads::{Input, Output, Payload, State},
+    payloads::{Input, Output, Payload, PwdEntry, State},
     widgets::PwdLoginWidget,
 };
 
@@ -10,7 +10,7 @@ pub struct PasswordLoginModel {
     account_changed: bool,
     account_state: State,
     account: Option<i64>,
-    password: Option<String>,
+    password: PwdEntry,
 }
 
 impl relm4::SimpleComponent for PasswordLoginModel {
@@ -41,9 +41,15 @@ impl relm4::SimpleComponent for PasswordLoginModel {
     ) -> relm4::ComponentParts<Self> {
         let widgets =
             PwdLoginWidget::new(root, &params, sender.input_sender(), sender.output_sender());
+
+        let pwd = match params.token {
+            Some(token) => PwdEntry::Token(token),
+            None => PwdEntry::None,
+        };
+
         let model = Self {
             account: params.account,
-            password: params.password,
+            password: pwd,
             account_changed: false,
             account_state: State::NoChange,
         };
@@ -70,15 +76,23 @@ impl relm4::SimpleComponent for PasswordLoginModel {
             }
             Input::Password(pwd) => {
                 if !pwd.is_empty() {
-                    self.password.replace(pwd);
+                    let n = match self.password {
+                        PwdEntry::None => PwdEntry::Password(pwd),
+                        PwdEntry::Token(_) => PwdEntry::None,
+                        PwdEntry::Password(_) => PwdEntry::Password(pwd),
+                    };
+                    self.password = n;
                 } else {
-                    self.password = None
+                    self.password = PwdEntry::None
                 }
             }
-            Input::Login => sender.output(Output::Login {
-                account: self.account.unwrap(),
-                pwd: self.password.clone().unwrap(),
-            }),
+            Input::Login => match (self.password.clone(), self.account) {
+                (PwdEntry::Password(pwd), Some(account)) => {
+                    sender.output(Output::Login { account, pwd: pwd })
+                }
+                (PwdEntry::Token(token), _) => sender.output(Output::TokenLogin(token)),
+                (_, _) => sender.output(Output::EnableLogin(false)),
+            },
             Input::Avatar(_) => todo!(),
         }
     }
@@ -91,6 +105,10 @@ impl relm4::SimpleComponent for PasswordLoginModel {
                     .map(|a| a.to_string())
                     .unwrap_or_else(String::new),
             );
+        }
+
+        if let PwdEntry::None = self.password {
+            widgets._pwd.set_text("");
         }
 
         sender.output(Output::EnableLogin(

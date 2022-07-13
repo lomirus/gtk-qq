@@ -81,8 +81,8 @@ impl PwdLoginWidget {
             .placeholder_text("QQ password")
             .build();
 
-        if let Some(ref p) = payload.password {
-            pwd.set_text(p);
+        if payload.token.is_some() {
+            pwd.set_text("0123456789");
         }
         let t_sender = sender.clone();
         pwd.connect_changed(move |entry| t_sender.send(Input::Password(entry.text().to_string())));
@@ -105,7 +105,7 @@ impl PwdLoginWidget {
             .build();
 
         output.send(Output::EnableLogin(
-            payload.account.is_some() && payload.password.is_some(),
+            payload.account.is_some() && payload.token.is_some(),
         ));
 
         root.append(&input_area);

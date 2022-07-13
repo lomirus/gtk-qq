@@ -1,4 +1,5 @@
 use relm4::gtk::gdk::Paintable;
+use ricq::client::Token;
 
 pub enum Input {
     Account(String),
@@ -9,6 +10,7 @@ pub enum Input {
 
 pub enum Output {
     Login { account: i64, pwd: String },
+    TokenLogin(Token),
     EnableLogin(bool),
 }
 
@@ -18,9 +20,25 @@ pub(super) enum State {
     Update,
 }
 
+#[derive(Debug, Clone)]
+pub(super) enum PwdEntry {
+    None,
+    Token(Token),
+    Password(String),
+}
+
 #[derive(Debug, Default)]
 pub struct Payload {
     pub account: Option<i64>,
-    pub password: Option<String>,
+    pub token: Option<Token>,
     pub avatar: Option<Paintable>,
+}
+
+impl PwdEntry {
+    pub(super) fn is_some(&self) -> bool {
+        match self {
+            PwdEntry::None => false,
+            _ => true,
+        }
+    }
 }
