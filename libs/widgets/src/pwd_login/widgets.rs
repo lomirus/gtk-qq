@@ -6,13 +6,16 @@ use relm4::{
     gtk::{
         self,
         prelude::EntryBufferExtManual,
-        traits::{BoxExt, ButtonExt, EditableExt, EntryExt},
-        Align, Button, CheckButton, Entry, EntryBuffer, PasswordEntry,
+        traits::{BoxExt, EditableExt, EntryExt},
+        Align, CheckButton, Entry, EntryBuffer, PasswordEntry,
     },
     Sender,
 };
 
-use super::payloads::{Input, Payload};
+use super::{
+    payloads::{Input, Payload},
+    Output,
+};
 #[derive(Debug)]
 pub struct PwdLoginWidget {
     _input_area: gtk::Box,
@@ -22,16 +25,18 @@ pub struct PwdLoginWidget {
     pub(super) account: Entry,
     _pwd_row: ActionRow,
     pub(super) _pwd: PasswordEntry,
-    _op_box: gtk::Box,
     _cfg_box: gtk::Box,
     pub(super) _remember_pwd: CheckButton,
     pub(super) _auto_login: CheckButton,
-
-    pub(super) login_btn: Button,
 }
 
 impl PwdLoginWidget {
-    pub(super) fn new(root: &gtk::Box, payload: &Payload, sender: &Sender<Input>) -> Self {
+    pub(super) fn new(
+        root: &gtk::Box,
+        payload: &Payload,
+        sender: &Sender<Input>,
+        output: &Sender<Output>,
+    ) -> Self {
         let input_area = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .halign(gtk::Align::Center)
@@ -82,38 +87,26 @@ impl PwdLoginWidget {
         let t_sender = sender.clone();
         pwd.connect_changed(move |entry| t_sender.send(Input::Password(entry.text().to_string())));
 
-        let op_box = gtk::Box::builder()
-            .orientation(gtk::Orientation::Horizontal)
-            .halign(Align::End)
-            .spacing(24)
-            .vexpand(true)
-            .build();
-
         let cfg_box = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .valign(Align::Center)
-            .halign(Align::Center)
+            .halign(Align::End)
             .spacing(8)
             .build();
 
         let remember_pwd = gtk::CheckButton::builder()
-            .label("remember password")
+            .label("Remember Password")
             .sensitive(false)
             .build();
 
         let auto_login = gtk::CheckButton::builder()
-            .label("auto login")
+            .label("Auto Login")
             .sensitive(false)
             .build();
 
-        let login_btn = Button::builder()
-            .icon_name(payload.icon_name)
-            .hexpand_set(true)
-            .sensitive(payload.account.is_some() && payload.password.is_some())
-            .build();
-
-        let t_sender = sender.clone();
-        login_btn.connect_clicked(move |_| t_sender.send(Input::Login));
+        output.send(Output::EnableLogin(
+            payload.account.is_some() && payload.password.is_some(),
+        ));
 
         root.append(&input_area);
         input_area.append(&avatar);
@@ -126,11 +119,9 @@ impl PwdLoginWidget {
         _group.add(&_pwd_row);
         _pwd_row.add_suffix(&pwd);
 
-        root.append(&op_box);
-        op_box.append(&cfg_box);
+        root.append(&cfg_box);
         cfg_box.append(&remember_pwd);
         cfg_box.append(&auto_login);
-        op_box.append(&login_btn);
 
         Self {
             avatar,
@@ -139,9 +130,7 @@ impl PwdLoginWidget {
             account,
             _pwd_row,
             _pwd: pwd,
-            login_btn,
             _input_area: input_area,
-            _op_box: op_box,
             _cfg_box: cfg_box,
             _remember_pwd: remember_pwd,
             _auto_login: auto_login,

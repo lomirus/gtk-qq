@@ -1,8 +1,4 @@
-use relm4::gtk::{
-    self,
-    gdk::Paintable,
-    traits::{EditableExt, WidgetExt},
-};
+use relm4::gtk::{self, gdk::Paintable, traits::EditableExt};
 
 use super::{
     payloads::{Input, Output, Payload, State},
@@ -43,7 +39,8 @@ impl relm4::SimpleComponent for PasswordLoginModel {
         root: &Self::Root,
         sender: &relm4::ComponentSender<Self>,
     ) -> relm4::ComponentParts<Self> {
-        let widgets = PwdLoginWidget::new(root, &params, sender.input_sender());
+        let widgets =
+            PwdLoginWidget::new(root, &params, sender.input_sender(), sender.output_sender());
         let model = Self {
             account: params.account,
             password: params.password,
@@ -86,7 +83,7 @@ impl relm4::SimpleComponent for PasswordLoginModel {
         }
     }
 
-    fn update_view(&self, widgets: &mut Self::Widgets, _sender: &relm4::ComponentSender<Self>) {
+    fn update_view(&self, widgets: &mut Self::Widgets, sender: &relm4::ComponentSender<Self>) {
         if let State::Update = self.account_state {
             widgets.account.set_text(
                 &self
@@ -96,9 +93,9 @@ impl relm4::SimpleComponent for PasswordLoginModel {
             );
         }
 
-        widgets
-            .login_btn
-            .set_sensitive(self.account.is_some() && self.password.is_some());
+        sender.output(Output::EnableLogin(
+            self.account.is_some() && self.password.is_some(),
+        ));
 
         if self.account_changed {
             widgets

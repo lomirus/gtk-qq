@@ -9,6 +9,7 @@ pub enum Input {
 
 pub enum Output {
     Login { account: i64, pwd: String },
+    EnableLogin(bool)
 }
 
 #[derive(Debug)]
@@ -22,5 +23,4 @@ pub struct Payload {
     pub account: Option<i64>,
     pub password: Option<String>,
     pub avatar: Option<Paintable>,
-    pub icon_name: &'static str,
 }

@@ -2,6 +2,7 @@ mod captcha;
 mod device_lock;
 mod service;
 
+use crate::gtk::Button;
 use std::sync::Arc;
 
 use once_cell::sync::OnceCell;
@@ -37,11 +38,14 @@ pub static LOGIN_SENDER: OnceCell<ComponentSender<LoginPageModel>> = OnceCell::n
 #[derive(Debug)]
 pub struct LoginPageModel {
     pwd_login: PasswordLogin,
+    enable_btn: bool,
     toast: Option<String>,
 }
 
 pub enum LoginPageMsg {
+    StartLogin,
     PwdLogin(i64, String),
+    EnableLogin(bool),
     LoginSuccessful,
     LoginFailed(String),
     NeedCaptcha(String, Arc<Client>, UserId, Password),
@@ -73,16 +77,17 @@ impl SimpleComponent for LoginPageModel {
                 account: account.parse().ok(),
                 password: password.into(),
                 avatar,
-                icon_name: "go-next",
             })
             .forward(sender.input_sender(), |out| match out {
                 pwd_login::Output::Login { account, pwd } => LoginPageMsg::PwdLogin(account, pwd),
+                pwd_login::Output::EnableLogin(enable) => LoginPageMsg::EnableLogin(enable),
             });
 
         let widgets = view_output!();
         let model = LoginPageModel {
             pwd_login,
             toast: None,
+            enable_btn: false,
         };
 
         ComponentParts { model, widgets }
@@ -91,6 +96,12 @@ impl SimpleComponent for LoginPageModel {
     fn update(&mut self, msg: LoginPageMsg, sender: &ComponentSender<Self>) {
         use LoginPageMsg::*;
         match msg {
+            EnableLogin(enable) => {
+                self.enable_btn = enable;
+            },
+            StartLogin => {
+                self.pwd_login.emit(Input::Login);
+            }
             PwdLogin(uin, pwd) => {
                 task::spawn(login(uin, pwd));
             }
@@ -168,6 +179,13 @@ impl SimpleComponent for LoginPageModel {
                 set_title_widget = Some(&Label) {
                     set_label: "Login"
                 },
+                pack_end : login_btn = &Button{
+                    set_icon_name : "go-next",
+                    set_sensitive : false,
+                    connect_clicked[sender] => move |_|{
+                        sender.input(LoginPageMsg::StartLogin)
+                    }
+                },
                 pack_end = &MenuButton {
                     set_icon_name: "menu-symbolic",
                     set_menu_model: Some(&main_menu),
@@ -184,6 +202,8 @@ impl SimpleComponent for LoginPageModel {
         if let Some(content) = &self.toast {
             widgets.toast_overlay.add_toast(&Toast::new(content));
         }
+        widgets.login_btn.set_sensitive(self.enable_btn);
+        
     }
 }
 
