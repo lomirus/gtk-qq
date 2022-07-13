@@ -98,7 +98,7 @@ impl SimpleComponent for LoginPageModel {
         match msg {
             EnableLogin(enable) => {
                 self.enable_btn = enable;
-            },
+            }
             StartLogin => {
                 self.pwd_login.emit(Input::Login);
             }
@@ -203,7 +203,6 @@ impl SimpleComponent for LoginPageModel {
             widgets.toast_overlay.add_toast(&Toast::new(content));
         }
         widgets.login_btn.set_sensitive(self.enable_btn);
-        
     }
 }
 

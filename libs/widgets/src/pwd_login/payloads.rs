@@ -9,7 +9,7 @@ pub enum Input {
 
 pub enum Output {
     Login { account: i64, pwd: String },
-    EnableLogin(bool)
+    EnableLogin(bool),
 }
 
 #[derive(Debug)]
