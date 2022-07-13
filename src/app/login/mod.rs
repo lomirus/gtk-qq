@@ -36,15 +36,12 @@ pub static LOGIN_SENDER: OnceCell<ComponentSender<LoginPageModel>> = OnceCell::n
 
 #[derive(Debug)]
 pub struct LoginPageModel {
-    // account: String,
-    // password: String,
-    // is_login_button_enabled: bool,
     pwd_login: PasswordLogin,
     toast: Option<String>,
 }
 
 pub enum LoginPageMsg {
-    Login(i64, String),
+    PwdLogin(i64, String),
     LoginSuccessful,
     LoginFailed(String),
     NeedCaptcha(String, Arc<Client>, UserId, Password),
@@ -78,7 +75,7 @@ impl SimpleComponent for LoginPageModel {
                 avatar: avatar,
             })
             .forward(sender.input_sender(), |out| match out {
-                pwd_login::Output::Login { account, pwd } => LoginPageMsg::Login(account, pwd),
+                pwd_login::Output::Login { account, pwd } => LoginPageMsg::PwdLogin(account, pwd),
             });
 
         let widgets = view_output!();
@@ -93,7 +90,7 @@ impl SimpleComponent for LoginPageModel {
     fn update(&mut self, msg: LoginPageMsg, sender: &ComponentSender<Self>) {
         use LoginPageMsg::*;
         match msg {
-            Login(uin, pwd) => {
+            PwdLogin(uin, pwd) => {
                 task::spawn(login(uin, pwd));
             }
             LoginSuccessful => {
