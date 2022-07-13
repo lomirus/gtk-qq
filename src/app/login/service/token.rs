@@ -21,8 +21,7 @@ impl LocalAccount {
 
     fn base64_to_token(base64: &str) -> Token {
         let vec = base64::decode(base64).expect("Bad Base64 Encode");
-        let token = bincode::deserialize(&vec).expect("Bad Bincode format");
-        token
+        bincode::deserialize(&vec).expect("Bad Bincode format")
     }
 
     pub async fn new(client: &Client) -> Self {

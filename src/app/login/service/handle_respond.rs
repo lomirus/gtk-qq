@@ -1,13 +1,13 @@
-use crate::app::login::service::LoginUnknownStatus;
-use ricq::LoginDeviceLocked;
 use crate::app::login::service::Color;
+use crate::app::login::service::LoginUnknownStatus;
 use crate::app::login::service::QrCode;
+use crate::app::login::{service::finish_login, Arc, LoginPageMsg, LOGIN_SENDER};
 use qrcode_png::QrCodeEcc;
 use resource_loader::AsyncCreatePath;
-use tokio::fs;
-use crate::app::login::{Arc, LOGIN_SENDER, LoginPageMsg, service::finish_login};
 use resource_loader::CaptchaQrCode;
-use ricq::{LoginResponse, Client, LoginNeedCaptcha};
+use ricq::LoginDeviceLocked;
+use ricq::{Client, LoginNeedCaptcha, LoginResponse};
+use tokio::fs;
 
 pub(in crate::app) async fn handle_login_response(
     res: LoginResponse,

@@ -33,8 +33,6 @@ pub(crate) async fn init_client() -> io::Result<Arc<Client>> {
     Ok(client)
 }
 
-
-
 pub(crate) async fn finish_login(account: i64, password: String, client: Arc<Client>) {
     let sender = LOGIN_SENDER.get().unwrap();
 

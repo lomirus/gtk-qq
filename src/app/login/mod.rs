@@ -26,7 +26,7 @@ use crate::app::AppMessage;
 use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::global::WINDOW;
 
-use self::service::{get_login_info, login};
+use self::service::{get_login_info, pwd_login::login};
 
 type SmsPhone = Option<String>;
 type VerifyUrl = String;
