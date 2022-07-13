@@ -8,6 +8,8 @@ use rusqlite::params;
 
 use crate::{app::login::LoginPageMsg, db::sql::get_db};
 
+use super::{handle_respond::handle_login_response, init_client};
+
 pub struct LocalAccount {
     pub account: i64,
     pub token: Token,
@@ -58,7 +60,14 @@ impl LocalAccount {
             .prepare("SELECT value FROM configs where key='account'")
             .unwrap();
         let mut rows = stmt.query([]).unwrap();
-        let account: i64 = rows.next().unwrap().and_then(|row| row.get(0).ok())?;
+
+        let next = rows.next().unwrap();
+
+        let account: i64 = next
+            .and_then(|row| {
+                row.get::<_,String>(0).ok()
+            })
+            .and_then(|v| v.parse().ok())?;
 
         let mut stmt = conn
             .prepare("SELECT value FROM configs where key='token'")
@@ -69,5 +78,20 @@ impl LocalAccount {
         let token = Self::base64_to_token(&token);
 
         Some(Self { account, token })
+    }
+}
+
+pub async fn token_login(token: Token, sender: Sender<LoginPageMsg>) {
+    let client = match init_client().await {
+        Ok(client) => client,
+        Err(err) => {
+            sender.send(LoginFailed(err.to_string()));
+            return;
+        }
+    };
+
+    match client.token_login(token).await {
+        Ok(resp) => handle_login_response(resp, client.clone()).await,
+        Err(err) => sender.send(LoginFailed(err.to_string())),
     }
 }
