@@ -7,20 +7,20 @@ use relm4::{
         self,
         prelude::EntryBufferExtManual,
         traits::{BoxExt, ButtonExt, EditableExt, EntryExt},
-        Align, Button, Entry, PasswordEntry,
+        Align, Button, Entry, PasswordEntry, EntryBuffer,
     },
     Sender,
 };
 
 use super::payloads::{Input, Payload};
-
+#[derive(Debug)]
 pub struct PwdLoginWidget {
     pub(super) avatar: Avatar,
     _group: PreferencesGroup,
     _account_row: ActionRow,
     pub(super) account: Entry,
     _pwd_row: ActionRow,
-    pub(super) pwd: PasswordEntry,
+    pub(super) _pwd: PasswordEntry,
     pub(super) login_btn: Button,
 }
 
@@ -40,11 +40,12 @@ impl PwdLoginWidget {
 
         let account = Entry::builder()
             .valign(Align::Center)
-            .placeholder_text("Please input your QQ account ")
+            .placeholder_text("QQ account")
             .build();
 
         if let Some(uin) = payload.account {
-            account.buffer().set_text(&uin.to_string())
+            let buf = EntryBuffer::new(Some(&uin.to_string()));
+            account.set_buffer(&buf);
         }
 
         let t_sender = sender.clone();
@@ -57,7 +58,8 @@ impl PwdLoginWidget {
 
         let pwd = PasswordEntry::builder()
             .valign(Align::Center)
-            .placeholder_text("Please input your QQ password")
+            .show_peek_icon(true)
+            .placeholder_text("QQ password")
             .build();
 
         if let Some(ref p) = payload.password {
@@ -67,9 +69,10 @@ impl PwdLoginWidget {
         let t_sender = sender.clone();
         pwd.connect_changed(move |entry| t_sender.send(Input::Password(entry.text().to_string())));
 
-        let login_btn = Button::builder().label("Log in")
-        .visible(false)
-        .build();
+        let login_btn = Button::builder()
+            .label("Log in")
+            .sensitive(payload.account.is_some() && payload.password.is_some())
+            .build();
 
         let t_sender = sender.clone();
         login_btn.connect_clicked(move |_| t_sender.send(Input::Login));
@@ -92,7 +95,7 @@ impl PwdLoginWidget {
             _account_row,
             account,
             _pwd_row,
-            pwd,
+            _pwd: pwd,
             login_btn,
         }
     }

@@ -5,14 +5,17 @@ use relm4::gtk::{
 };
 
 use super::{
-    payloads::{Input, Output, Payload},
+    payloads::{Input, Output, Payload, State},
     widgets::PwdLoginWidget,
 };
 
+#[derive(Debug)]
 pub struct PasswordLoginModel {
     account_changed: bool,
+    account_state: State,
     account: Option<i64>,
     password: Option<String>,
+    
 }
 
 impl relm4::SimpleComponent for PasswordLoginModel {
@@ -45,6 +48,7 @@ impl relm4::SimpleComponent for PasswordLoginModel {
             account: params.account,
             password: params.password,
             account_changed: false,
+            account_state: State::NoChange,
         };
 
         relm4::ComponentParts { model, widgets }
@@ -53,38 +57,48 @@ impl relm4::SimpleComponent for PasswordLoginModel {
     fn update(&mut self, message: Self::Input, sender: &relm4::ComponentSender<Self>) {
         match message {
             Input::Account(ac) => {
-                if let Ok(uin) = ac.parse::<i64>() {
-                    self.account.replace(uin);
-                    self.account_changed = true;
+                if let State::NoChange = self.account_state {
+                    if let Ok(uin) = ac.parse::<i64>() {
+                        self.account.replace(uin);
+                        self.account_changed = true;
+                    } else if ac.is_empty() {
+                        self.account = None;
+                        self.account_changed = true;
+                    } else {
+                        self.account_state = State::Update;
+                    }
+                } else {
+                    self.account_state = State::NoChange;
                 }
             }
             Input::Password(pwd) => {
-                self.password.replace(pwd);
+                if !pwd.is_empty() {
+                    self.password.replace(pwd);
+                } else {
+                    self.password = None
+                }
             }
             Input::Login => sender.output(Output::Login {
                 account: self.account.unwrap(),
                 pwd: self.password.clone().unwrap(),
             }),
+            Input::Avatar(_) => todo!(),
         }
     }
 
     fn update_view(&self, widgets: &mut Self::Widgets, _sender: &relm4::ComponentSender<Self>) {
-        widgets.account.set_text(
-            &self
-                .account
-                .map(|a| a.to_string())
-                .unwrap_or_else(String::new),
-        );
-
-        widgets.pwd.set_text(
-            Into::<Option<&String>>::into(&self.password)
-                .map(|s| s.as_str())
-                .unwrap_or(""),
-        );
-
-        if self.account.is_some() && self.password.is_some() {
-            widgets.login_btn.set_visible(true);
+        if let State::Update = self.account_state {
+            widgets.account.set_text(
+                &self
+                    .account
+                    .map(|a| a.to_string())
+                    .unwrap_or_else(String::new),
+            );
         }
+
+        widgets
+            .login_btn
+            .set_sensitive(self.account.is_some() && self.password.is_some());
 
         if self.account_changed {
             widgets

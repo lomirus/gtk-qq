@@ -3,16 +3,23 @@ use relm4::gtk::gdk::Paintable;
 pub enum Input {
     Account(String),
     Password(String),
-    Login
+    Login,
+    Avatar(Option<Paintable>)
 }
 
 pub enum Output {
     Login { account: i64, pwd: String },
 }
 
-#[derive(Debug, typed_builder::TypedBuilder)]
+#[derive(Debug)]
+pub(super) enum State{
+    NoChange,
+    Update
+}
+
+#[derive(Debug, Default)]
 pub struct Payload {
-    pub(super) account: Option<i64>,
-    pub(super) password: Option<String>,
-    pub(super) avatar : Option<Paintable>
+    pub account: Option<i64>,
+    pub password: Option<String>,
+    pub avatar: Option<Paintable>,
 }
