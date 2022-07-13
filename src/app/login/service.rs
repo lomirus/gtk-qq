@@ -1,20 +1,21 @@
 use resource_loader::SyncLoadResource;
 use std::{io, sync::Arc};
 
-use qrcode_png::{Color, QrCode, QrCodeEcc};
+use qrcode_png::{Color, QrCode};
 
-use resource_loader::{AsyncCreatePath, CaptchaQrCode};
-use ricq::{
-    ext::common::after_login, Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse,
-    LoginUnknownStatus,
-};
+use ricq::{ext::common::after_login, Client, LoginUnknownStatus};
 use rusqlite::params;
-use tokio::{fs, net::TcpStream, task};
+use tokio::{net::TcpStream, task};
 
+use crate::app::login::service::handle_respond::handle_login_response;
 use crate::app::login::{LoginPageMsg, LOGIN_SENDER};
 use crate::db::sql::get_db;
 
 use crate::handler::{AppHandler, ACCOUNT, CLIENT};
+
+pub(super) mod handle_respond;
+pub(super) mod pwd_login;
+pub mod token;
 
 pub(crate) async fn init_client() -> io::Result<Arc<Client>> {
     let client = Arc::new(Client::new(
@@ -32,102 +33,7 @@ pub(crate) async fn init_client() -> io::Result<Arc<Client>> {
     Ok(client)
 }
 
-pub(crate) async fn login(account: i64, password: String) {
-    use crate::app::login::LoginPageMsg::LoginFailed;
-    let sender = LOGIN_SENDER.get().unwrap();
 
-    let client = match init_client().await {
-        Ok(client) => client,
-        Err(err) => {
-            sender.input(LoginFailed(err.to_string()));
-            return;
-        }
-    };
-
-    let res = match client.password_login(account, &password).await {
-        Ok(res) => res,
-        Err(err) => {
-            sender.input(LoginFailed(err.to_string()));
-            return;
-        }
-    };
-    handle_login_response(res, account, password, client).await;
-}
-
-pub(crate) async fn handle_login_response(
-    res: LoginResponse,
-    account: i64,
-    password: String,
-    client: Arc<Client>,
-) {
-    let sender = LOGIN_SENDER.get().unwrap();
-
-    use LoginPageMsg::LoginFailed;
-    match res {
-        LoginResponse::Success(_) => {
-            finish_login(account, password, client).await;
-        }
-        LoginResponse::NeedCaptcha(LoginNeedCaptcha { verify_url, .. }) => {
-            // Get the captcha url qrcode image path
-            let path = match CaptchaQrCode::create_and_get_path_async().await {
-                Ok(path) => path,
-                Err(err) => {
-                    sender.input(LoginFailed(err.to_string()));
-                    return;
-                }
-            };
-
-            // Generate qrcode image
-            let verify_url = verify_url.unwrap();
-            let mut qrcode = QrCode::new(verify_url.clone(), QrCodeEcc::Low).unwrap();
-            qrcode.margin(10);
-            qrcode.zoom(5);
-
-            // Write the image
-            let buf = qrcode.generate(Color::Grayscale(0, 255)).unwrap();
-            if let Err(err) = fs::write(path, buf).await {
-                sender.input(LoginFailed(err.to_string()));
-                return;
-            };
-            sender.input(LoginPageMsg::NeedCaptcha(
-                verify_url,
-                client.clone(),
-                account,
-                password,
-            ));
-        }
-        LoginResponse::AccountFrozen => {
-            sender.input(LoginFailed("Account Frozen".to_string()));
-        }
-        LoginResponse::DeviceLocked(LoginDeviceLocked {
-            sms_phone,
-            verify_url,
-            ..
-        }) => {
-            sender.input(LoginFailed(
-                "Device Locked. See more in the pop-up window.".to_string(),
-            ));
-
-            sender.input(LoginPageMsg::DeviceLock(
-                verify_url.unwrap_or_else(|| "<unknown>".into()),
-                sms_phone,
-            ));
-        }
-        LoginResponse::TooManySMSRequest => {
-            sender.input(LoginFailed("Too Many SMS Request".to_string()));
-        }
-        LoginResponse::DeviceLockLogin(_) => {
-            if let Err(err) = client.device_lock_login().await {
-                sender.input(LoginFailed(err.to_string()));
-            } else {
-                finish_login(account, password, client).await;
-            }
-        }
-        LoginResponse::UnknownStatus(LoginUnknownStatus { message, .. }) => {
-            sender.input(LoginFailed(message));
-        }
-    }
-}
 
 pub(crate) async fn finish_login(account: i64, password: String, client: Arc<Client>) {
     let sender = LOGIN_SENDER.get().unwrap();

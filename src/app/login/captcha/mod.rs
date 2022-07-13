@@ -13,7 +13,7 @@ use ricq::Client;
 use tokio::task;
 use widgets::link_copier::{self, LinkCopierModel};
 
-use super::service::handle_login_response;
+use super::service::handle_respond::handle_login_response;
 use super::LoginPageMsg;
 
 #[derive(Clone)]
