@@ -6,14 +6,16 @@ use crate::{static_data::load_cfg, SyncLoadResource};
 
 pub struct Device;
 
-impl SyncLoadResource<StdRng> for Device {
+impl SyncLoadResource<ricq::device::Device> for Device {
     type Args = ();
 
     type Error = Infallible;
 
-    fn load_resource(_: Self::Args) -> Result<StdRng, Self::Error> {
+    fn load_resource(_: Self::Args) -> Result<ricq::device::Device, Self::Error> {
         let seed = load_cfg().client.device_seed;
-        Ok(StdRng::seed_from_u64(seed))
+        Ok(ricq::device::Device::random_with_rng(
+            &mut StdRng::seed_from_u64(seed),
+        ))
     }
 }
 
