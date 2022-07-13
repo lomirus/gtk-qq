@@ -4,7 +4,7 @@ pub enum Input {
     Account(String),
     Password(String),
     Login,
-    Avatar(Option<Paintable>)
+    Avatar(Option<Paintable>),
 }
 
 pub enum Output {
@@ -12,9 +12,9 @@ pub enum Output {
 }
 
 #[derive(Debug)]
-pub(super) enum State{
+pub(super) enum State {
     NoChange,
-    Update
+    Update,
 }
 
 #[derive(Debug, Default)]

@@ -72,7 +72,7 @@ impl SimpleComponent for LoginPageModel {
             .launch(Payload {
                 account: account.parse().ok(),
                 password: password.into(),
-                avatar: avatar,
+                avatar,
             })
             .forward(sender.input_sender(), |out| match out {
                 pwd_login::Output::Login { account, pwd } => LoginPageMsg::PwdLogin(account, pwd),

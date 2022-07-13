@@ -15,7 +15,6 @@ pub struct PasswordLoginModel {
     account_state: State,
     account: Option<i64>,
     password: Option<String>,
-    
 }
 
 impl relm4::SimpleComponent for PasswordLoginModel {

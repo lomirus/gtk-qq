@@ -7,7 +7,7 @@ use relm4::{
         self,
         prelude::EntryBufferExtManual,
         traits::{BoxExt, ButtonExt, EditableExt, EntryExt},
-        Align, Button, Entry, PasswordEntry, EntryBuffer,
+        Align, Button, Entry, EntryBuffer, PasswordEntry,
     },
     Sender,
 };
