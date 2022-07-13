@@ -1,13 +1,13 @@
-use std::sync::Arc;
+
+use resource_loader::SyncLoadResource;
+use std::{io, sync::Arc};
 
 use qrcode_png::{Color, QrCode, QrCodeEcc};
-use rand::prelude::*;
+
 use resource_loader::{AsyncCreatePath, CaptchaQrCode};
 use ricq::{
-    device::Device,
-    ext::common::after_login,
-    version::{get_version, Protocol},
-    Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse, LoginUnknownStatus,
+    ext::common::after_login, Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse,
+    LoginUnknownStatus,
 };
 use rusqlite::params;
 use tokio::{fs, net::TcpStream, task};
@@ -17,28 +17,34 @@ use crate::db::sql::get_db;
 
 use crate::handler::{AppHandler, ACCOUNT, CLIENT};
 
-pub(crate) async fn login(account: i64, password: String) {
-    let sender = LOGIN_SENDER.get().unwrap();
-
-    use LoginPageMsg::LoginFailed;
-    // Initialize device and client
-    let device = Device::random_with_rng(&mut StdRng::seed_from_u64(account as u64));
+pub(crate) async fn init_client() -> io::Result<Arc<Client>> {
     let client = Arc::new(Client::new(
-        device,
-        get_version(Protocol::MacOS),
+        resource_loader::Device::load_resource(()).unwrap(),
+        resource_loader::Protocol::load_resource(()).unwrap(),
         AppHandler,
     ));
+
     // Connect to server
-    let stream = match TcpStream::connect(client.get_address()).await {
-        Ok(stream) => stream,
+    let stream = TcpStream::connect(client.get_address()).await?;
+    let client_cloned = client.clone();
+    tokio::spawn(async move { client_cloned.start(stream).await });
+    task::yield_now().await;
+
+    Ok(client)
+}
+
+pub(crate) async fn login(account: i64, password: String) {
+    use crate::app::login::LoginPageMsg::LoginFailed;
+    let sender = LOGIN_SENDER.get().unwrap();
+
+    let client = match init_client().await {
+        Ok(client) => client,
         Err(err) => {
             sender.input(LoginFailed(err.to_string()));
             return;
         }
     };
-    let client_cloned = client.clone();
-    tokio::spawn(async move { client_cloned.start(stream).await });
-    task::yield_now().await;
+
     let res = match client.password_login(account, &password).await {
         Ok(res) => res,
         Err(err) => {
