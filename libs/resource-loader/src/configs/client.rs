@@ -1,4 +1,5 @@
 use derivative::Derivative;
+use ricq::version::{get_version, Version};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Derivative)]
@@ -6,11 +7,25 @@ use serde::{Deserialize, Serialize};
 pub struct ClientConfig {
     #[serde(default = "Default::default")]
     #[derivative(Default(value = "Default::default()"))]
-    pub(crate) protocol: Protocol,
+    protocol: Protocol,
 
     #[serde(default = "default_seed")]
     #[derivative(Default(value = "default_seed()"))]
+    device_seed: u64,
+}
+
+pub struct ClientInner {
     pub(crate) device_seed: u64,
+    pub(crate) version: &'static Version,
+}
+
+impl From<ClientConfig> for ClientInner {
+    fn from(cfg: ClientConfig) -> Self {
+        ClientInner {
+            device_seed: cfg.device_seed,
+            version: get_version(cfg.protocol.into()),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Derivative, Deserialize)]

@@ -26,6 +26,6 @@ impl SyncLoadResource<&'static ricq::version::Version> for Protocol {
     type Error = Infallible;
 
     fn load_resource(_: Self::Args) -> Result<&'static ricq::version::Version, Self::Error> {
-        Ok(get_version(load_cfg().client.protocol.into()))
+        Ok(load_cfg().client.version)
     }
 }
