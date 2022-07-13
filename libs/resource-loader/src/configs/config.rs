@@ -35,7 +35,7 @@ pub struct InnerConfig {
     pub(crate) temporary: InnerTemporaryConfig,
     pub(crate) avatar: InnerAvatarConfig,
     pub(crate) database: InnerDbConfig,
-    pub(crate) client:ClientConfig
+    pub(crate) client: ClientConfig,
 }
 
 impl Config {

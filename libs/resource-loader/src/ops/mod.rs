@@ -1,5 +1,5 @@
-pub mod client;
 pub mod avatar;
+pub mod client;
 pub mod database;
 pub mod temporary;
 use std::path::Path;

@@ -32,10 +32,10 @@ pub enum Protocol {
     QiDian,
 }
 
-impl Into<ricq::version::Protocol> for Protocol {
-    fn into(self) -> ricq::version::Protocol {
+impl From<Protocol> for ricq::version::Protocol {
+    fn from(val: Protocol) -> Self {
         use ricq::version::Protocol::*;
-        match self {
+        match val {
             Protocol::IPad => IPad,
             Protocol::AndroidPhone => AndroidPhone,
             Protocol::AndroidWatch => AndroidWatch,
