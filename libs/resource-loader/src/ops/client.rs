@@ -1,7 +1,6 @@
 use std::convert::Infallible;
 
 use rand::{prelude::StdRng, SeedableRng};
-use ricq::version::get_version;
 
 use crate::{static_data::load_cfg, SyncLoadResource};
 
