@@ -61,17 +61,9 @@ impl LocalAccount {
     }
 }
 
-pub async fn token_login(token: Token, sender: &Sender<LoginPageMsg>) {
-    let client = match init_client().await {
-        Ok(client) => client,
-        Err(err) => {
-            sender.send(LoginFailed(err.to_string()));
-            return;
-        }
-    };
-
+pub async fn token_login(token: Token, sender: &Sender<LoginPageMsg>, client: &Client) {
     match client.token_login(token).await {
-        Ok(resp) => sender.send(LoginRespond(resp.into(), client)),
+        Ok(resp) => sender.send(LoginRespond(resp.into())),
         Err(err) => sender.send(LoginFailed(err.to_string())),
     }
 }

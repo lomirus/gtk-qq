@@ -2,7 +2,7 @@ mod captcha;
 mod device_lock;
 mod service;
 
-use crate::app::login::service::handle_respond::handle_login_response;
+use crate::app::login::service::login_server::Login;
 use crate::db::sql::{load_sql_config, save_sql_config};
 use crate::gtk::Button;
 use std::boxed;
@@ -31,6 +31,7 @@ use crate::app::AppMessage;
 use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::global::WINDOW;
 
+use self::service::login_server::{self, LoginHandle, Sender};
 use self::service::pwd_login::login;
 use self::service::token::{token_login, LocalAccount};
 
@@ -44,14 +45,17 @@ pub struct LoginPageModel {
     remember_pwd: bool,
     auto_login: bool,
     toast: RefCell<Option<String>>,
+    sender: Option<Sender>,
 }
 
 pub enum LoginPageMsg {
+    ClientInit(LoginHandle),
+
     StartLogin,
     PwdLogin(i64, String),
     TokenLogin(Token),
-    LoginRespond(boxed::Box<LoginResponse>, Arc<Client>),
-    LoginSuccessful,
+    LoginRespond(boxed::Box<LoginResponse>),
+    LoginSuccessful(Arc<Client>),
 
     LoginFailed(String),
     NeedCaptcha(String, Arc<Client>),
@@ -77,6 +81,13 @@ impl SimpleComponent for LoginPageModel {
         root: &Self::Root,
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        let t_sender = sender.input_sender().clone();
+        tokio::spawn(async move {
+            t_sender.send(LoginPageMsg::ClientInit(
+                LoginHandle::new(t_sender.clone()).await,
+            ))
+        });
+
         let remember_pwd = load_sql_config(&"remember_pwd")
             .ok()
             .flatten()
@@ -120,6 +131,7 @@ impl SimpleComponent for LoginPageModel {
             enable_btn: false,
             remember_pwd,
             auto_login,
+            sender: None,
         };
 
         ComponentParts { model, widgets }
@@ -128,11 +140,16 @@ impl SimpleComponent for LoginPageModel {
     fn update(&mut self, msg: LoginPageMsg, sender: &ComponentSender<Self>) {
         use LoginPageMsg::*;
         match msg {
-            LoginRespond(boxed_login_resp, client) => {
-                let sender = sender.input_sender().clone();
-                tokio::spawn(async move {
-                    handle_login_response(&boxed_login_resp, client, &sender).await
-                });
+            ClientInit(client) => {
+                self.sender.replace(client.get_sender());
+                client.start_handle();
+            }
+            LoginRespond(boxed_login_resp) => {
+                if let Some(ref sender) = self.sender {
+                    sender.send(login_server::Input::LoginRespond(boxed_login_resp))
+                } else {
+                    sender.input(LoginFailed("Client Not Init. Please Wait".into()));
+                }
             }
             RememberPwd(b) => {
                 self.remember_pwd = b;
@@ -141,20 +158,26 @@ impl SimpleComponent for LoginPageModel {
                 self.auto_login = b;
             }
             TokenLogin(token) => {
-                let sender = sender.input_sender().clone();
-                task::spawn(async move { token_login(token, &sender).await });
+                if let Some(ref sender) = self.sender {
+                    sender.send(login_server::Input::Login(Login::Token(token)))
+                } else {
+                    sender.input(LoginFailed("Client Not Init. Please Wait".into()));
+                }
             }
             EnableLogin(enable) => {
-                self.enable_btn = enable;
+                self.enable_btn = enable && self.sender.is_some();
             }
             StartLogin => {
                 self.pwd_login.emit(Input::Login);
             }
             PwdLogin(uin, pwd) => {
-                let sender = sender.input_sender().clone();
-                task::spawn(async move { login(uin, pwd, &sender).await });
+                if let Some(ref sender) = self.sender {
+                    sender.send(login_server::Input::Login(Login::Pwd(uin, pwd)))
+                } else {
+                    sender.input(LoginFailed("Client Not Init. Please Wait".into()));
+                }
             }
-            LoginSuccessful => {
+            LoginSuccessful(_) => {
                 self.save_login_setting();
                 sender.output(AppMessage::LoginSuccessful);
             }

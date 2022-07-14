@@ -47,5 +47,5 @@ pub(crate) async fn finish_login(client: Arc<Client>, sender: &Sender<LoginPageM
     local.save_account(&sender);
 
     after_login(&client).await;
-    sender.send(LoginSuccessful);
+    sender.send(LoginSuccessful(client));
 }

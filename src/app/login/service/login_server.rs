@@ -27,6 +27,21 @@ pub struct Sender {
     sender: relm4::Sender<LoginPageMsg>,
 }
 
+impl Sender {
+    pub fn send(&self, input: Input) {
+        let sender = self.sender.clone();
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            if tx.send(input).await.is_err() {
+                sender.send(LoginPageMsg::LoginFailed(
+                    "Login in Handle receive end closed".into(),
+                ))
+            }
+            ()
+        });
+    }
+}
+
 pub struct LoginHandle {
     client: Arc<ricq::Client>,
     rx: mpsc::Receiver<Input>,
@@ -53,29 +68,27 @@ impl LoginHandle {
 }
 
 impl LoginHandle {
-    pub fn start_handle(mut self) -> JoinHandle<Arc<Client>> {
+    pub fn start_handle(mut self) -> JoinHandle<()> {
         let task = async move {
             while let Some(input) = self.rx.recv().await {
                 match input {
                     Input::Login(login) => match login {
                         Login::Pwd(account, pwd) => {
-                            super::pwd_login::login(account, pwd, &self.sender).await;
+                            super::pwd_login::login(account, pwd, &self.sender,&self.client).await;
                         }
                         Login::Token(token) => {
-                            super::token::token_login(token, &self.sender).await;
+                            super::token::token_login(token, &self.sender,&self.client).await;
                         }
                         Login::QrCode => {
                             todo!()
                         }
                     },
                     Input::LoginRespond(resp) => {
-                        handle_login_response(&resp, Arc::clone(&self.client), &self.sender).await;
+                        handle_login_response(&resp, &self.client, &self.sender).await;
                     }
                     Input::Stop => break,
                 }
             }
-
-            self.client
         };
 
         tokio::spawn(task)

@@ -198,7 +198,7 @@ impl Component for CaptchaModel {
 impl CaptchaModel {
     async fn submit_ticket(self, sender: ComponentSender<CaptchaModel>) {
         match self.client.submit_ticket(&self.ticket).await {
-            Ok(res) => sender.output(LoginPageMsg::LoginRespond(res.into(), self.client.clone())),
+            Ok(res) => sender.output(LoginPageMsg::LoginRespond(res.into())),
             Err(err) => {
                 sender.output(LoginPageMsg::LoginFailed(err.to_string()));
             }
