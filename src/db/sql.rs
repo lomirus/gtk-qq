@@ -235,8 +235,8 @@ pub fn check_db_version() {
 
 pub fn load_sql_config(key: &impl AsRef<str>) -> Result<Option<String>, rusqlite::Error> {
     let conn = get_db();
-    let mut stmt = conn.prepare("SELECT value FROM configs where key='?'")?;
-    let mut query = stmt.query(&[key.as_ref()])?;
+    let mut stmt = conn.prepare("SELECT value FROM configs where key= ? ")?;
+    let mut query = stmt.query(params![key.as_ref()])?;
     query.next()?.map(|row| row.get::<_, String>(0)).transpose()
 }
 
@@ -251,4 +251,19 @@ pub fn save_sql_config(
         params![key.as_ref(), value.as_ref()],
     )
     .map(|_| ())
+}
+
+
+#[cfg(test)]
+mod test{
+    
+    use crate::db::sql::load_sql_config;
+
+#[test]
+    fn test_account_load() {
+        let acc = load_sql_config(&"account");   
+
+        println!("{acc:?}")
+    }
+
 }
