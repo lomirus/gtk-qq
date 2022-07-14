@@ -1,6 +1,6 @@
 use crate::app::login::{service::init_client, LoginPageMsg};
 
-pub(crate) async fn login(account: i64, password: String, sender: relm4::Sender<LoginPageMsg>) {
+pub(crate) async fn login(account: i64, password: String, sender: &relm4::Sender<LoginPageMsg>) {
     use crate::app::login::LoginPageMsg::{LoginFailed, LoginRespond};
 
     let operate = || async {

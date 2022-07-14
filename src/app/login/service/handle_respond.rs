@@ -11,7 +11,7 @@ use tokio::fs;
 pub(in crate::app) async fn handle_login_response(
     res: &LoginResponse,
     client: Arc<Client>,
-    sender: Sender<LoginPageMsg>,
+    sender: &Sender<LoginPageMsg>,
 ) {
     use LoginPageMsg::LoginFailed;
     match res {

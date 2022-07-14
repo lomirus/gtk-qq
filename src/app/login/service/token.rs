@@ -61,7 +61,7 @@ impl LocalAccount {
     }
 }
 
-pub async fn token_login(token: Token, sender: Sender<LoginPageMsg>) {
+pub async fn token_login(token: Token, sender: &Sender<LoginPageMsg>) {
     let client = match init_client().await {
         Ok(client) => client,
         Err(err) => {

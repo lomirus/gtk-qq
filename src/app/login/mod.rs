@@ -37,7 +37,6 @@ use self::service::token::{token_login, LocalAccount};
 type SmsPhone = Option<String>;
 type VerifyUrl = String;
 
-
 #[derive(Debug)]
 pub struct LoginPageModel {
     pwd_login: PasswordLogin,
@@ -131,7 +130,9 @@ impl SimpleComponent for LoginPageModel {
         match msg {
             LoginRespond(boxed_login_resp, client) => {
                 let sender = sender.input_sender().clone();
-                tokio::spawn(async move { handle_login_response(&boxed_login_resp, client,sender).await });
+                tokio::spawn(async move {
+                    handle_login_response(&boxed_login_resp, client, &sender).await
+                });
             }
             RememberPwd(b) => {
                 self.remember_pwd = b;
@@ -141,7 +142,7 @@ impl SimpleComponent for LoginPageModel {
             }
             TokenLogin(token) => {
                 let sender = sender.input_sender().clone();
-                task::spawn(token_login(token, sender));
+                task::spawn(async move { token_login(token, &sender).await });
             }
             EnableLogin(enable) => {
                 self.enable_btn = enable;
@@ -151,7 +152,7 @@ impl SimpleComponent for LoginPageModel {
             }
             PwdLogin(uin, pwd) => {
                 let sender = sender.input_sender().clone();
-                task::spawn(login(uin, pwd, sender));
+                task::spawn(async move { login(uin, pwd, &sender).await });
             }
             LoginSuccessful => {
                 self.save_login_setting();
