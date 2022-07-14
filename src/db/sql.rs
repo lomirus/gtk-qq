@@ -237,10 +237,7 @@ pub fn load_sql_config(key: &impl AsRef<str>) -> Result<Option<String>, rusqlite
     let conn = get_db();
     let mut stmt = conn.prepare("SELECT value FROM configs where key='?'")?;
     let mut query = stmt.query(&[key.as_ref()])?;
-    Ok(query
-        .next()?
-        .map(|row| row.get::<_, String>(0))
-        .transpose()?)
+    query.next()?.map(|row| row.get::<_, String>(0)).transpose()
 }
 
 pub fn save_sql_config(

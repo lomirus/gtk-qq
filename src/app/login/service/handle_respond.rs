@@ -1,12 +1,10 @@
-use crate::app::login::service::Color;
-use crate::app::login::service::LoginUnknownStatus;
-use crate::app::login::service::QrCode;
-use crate::app::login::{service::finish_login, Arc, LoginPageMsg, LOGIN_SENDER};
+use crate::app::login::{
+    service::{finish_login, Color, LoginUnknownStatus, QrCode},
+    Arc, LoginPageMsg, LOGIN_SENDER,
+};
 use qrcode_png::QrCodeEcc;
-use resource_loader::AsyncCreatePath;
-use resource_loader::CaptchaQrCode;
-use ricq::LoginDeviceLocked;
-use ricq::{Client, LoginNeedCaptcha, LoginResponse};
+use resource_loader::{AsyncCreatePath, CaptchaQrCode};
+use ricq::{Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse};
 use tokio::fs;
 
 pub(in crate::app) async fn handle_login_response(res: &LoginResponse, client: Arc<Client>) {
@@ -39,10 +37,7 @@ pub(in crate::app) async fn handle_login_response(res: &LoginResponse, client: A
                     .await
                     .map_err(|err| err.to_string())?;
 
-                sender.input(LoginPageMsg::NeedCaptcha(
-                    verify_url.clone(),
-                    client,
-                ));
+                sender.input(LoginPageMsg::NeedCaptcha(verify_url.clone(), client));
                 Result::<_, String>::Ok(())
             };
 
