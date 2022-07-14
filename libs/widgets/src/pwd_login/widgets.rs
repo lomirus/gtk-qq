@@ -6,7 +6,7 @@ use relm4::{
     gtk::{
         self,
         prelude::EntryBufferExtManual,
-        traits::{BoxExt, EditableExt, EntryExt},
+        traits::{BoxExt, CheckButtonExt, EditableExt, EntryExt},
         Align, CheckButton, Entry, EntryBuffer, PasswordEntry,
     },
     Sender,
@@ -95,18 +95,24 @@ impl PwdLoginWidget {
             .build();
 
         let remember_pwd = gtk::CheckButton::builder()
+            .active(payload.remember_pwd)
             .label("Remember Password")
-            .sensitive(false)
             .build();
+
+        let t_sender = output.clone();
+        remember_pwd.connect_toggled(move |this| {
+            t_sender.send(Output::RememberPwd(this.is_active()));
+        });
 
         let auto_login = gtk::CheckButton::builder()
             .label("Auto Login")
-            .sensitive(false)
+            .active(payload.auto_login)
             .build();
 
-        output.send(Output::EnableLogin(
-            payload.account.is_some() && payload.token.is_some(),
-        ));
+        let t_sender = output.clone();
+        auto_login.connect_toggled(move |this| {
+            t_sender.send(Output::AutoLogin(this.is_active()));
+        });
 
         root.append(&input_area);
         input_area.append(&avatar);

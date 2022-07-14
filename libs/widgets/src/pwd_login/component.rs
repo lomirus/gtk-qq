@@ -39,6 +39,13 @@ impl relm4::SimpleComponent for PasswordLoginModel {
         root: &Self::Root,
         sender: &relm4::ComponentSender<Self>,
     ) -> relm4::ComponentParts<Self> {
+        sender.output(Output::EnableLogin(
+            params.account.is_some() && params.token.is_some(),
+        ));
+        if params.auto_login {
+            sender.input(Input::Login);
+        }
+
         let widgets =
             PwdLoginWidget::new(root, &params, sender.input_sender(), sender.output_sender());
 
