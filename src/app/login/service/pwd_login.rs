@@ -22,5 +22,5 @@ pub(crate) async fn login(account: i64, password: String) {
             return;
         }
     };
-    handle_login_response(res, client).await;
+    handle_login_response(&res, client).await;
 }

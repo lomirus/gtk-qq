@@ -71,7 +71,7 @@ pub async fn token_login(token: Token, sender: Sender<LoginPageMsg>) {
     };
 
     match client.token_login(token).await {
-        Ok(resp) => handle_login_response(resp, client.clone()).await,
+        Ok(resp) => handle_login_response(&resp, client.clone()).await,
         Err(err) => sender.send(LoginFailed(err.to_string())),
     }
 }
