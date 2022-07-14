@@ -1,9 +1,11 @@
-use crate::app::login::LoginPageMsg::LoginFailed;
+use crate::{
+    app::login::LoginPageMsg::LoginFailed,
+    db::sql::{load_sql_config, save_sql_config},
+};
 use relm4::Sender;
 use ricq::{client::Token, Client};
-use rusqlite::params;
 
-use crate::{app::login::LoginPageMsg, db::sql::get_db};
+use crate::app::login::LoginPageMsg;
 
 use super::{handle_respond::handle_login_response, init_client};
 
@@ -36,40 +38,23 @@ impl LocalAccount {
     pub fn save_account(&self, sender: &Sender<LoginPageMsg>) {
         let account = self.account.to_string();
         let token = Self::token_to_base64(&self.token);
-        let db = get_db();
-        if let Err(err) = db.execute(
-            "REPLACE INTO configs (key, value) VALUES (?1, ?2)",
-            params!["account", account],
-        ) {
-            sender.send(LoginFailed(err.to_string()));
-        }
-        if let Err(err) = db.execute(
-            "REPLACE INTO configs (key, value) VALUES (?1, ?2)",
-            params!["token", &token],
-        ) {
+
+        let saving = || {
+            save_sql_config(&"account", &account)?;
+            save_sql_config(&"token", &token)
+        };
+        if let Err(err) = saving() {
             sender.send(LoginFailed(err.to_string()));
         }
     }
 
     pub fn get_account() -> Option<Self> {
-        let conn = get_db();
-        let mut stmt = conn
-            .prepare("SELECT value FROM configs where key='account'")
-            .unwrap();
-        let mut rows = stmt.query([]).unwrap();
-
-        let next = rows.next().unwrap();
-
-        let account: i64 = next
-            .and_then(|row| row.get::<_, String>(0).ok())
+        let account: i64 = load_sql_config(&"account")
+            .ok()
+            .flatten()
             .and_then(|v| v.parse().ok())?;
 
-        let mut stmt = conn
-            .prepare("SELECT value FROM configs where key='token'")
-            .unwrap();
-        let mut rows = stmt.query([]).unwrap();
-        let token: String = rows.next().unwrap().and_then(|row| row.get(0).ok())?;
-
+        let token = load_sql_config(&"token").ok().flatten()?;
         let token = Self::base64_to_token(&token);
 
         Some(Self { account, token })
