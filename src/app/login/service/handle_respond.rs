@@ -1,19 +1,22 @@
 use crate::app::login::{
     service::{finish_login, Color, LoginUnknownStatus, QrCode},
-    Arc, LoginPageMsg, LOGIN_SENDER,
+    Arc, LoginPageMsg,
 };
 use qrcode_png::QrCodeEcc;
+use relm4::Sender;
 use resource_loader::{AsyncCreatePath, CaptchaQrCode};
 use ricq::{Client, LoginDeviceLocked, LoginNeedCaptcha, LoginResponse};
 use tokio::fs;
 
-pub(in crate::app) async fn handle_login_response(res: &LoginResponse, client: Arc<Client>) {
-    let sender = LOGIN_SENDER.get().unwrap();
-
+pub(in crate::app) async fn handle_login_response(
+    res: &LoginResponse,
+    client: Arc<Client>,
+    sender: Sender<LoginPageMsg>,
+) {
     use LoginPageMsg::LoginFailed;
     match res {
         LoginResponse::Success(_) => {
-            finish_login(client).await;
+            finish_login(client, &sender).await;
         }
         LoginResponse::NeedCaptcha(LoginNeedCaptcha { verify_url, .. }) => {
             let verify_url = Into::<Option<&String>>::into(verify_url);
@@ -37,44 +40,44 @@ pub(in crate::app) async fn handle_login_response(res: &LoginResponse, client: A
                     .await
                     .map_err(|err| err.to_string())?;
 
-                sender.input(LoginPageMsg::NeedCaptcha(verify_url.clone(), client));
+                sender.send(LoginPageMsg::NeedCaptcha(verify_url.clone(), client));
                 Result::<_, String>::Ok(())
             };
 
             if let Err(err) = operate().await {
-                sender.input(LoginFailed(err));
+                sender.send(LoginFailed(err));
             }
         }
         LoginResponse::AccountFrozen => {
-            sender.input(LoginFailed("Account Frozen".to_string()));
+            sender.send(LoginFailed("Account Frozen".to_string()));
         }
         LoginResponse::DeviceLocked(LoginDeviceLocked {
             sms_phone,
             verify_url,
             ..
         }) => {
-            sender.input(LoginFailed(
+            sender.send(LoginFailed(
                 "Device Locked. See more in the pop-up window.".to_string(),
             ));
 
-            sender.input(LoginPageMsg::DeviceLock(
+            sender.send(LoginPageMsg::DeviceLock(
                 verify_url.clone().unwrap_or_else(|| "<unknown>".into()),
                 sms_phone.clone(),
             ));
         }
         LoginResponse::TooManySMSRequest => {
-            sender.input(LoginFailed("Too Many SMS Request".to_string()));
+            sender.send(LoginFailed("Too Many SMS Request".to_string()));
         }
         LoginResponse::DeviceLockLogin(_) => match client.device_lock_login().await {
             Err(err) => {
-                sender.input(LoginFailed(err.to_string()));
+                sender.send(LoginFailed(err.to_string()));
             }
             Ok(_) => {
-                finish_login(client).await;
+                finish_login(client, &sender).await;
             }
         },
         LoginResponse::UnknownStatus(LoginUnknownStatus { message, .. }) => {
-            sender.input(LoginFailed(message.clone()));
+            sender.send(LoginFailed(message.clone()));
         }
     }
 }

@@ -1,3 +1,4 @@
+use relm4::Sender;
 use resource_loader::SyncLoadResource;
 use std::{io, sync::Arc};
 
@@ -7,11 +8,12 @@ use ricq::{ext::common::after_login, Client, LoginUnknownStatus};
 use tokio::{net::TcpStream, task};
 
 use crate::app::login::service::token::LocalAccount;
-use crate::app::login::{LoginPageMsg, LOGIN_SENDER};
+use crate::app::login::LoginPageMsg;
 
 use crate::handler::{AppHandler, ACCOUNT, CLIENT};
 
 pub(super) mod handle_respond;
+pub mod login_server;
 pub(super) mod pwd_login;
 pub mod token;
 
@@ -31,8 +33,7 @@ pub(crate) async fn init_client() -> io::Result<Arc<Client>> {
     Ok(client)
 }
 
-pub(crate) async fn finish_login(client: Arc<Client>) {
-    let sender = LOGIN_SENDER.get().unwrap();
+pub(crate) async fn finish_login(client: Arc<Client>, sender: &Sender<LoginPageMsg>) {
     let local = LocalAccount::new(&client).await;
 
     use LoginPageMsg::LoginSuccessful;
@@ -43,8 +44,8 @@ pub(crate) async fn finish_login(client: Arc<Client>) {
         panic!("falied to store account");
     };
 
-    local.save_account(sender.input_sender());
+    local.save_account(&sender);
 
     after_login(&client).await;
-    sender.input(LoginSuccessful);
+    sender.send(LoginSuccessful);
 }

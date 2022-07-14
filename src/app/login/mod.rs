@@ -37,7 +37,6 @@ use self::service::token::{token_login, LocalAccount};
 type SmsPhone = Option<String>;
 type VerifyUrl = String;
 
-pub static LOGIN_SENDER: OnceCell<ComponentSender<LoginPageModel>> = OnceCell::new();
 
 #[derive(Debug)]
 pub struct LoginPageModel {
@@ -79,9 +78,6 @@ impl SimpleComponent for LoginPageModel {
         root: &Self::Root,
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        if LOGIN_SENDER.set(sender.clone()).is_err() {
-            panic!("failed to initialize login sender");
-        }
         let remember_pwd = load_sql_config(&"remember_pwd")
             .ok()
             .flatten()
@@ -134,7 +130,8 @@ impl SimpleComponent for LoginPageModel {
         use LoginPageMsg::*;
         match msg {
             LoginRespond(boxed_login_resp, client) => {
-                tokio::spawn(async move { handle_login_response(&boxed_login_resp, client).await });
+                let sender = sender.input_sender().clone();
+                tokio::spawn(async move { handle_login_response(&boxed_login_resp, client,sender).await });
             }
             RememberPwd(b) => {
                 self.remember_pwd = b;
@@ -153,7 +150,8 @@ impl SimpleComponent for LoginPageModel {
                 self.pwd_login.emit(Input::Login);
             }
             PwdLogin(uin, pwd) => {
-                task::spawn(login(uin, pwd));
+                let sender = sender.input_sender().clone();
+                task::spawn(login(uin, pwd, sender));
             }
             LoginSuccessful => {
                 self.save_login_setting();
