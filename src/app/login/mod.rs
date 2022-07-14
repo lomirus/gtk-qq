@@ -240,7 +240,7 @@ impl SimpleComponent for LoginPageModel {
 
     fn pre_view(&self, widgets: &mut Self::Widgets, sender: &ComponentSender<Self>) {
         if let Some(ref content) = self.toast.borrow_mut().take() {
-            widgets.toast_overlay.add_toast(&Toast::new(&content));
+            widgets.toast_overlay.add_toast(&Toast::new(content));
         }
         widgets.login_btn.set_sensitive(self.enable_btn);
     }
@@ -251,10 +251,9 @@ impl SimpleComponent for LoginPageModel {
 }
 
 impl LoginPageModel {
-    fn save_login_setting(&self){
+    fn save_login_setting(&self) {
         save_sql_config(&"remember_pwd", &self.remember_pwd.to_string()).expect("Save cfg Error");
         save_sql_config(&"auto_login", &self.auto_login.to_string()).expect("Save cfg Error");
-
     }
 }
 
