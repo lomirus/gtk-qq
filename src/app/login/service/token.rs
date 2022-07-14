@@ -7,8 +7,6 @@ use ricq::{client::Token, Client};
 
 use crate::app::login::LoginPageMsg;
 
-use super::init_client;
-
 pub struct LocalAccount {
     pub account: i64,
     pub token: Token,

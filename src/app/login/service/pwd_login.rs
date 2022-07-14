@@ -1,6 +1,6 @@
 use ricq::Client;
 
-use crate::app::login::{service::init_client, LoginPageMsg};
+use crate::app::login::LoginPageMsg;
 
 pub(crate) async fn login(
     account: i64,

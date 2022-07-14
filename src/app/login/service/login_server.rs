@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use ricq::{client::Token, Client, LoginResponse};
+use ricq::{client::Token, LoginResponse};
 use tokio::{sync::mpsc, task::JoinHandle};
 
 use crate::app::login::LoginPageMsg;
@@ -9,7 +9,8 @@ use super::{handle_respond::handle_login_response, init_client};
 
 pub enum Login {
     Pwd(i64, String),
-    Token(Token),
+    Token(Box<Token>),
+    #[allow(dead_code)]
     QrCode,
 }
 
@@ -18,6 +19,7 @@ pub enum Input {
     Login(Login),
     // login proc
     LoginRespond(Box<LoginResponse>),
+    #[allow(dead_code)]
     Stop,
 }
 
@@ -37,7 +39,6 @@ impl Sender {
                     "Login in Handle receive end closed".into(),
                 ))
             }
-            ()
         });
     }
 }
@@ -74,10 +75,10 @@ impl LoginHandle {
                 match input {
                     Input::Login(login) => match login {
                         Login::Pwd(account, pwd) => {
-                            super::pwd_login::login(account, pwd, &self.sender,&self.client).await;
+                            super::pwd_login::login(account, pwd, &self.sender, &self.client).await;
                         }
                         Login::Token(token) => {
-                            super::token::token_login(token, &self.sender,&self.client).await;
+                            super::token::token_login(*token, &self.sender, &self.client).await;
                         }
                         Login::QrCode => {
                             todo!()

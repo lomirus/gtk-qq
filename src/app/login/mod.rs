@@ -9,7 +9,6 @@ use std::boxed;
 use std::cell::RefCell;
 use std::sync::Arc;
 
-use once_cell::sync::OnceCell;
 use relm4::gtk::gdk::Paintable;
 use relm4::{
     adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, SimpleComponent,
@@ -32,8 +31,7 @@ use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::global::WINDOW;
 
 use self::service::login_server::{self, LoginHandle, Sender};
-use self::service::pwd_login::login;
-use self::service::token::{token_login, LocalAccount};
+use self::service::token::LocalAccount;
 
 type SmsPhone = Option<String>;
 type VerifyUrl = String;
@@ -81,6 +79,7 @@ impl SimpleComponent for LoginPageModel {
         root: &Self::Root,
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        // start client
         let t_sender = sender.input_sender().clone();
         tokio::spawn(async move {
             t_sender.send(LoginPageMsg::ClientInit(
@@ -88,6 +87,7 @@ impl SimpleComponent for LoginPageModel {
             ))
         });
 
+        // load config
         let remember_pwd = load_sql_config(&"remember_pwd")
             .ok()
             .flatten()
@@ -100,6 +100,7 @@ impl SimpleComponent for LoginPageModel {
             .and_then(|v| v.parse().ok())
             .unwrap_or(false);
 
+        // load safe account
         let account = if !remember_pwd {
             None
         } else {
@@ -125,6 +126,7 @@ impl SimpleComponent for LoginPageModel {
             });
 
         let widgets = view_output!();
+
         let model = LoginPageModel {
             pwd_login,
             toast: RefCell::new(None),
@@ -159,7 +161,7 @@ impl SimpleComponent for LoginPageModel {
             }
             TokenLogin(token) => {
                 if let Some(ref sender) = self.sender {
-                    sender.send(login_server::Input::Login(Login::Token(token)))
+                    sender.send(login_server::Input::Login(Login::Token(token.into())))
                 } else {
                     sender.input(LoginFailed("Client Not Init. Please Wait".into()));
                 }
@@ -208,9 +210,7 @@ impl SimpleComponent for LoginPageModel {
                 window.set_content(Some(captcha.widget()));
                 window.present();
             }
-            LinkCopied => {
-                self.toast.borrow_mut().replace("Link Copied".into());
-            }
+
             DeviceLock(verify_url, sms) => {
                 let window = Window::builder()
                     .transient_for(&WINDOW.get().unwrap().window)
@@ -230,6 +230,9 @@ impl SimpleComponent for LoginPageModel {
             }
             // TODO: proc follow operate
             ConfirmVerification => self.pwd_login.emit(Input::Login),
+            LinkCopied => {
+                self.toast.borrow_mut().replace("Link Copied".into());
+            }
         }
     }
 

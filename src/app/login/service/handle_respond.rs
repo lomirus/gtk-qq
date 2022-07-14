@@ -16,7 +16,7 @@ pub(in crate::app) async fn handle_login_response(
     use LoginPageMsg::LoginFailed;
     match res {
         LoginResponse::Success(_) => {
-            finish_login(Arc::clone(client), &sender).await;
+            finish_login(Arc::clone(client), sender).await;
         }
         LoginResponse::NeedCaptcha(LoginNeedCaptcha { verify_url, .. }) => {
             let verify_url = Into::<Option<&String>>::into(verify_url);
@@ -40,7 +40,10 @@ pub(in crate::app) async fn handle_login_response(
                     .await
                     .map_err(|err| err.to_string())?;
 
-                sender.send(LoginPageMsg::NeedCaptcha(verify_url.clone(), Arc::clone(client)));
+                sender.send(LoginPageMsg::NeedCaptcha(
+                    verify_url.clone(),
+                    Arc::clone(client),
+                ));
                 Result::<_, String>::Ok(())
             };
 
@@ -73,7 +76,7 @@ pub(in crate::app) async fn handle_login_response(
                 sender.send(LoginFailed(err.to_string()));
             }
             Ok(_) => {
-                finish_login(Arc::clone(client), &sender).await;
+                finish_login(Arc::clone(client), sender).await;
             }
         },
         LoginResponse::UnknownStatus(LoginUnknownStatus { message, .. }) => {

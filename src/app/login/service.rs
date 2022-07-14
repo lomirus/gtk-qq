@@ -44,7 +44,7 @@ pub(crate) async fn finish_login(client: Arc<Client>, sender: &Sender<LoginPageM
         panic!("falied to store account");
     };
 
-    local.save_account(&sender);
+    local.save_account(sender);
 
     after_login(&client).await;
     sender.send(LoginSuccessful(client));
