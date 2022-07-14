@@ -4,6 +4,7 @@ mod service;
 
 use crate::db::sql::{load_sql_config, save_sql_config};
 use crate::gtk::Button;
+use std::cell::RefCell;
 use std::sync::Arc;
 
 use once_cell::sync::OnceCell;
@@ -42,7 +43,7 @@ pub struct LoginPageModel {
     enable_btn: bool,
     remember_pwd: bool,
     auto_login: bool,
-    toast: Option<String>,
+    toast: RefCell<Option<String>>,
 }
 
 pub enum LoginPageMsg {
@@ -114,7 +115,7 @@ impl SimpleComponent for LoginPageModel {
         let widgets = view_output!();
         let model = LoginPageModel {
             pwd_login,
-            toast: None,
+            toast: RefCell::new(None),
             enable_btn: false,
             remember_pwd,
             auto_login,
@@ -150,7 +151,7 @@ impl SimpleComponent for LoginPageModel {
                 sender.output(AppMessage::LoginSuccessful);
             }
             LoginFailed(msg) => {
-                self.toast = Some(msg);
+                *(self.toast.borrow_mut()) = Some(msg);
             }
             NeedCaptcha(verify_url, client) => {
                 sender.input(LoginPageMsg::LoginFailed(
@@ -177,7 +178,7 @@ impl SimpleComponent for LoginPageModel {
                 window.present();
             }
             LinkCopied => {
-                self.toast.replace("Link Copied".into());
+                self.toast.borrow_mut().replace("Link Copied".into());
             }
             DeviceLock(verify_url, sms) => {
                 let window = Window::builder()
@@ -238,8 +239,8 @@ impl SimpleComponent for LoginPageModel {
     }
 
     fn pre_view(&self, widgets: &mut Self::Widgets, sender: &ComponentSender<Self>) {
-        if let Some(content) = &self.toast {
-            widgets.toast_overlay.add_toast(&Toast::new(content));
+        if let Some(ref content) = self.toast.borrow_mut().take() {
+            widgets.toast_overlay.add_toast(&Toast::new(&content));
         }
         widgets.login_btn.set_sensitive(self.enable_btn);
     }
