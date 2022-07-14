@@ -253,17 +253,15 @@ pub fn save_sql_config(
     .map(|_| ())
 }
 
-
 #[cfg(test)]
-mod test{
-    
+mod test {
+
     use crate::db::sql::load_sql_config;
 
-#[test]
+    #[test]
     fn test_account_load() {
-        let acc = load_sql_config(&"account");   
+        let acc = load_sql_config(&"account");
 
         println!("{acc:?}")
     }
-
 }
