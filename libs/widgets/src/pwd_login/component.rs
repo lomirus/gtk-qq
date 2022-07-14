@@ -11,6 +11,7 @@ pub struct PasswordLoginModel {
     account_state: State,
     account: Option<i64>,
     password: PwdEntry,
+    avatar: Option<Paintable>,
 }
 
 impl relm4::SimpleComponent for PasswordLoginModel {
@@ -59,6 +60,7 @@ impl relm4::SimpleComponent for PasswordLoginModel {
             password: pwd,
             account_changed: false,
             account_state: State::NoChange,
+            avatar: None,
         };
 
         relm4::ComponentParts { model, widgets }
@@ -100,7 +102,7 @@ impl relm4::SimpleComponent for PasswordLoginModel {
                 (PwdEntry::Token(token), _) => sender.output(Output::TokenLogin(token)),
                 (_, _) => sender.output(Output::EnableLogin(false)),
             },
-            Input::Avatar(_) => todo!(),
+            Input::Avatar(pic) => self.avatar = pic,
         }
     }
 
@@ -127,5 +129,9 @@ impl relm4::SimpleComponent for PasswordLoginModel {
                 .avatar
                 .set_custom_image(Option::<&'static Paintable>::None);
         }
+
+        widgets
+            .avatar
+            .set_custom_image(Into::<Option<&Paintable>>::into(&self.avatar));
     }
 }

@@ -78,6 +78,7 @@ impl PwdLoginWidget {
         let pwd = PasswordEntry::builder()
             .valign(Align::Center)
             .show_peek_icon(true)
+            .activates_default(true)
             .placeholder_text("QQ password")
             .build();
 
@@ -86,6 +87,9 @@ impl PwdLoginWidget {
         }
         let t_sender = sender.clone();
         pwd.connect_changed(move |entry| t_sender.send(Input::Password(entry.text().to_string())));
+
+        let t_sender = sender.clone();
+        pwd.connect_activate(move |_| t_sender.send(Input::Login));
 
         let cfg_box = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
@@ -106,6 +110,7 @@ impl PwdLoginWidget {
 
         let auto_login = gtk::CheckButton::builder()
             .label("Auto Login")
+            .sensitive(false)
             .active(payload.auto_login)
             .build();
 
