@@ -2,6 +2,7 @@ mod captcha;
 mod device_lock;
 mod service;
 
+use crate::db::sql::{load_sql_config, save_sql_config};
 use crate::gtk::Button;
 use std::sync::Arc;
 
@@ -39,6 +40,8 @@ pub static LOGIN_SENDER: OnceCell<ComponentSender<LoginPageModel>> = OnceCell::n
 pub struct LoginPageModel {
     pwd_login: PasswordLogin,
     enable_btn: bool,
+    remember_pwd: bool,
+    auto_login: bool,
     toast: Option<String>,
 }
 
@@ -53,6 +56,8 @@ pub enum LoginPageMsg {
     DeviceLock(VerifyUrl, SmsPhone),
     ConfirmVerification,
     LinkCopied,
+    RememberPwd(bool),
+    AutoLogin(bool),
 }
 
 #[relm4::component(pub)]
@@ -70,7 +75,23 @@ impl SimpleComponent for LoginPageModel {
         if LOGIN_SENDER.set(sender.clone()).is_err() {
             panic!("failed to initialize login sender");
         }
-        let account = LocalAccount::get_account();
+        let remember_pwd = load_sql_config(&"remember_pwd")
+            .ok()
+            .flatten()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(false);
+
+        let auto_login = load_sql_config(&"auto_login")
+            .ok()
+            .flatten()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(false);
+
+        let account = if !remember_pwd {
+            None
+        } else {
+            LocalAccount::get_account()
+        };
         let account_ref = Into::<Option<&LocalAccount>>::into(&account);
         let avatar = load_avatar(account_ref.map(|a| a.account), true);
 
@@ -79,11 +100,15 @@ impl SimpleComponent for LoginPageModel {
                 account: account_ref.map(|a| a.account),
                 avatar,
                 token: account.map(|a| a.token),
+                remember_pwd,
+                auto_login,
             })
             .forward(sender.input_sender(), |out| match out {
                 pwd_login::Output::Login { account, pwd } => LoginPageMsg::PwdLogin(account, pwd),
                 pwd_login::Output::EnableLogin(enable) => LoginPageMsg::EnableLogin(enable),
                 pwd_login::Output::TokenLogin(token) => LoginPageMsg::TokenLogin(token),
+                pwd_login::Output::RememberPwd(b) => LoginPageMsg::RememberPwd(b),
+                pwd_login::Output::AutoLogin(b) => LoginPageMsg::AutoLogin(b),
             });
 
         let widgets = view_output!();
@@ -91,6 +116,8 @@ impl SimpleComponent for LoginPageModel {
             pwd_login,
             toast: None,
             enable_btn: false,
+            remember_pwd,
+            auto_login,
         };
 
         ComponentParts { model, widgets }
@@ -99,6 +126,12 @@ impl SimpleComponent for LoginPageModel {
     fn update(&mut self, msg: LoginPageMsg, sender: &ComponentSender<Self>) {
         use LoginPageMsg::*;
         match msg {
+            RememberPwd(b) => {
+                self.remember_pwd = b;
+            }
+            AutoLogin(b) => {
+                self.auto_login = b;
+            }
             TokenLogin(token) => {
                 let sender = sender.input_sender().clone();
                 task::spawn(token_login(token, sender));
@@ -113,6 +146,7 @@ impl SimpleComponent for LoginPageModel {
                 task::spawn(login(uin, pwd));
             }
             LoginSuccessful => {
+                self.save_login_setting();
                 sender.output(AppMessage::LoginSuccessful);
             }
             LoginFailed(msg) => {
@@ -208,6 +242,18 @@ impl SimpleComponent for LoginPageModel {
             widgets.toast_overlay.add_toast(&Toast::new(content));
         }
         widgets.login_btn.set_sensitive(self.enable_btn);
+    }
+
+    fn shutdown(&mut self, _: &mut Self::Widgets, _: relm4::Sender<Self::Output>) {
+        self.save_login_setting()
+    }
+}
+
+impl LoginPageModel {
+    fn save_login_setting(&self){
+        save_sql_config(&"remember_pwd", &self.remember_pwd.to_string()).expect("Save cfg Error");
+        save_sql_config(&"auto_login", &self.auto_login.to_string()).expect("Save cfg Error");
+
     }
 }
 
