@@ -2,8 +2,10 @@ mod captcha;
 mod device_lock;
 mod service;
 
+use crate::app::login::service::handle_respond::handle_login_response;
 use crate::db::sql::{load_sql_config, save_sql_config};
 use crate::gtk::Button;
+use std::boxed;
 use std::cell::RefCell;
 use std::sync::Arc;
 
@@ -20,7 +22,7 @@ use gtk::gdk_pixbuf::Pixbuf;
 use gtk::{Box, Label, MenuButton, Orientation, Picture};
 
 use ricq::client::Token;
-use ricq::Client;
+use ricq::{Client, LoginResponse};
 use tokio::task;
 use widgets::pwd_login::{self, Input, PasswordLogin, PasswordLoginModel, Payload};
 
@@ -50,15 +52,19 @@ pub enum LoginPageMsg {
     StartLogin,
     PwdLogin(i64, String),
     TokenLogin(Token),
-    EnableLogin(bool),
+    LoginRespond(boxed::Box<LoginResponse>, Arc<Client>),
     LoginSuccessful,
+
     LoginFailed(String),
     NeedCaptcha(String, Arc<Client>),
     DeviceLock(VerifyUrl, SmsPhone),
     ConfirmVerification,
-    LinkCopied,
+
+    EnableLogin(bool),
     RememberPwd(bool),
     AutoLogin(bool),
+
+    LinkCopied,
 }
 
 #[relm4::component(pub)]
@@ -127,6 +133,9 @@ impl SimpleComponent for LoginPageModel {
     fn update(&mut self, msg: LoginPageMsg, sender: &ComponentSender<Self>) {
         use LoginPageMsg::*;
         match msg {
+            LoginRespond(boxed_login_resp, client) => {
+                tokio::spawn(async move { handle_login_response(&boxed_login_resp, client).await });
+            }
             RememberPwd(b) => {
                 self.remember_pwd = b;
             }

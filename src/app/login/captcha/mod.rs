@@ -13,7 +13,6 @@ use ricq::Client;
 use tokio::task;
 use widgets::link_copier::{self, LinkCopierModel};
 
-use super::service::handle_respond::handle_login_response;
 use super::LoginPageMsg;
 
 #[derive(Clone)]
@@ -199,7 +198,7 @@ impl Component for CaptchaModel {
 impl CaptchaModel {
     async fn submit_ticket(self, sender: ComponentSender<CaptchaModel>) {
         match self.client.submit_ticket(&self.ticket).await {
-            Ok(res) => handle_login_response(&res, self.client.clone()).await,
+            Ok(res) => sender.output(LoginPageMsg::LoginRespond(res.into(), self.client.clone())),
             Err(err) => {
                 sender.output(LoginPageMsg::LoginFailed(err.to_string()));
             }

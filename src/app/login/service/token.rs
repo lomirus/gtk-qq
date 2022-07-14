@@ -1,5 +1,5 @@
 use crate::{
-    app::login::LoginPageMsg::LoginFailed,
+    app::login::LoginPageMsg::{LoginFailed, LoginRespond},
     db::sql::{load_sql_config, save_sql_config},
 };
 use relm4::Sender;
@@ -7,7 +7,7 @@ use ricq::{client::Token, Client};
 
 use crate::app::login::LoginPageMsg;
 
-use super::{handle_respond::handle_login_response, init_client};
+use super::init_client;
 
 pub struct LocalAccount {
     pub account: i64,
@@ -71,7 +71,7 @@ pub async fn token_login(token: Token, sender: Sender<LoginPageMsg>) {
     };
 
     match client.token_login(token).await {
-        Ok(resp) => handle_login_response(&resp, client.clone()).await,
+        Ok(resp) => sender.send(LoginRespond(resp.into(), client)),
         Err(err) => sender.send(LoginFailed(err.to_string())),
     }
 }

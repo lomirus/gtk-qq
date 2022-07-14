@@ -6,7 +6,6 @@ use qrcode_png::{Color, QrCode};
 use ricq::{ext::common::after_login, Client, LoginUnknownStatus};
 use tokio::{net::TcpStream, task};
 
-use crate::app::login::service::handle_respond::handle_login_response;
 use crate::app::login::service::token::LocalAccount;
 use crate::app::login::{LoginPageMsg, LOGIN_SENDER};
 
