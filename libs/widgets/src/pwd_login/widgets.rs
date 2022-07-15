@@ -38,11 +38,11 @@ impl PwdLoginWidget {
         output: &Sender<Output>,
     ) -> Self {
         let input_area = gtk::Box::builder()
-            .orientation(gtk::Orientation::Horizontal)
+            .orientation(gtk::Orientation::Vertical)
             .halign(gtk::Align::Center)
             .valign(gtk::Align::Center)
             .vexpand(true)
-            .spacing(32)
+            .spacing(12)
             .build();
 
         let avatar = Avatar::builder().size(96).build();
@@ -51,6 +51,7 @@ impl PwdLoginWidget {
             avatar.set_custom_image(Some(a));
         }
 
+        
         let _group = PreferencesGroup::new();
         let _account_row = ActionRow::builder()
             .title("Account  ")
@@ -91,10 +92,10 @@ impl PwdLoginWidget {
         let t_sender = sender.clone();
         pwd.connect_activate(move |_| t_sender.send(Input::Login));
 
-        let cfg_box = gtk::Box::builder()
+        let edit_box = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .valign(Align::Center)
-            .halign(Align::End)
+            .halign(Align::Center)
             .spacing(8)
             .build();
 
@@ -119,20 +120,21 @@ impl PwdLoginWidget {
             t_sender.send(Output::AutoLogin(this.is_active()));
         });
 
+        root.append(&avatar);
         root.append(&input_area);
-        input_area.append(&avatar);
 
         input_area.append(&_group);
-
+        
         _group.add(&_account_row);
         _account_row.add_suffix(&account);
-
+        
         _group.add(&_pwd_row);
         _pwd_row.add_suffix(&pwd);
+        
+        input_area.append(&edit_box);
 
-        root.append(&cfg_box);
-        cfg_box.append(&remember_pwd);
-        cfg_box.append(&auto_login);
+        edit_box.append(&remember_pwd);
+        edit_box.append(&auto_login);
 
         Self {
             avatar,
@@ -142,7 +144,7 @@ impl PwdLoginWidget {
             _pwd_row,
             _pwd: pwd,
             _input_area: input_area,
-            _cfg_box: cfg_box,
+            _cfg_box: edit_box,
             _remember_pwd: remember_pwd,
             _auto_login: auto_login,
         }
