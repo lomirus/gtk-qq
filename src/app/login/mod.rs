@@ -170,6 +170,7 @@ impl SimpleComponent for LoginPageModel {
                 self.enable_btn = enable && self.sender.is_some();
             }
             StartLogin => {
+                self.enable_btn = false;
                 self.pwd_login.emit(Input::Login);
             }
             PwdLogin(uin, pwd) => {
@@ -184,6 +185,7 @@ impl SimpleComponent for LoginPageModel {
                 sender.output(AppMessage::LoginSuccessful);
             }
             LoginFailed(msg) => {
+                self.enable_btn = true;
                 *(self.toast.borrow_mut()) = Some(msg);
             }
             NeedCaptcha(verify_url, client) => {
@@ -229,7 +231,7 @@ impl SimpleComponent for LoginPageModel {
                 window.present()
             }
             // TODO: proc follow operate
-            ConfirmVerification => self.pwd_login.emit(Input::Login),
+            ConfirmVerification => sender.input(LoginPageMsg::StartLogin),
             LinkCopied => {
                 self.toast.borrow_mut().replace("Link Copied".into());
             }
