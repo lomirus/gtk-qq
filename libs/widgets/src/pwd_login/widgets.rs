@@ -51,7 +51,6 @@ impl PwdLoginWidget {
             avatar.set_custom_image(Some(a));
         }
 
-        
         let _group = PreferencesGroup::new();
         let _account_row = ActionRow::builder()
             .title("Account  ")
@@ -124,13 +123,13 @@ impl PwdLoginWidget {
         root.append(&input_area);
 
         input_area.append(&_group);
-        
+
         _group.add(&_account_row);
         _account_row.add_suffix(&account);
-        
+
         _group.add(&_pwd_row);
         _pwd_row.add_suffix(&pwd);
-        
+
         input_area.append(&edit_box);
 
         edit_box.append(&remember_pwd);
