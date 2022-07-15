@@ -135,7 +135,7 @@ impl Component for CaptchaModel {
                         }
                     },
                     Box {
-                        set_orientation: Orientation::Horizontal,
+                        set_orientation: Orientation::Vertical,
                         Label {
                             set_xalign: 0.0,
                             set_label: "Help: If you do not have an Android phone to install the tool, open the"
@@ -143,7 +143,7 @@ impl Component for CaptchaModel {
                         append: verify_link.widget(),
                         Label {
                             set_xalign: 0.0,
-                            set_label: " in the browser manually, open the devtools and switch to the network panel. After you passed the"
+                            set_label: "in the browser manually, open the devtools and switch to the network panel. After you passed the"
                         },
                         Label {
                             set_xalign: 0.0,
