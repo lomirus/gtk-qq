@@ -60,7 +60,7 @@ impl relm4::SimpleComponent for PasswordLoginModel {
             password: pwd,
             account_changed: false,
             account_state: State::NoChange,
-            avatar: None,
+            avatar: params.avatar,
         };
 
         relm4::ComponentParts { model, widgets }
