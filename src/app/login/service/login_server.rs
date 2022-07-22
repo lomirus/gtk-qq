@@ -1,7 +1,13 @@
 use std::sync::Arc;
 
 use ricq::{client::Token, LoginResponse};
-use tokio::{sync::mpsc, task::JoinHandle};
+use tokio::{
+    sync::{
+        mpsc::{self, error::TrySendError},
+        oneshot::{self, error::TryRecvError},
+    },
+    task::JoinHandle,
+};
 
 use crate::app::login::LoginPageMsg;
 
@@ -23,29 +29,64 @@ pub enum Input {
     Stop,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Sender {
-    tx: mpsc::Sender<Input>,
+    feedback: Option<oneshot::Receiver<()>>,
+    tx: mpsc::Sender<(Input, oneshot::Sender<()>)>,
     sender: relm4::Sender<LoginPageMsg>,
 }
 
+impl Clone for Sender {
+    fn clone(&self) -> Self {
+        Self {
+            feedback: None,
+            tx: self.tx.clone(),
+            sender: self.sender.clone(),
+        }
+    }
+}
+
 impl Sender {
-    pub fn send(&self, input: Input) {
-        let sender = self.sender.clone();
-        let tx = self.tx.clone();
-        tokio::spawn(async move {
-            if tx.send(input).await.is_err() {
-                sender.send(LoginPageMsg::LoginFailed(
-                    "Login in Handle receive end closed".into(),
-                ))
+    pub fn send(&mut self, input: Input) {
+        // check is ready to handle next operate
+        if let Some(fb) = &mut self.feedback {
+            match fb.try_recv() {
+                Ok(_) => {
+                    self.feedback.take();
+                }
+                Err(err) => match err {
+                    TryRecvError::Empty => self.sender.send(LoginPageMsg::LoginFailed(
+                        "Previous login task not finish yet,please wait".into(),
+                    )),
+                    TryRecvError::Closed => self
+                        .sender
+                        .send(LoginPageMsg::LoginFailed("Login Server Closed".into())),
+                },
             }
-        });
+        }
+        // ready to handle next operate
+        if self.feedback.is_none() {
+            let (tx, rx) = oneshot::channel();
+            match self.tx.try_send((input, tx)) {
+                Ok(_r) => {
+                    self.feedback.replace(rx);
+                }
+                Err(err) => match err {
+                    TrySendError::Full(_) => self.sender.send(LoginPageMsg::LoginFailed(
+                        "Channel Buff Full,Please wait".into(),
+                    )),
+                    TrySendError::Closed(_) => self
+                        .sender
+                        .send(LoginPageMsg::LoginFailed("Login Server Closed".into())),
+                },
+            }
+        }
     }
 }
 
 pub struct LoginHandle {
     client: Arc<ricq::Client>,
-    rx: mpsc::Receiver<Input>,
+    rx: mpsc::Receiver<(Input, oneshot::Sender<()>)>,
     sender: relm4::Sender<LoginPageMsg>,
     inner_send: Sender,
 }
@@ -59,7 +100,11 @@ impl LoginHandle {
             client,
             rx,
             sender: sender.clone(),
-            inner_send: Sender { tx, sender },
+            inner_send: Sender {
+                tx,
+                sender,
+                feedback: None,
+            },
         }
     }
 
@@ -71,7 +116,7 @@ impl LoginHandle {
 impl LoginHandle {
     pub fn start_handle(mut self) -> JoinHandle<()> {
         let task = async move {
-            while let Some(input) = self.rx.recv().await {
+            while let Some((input, sender)) = self.rx.recv().await {
                 match input {
                     Input::Login(login) => match login {
                         Login::Pwd(account, pwd) => {
@@ -89,6 +134,7 @@ impl LoginHandle {
                     }
                     Input::Stop => break,
                 }
+                sender.send(()).ok();
             }
         };
 

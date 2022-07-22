@@ -147,7 +147,7 @@ impl SimpleComponent for LoginPageModel {
                 client.start_handle();
             }
             LoginRespond(boxed_login_resp) => {
-                if let Some(ref sender) = self.sender {
+                if let Some(sender) = &mut self.sender {
                     sender.send(login_server::Input::LoginRespond(boxed_login_resp))
                 } else {
                     sender.input(LoginFailed("Client Not Init. Please Wait".into()));
@@ -160,7 +160,7 @@ impl SimpleComponent for LoginPageModel {
                 self.auto_login = b;
             }
             TokenLogin(token) => {
-                if let Some(ref sender) = self.sender {
+                if let Some(sender) = &mut self.sender {
                     sender.send(login_server::Input::Login(Login::Token(token.into())))
                 } else {
                     sender.input(LoginFailed("Client Not Init. Please Wait".into()));
@@ -174,7 +174,7 @@ impl SimpleComponent for LoginPageModel {
                 self.pwd_login.emit(Input::Login);
             }
             PwdLogin(uin, pwd) => {
-                if let Some(ref sender) = self.sender {
+                if let Some(sender) = &mut self.sender {
                     sender.send(login_server::Input::Login(Login::Pwd(uin, pwd)))
                 } else {
                     sender.input(LoginFailed("Client Not Init. Please Wait".into()));
