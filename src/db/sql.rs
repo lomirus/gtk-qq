@@ -233,7 +233,9 @@ pub fn check_db_version() {
     }
 }
 
-pub fn load_sql_config(key: &impl AsRef<str>) -> Result<Option<String>, rusqlite::Error> {
+pub fn load_sql_config(
+    key: &(impl AsRef<str> + ?Sized),
+) -> Result<Option<String>, rusqlite::Error> {
     let conn = get_db();
     let mut stmt = conn.prepare("SELECT value FROM configs where key= ? ")?;
     let mut query = stmt.query(params![key.as_ref()])?;
@@ -241,8 +243,8 @@ pub fn load_sql_config(key: &impl AsRef<str>) -> Result<Option<String>, rusqlite
 }
 
 pub fn save_sql_config(
-    key: &impl AsRef<str>,
-    value: &impl AsRef<str>,
+    key: &(impl AsRef<str> + ?Sized),
+    value: impl AsRef<str>,
 ) -> Result<(), rusqlite::Error> {
     let db = get_db();
 
@@ -260,7 +262,7 @@ mod test {
 
     #[test]
     fn test_account_load() {
-        let acc = load_sql_config(&"account");
+        let acc = load_sql_config("account");
 
         println!("{acc:?}")
     }
