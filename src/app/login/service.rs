@@ -1,5 +1,6 @@
 use relm4::Sender;
 use resource_loader::SyncLoadResource;
+use std::sync::atomic::Ordering;
 use std::{io, sync::Arc};
 
 use qrcode_png::{Color, QrCode};
@@ -8,7 +9,7 @@ use ricq::{ext::common::after_login, Client, LoginUnknownStatus};
 use tokio::{net::TcpStream, task};
 
 use crate::app::login::service::token::LocalAccount;
-use crate::app::login::LoginPageMsg;
+use crate::app::login::{LoginPageMsg, REMEMBER_PWD};
 
 use crate::handler::{AppHandler, ACCOUNT, CLIENT};
 
@@ -43,8 +44,9 @@ pub(crate) async fn finish_login(client: Arc<Client>, sender: &Sender<LoginPageM
     if ACCOUNT.set(local.account).is_err() {
         panic!("falied to store account");
     };
-
-    local.save_account(sender);
+    if REMEMBER_PWD.load(Ordering::Relaxed) {
+        local.save_account(sender);
+    }
 
     after_login(&client).await;
     sender.send(LoginSuccessful(client));

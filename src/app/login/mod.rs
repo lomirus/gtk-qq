@@ -7,6 +7,7 @@ use crate::db::sql::{load_sql_config, save_sql_config};
 use crate::gtk::Button;
 use std::boxed;
 use std::cell::RefCell;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use relm4::gtk::gdk::Paintable;
@@ -36,12 +37,13 @@ use self::service::token::LocalAccount;
 type SmsPhone = Option<String>;
 type VerifyUrl = String;
 
+pub(in crate::app::login) static REMEMBER_PWD: AtomicBool = AtomicBool::new(false);
+pub(in crate::app::login) static AUTO_LOGIN: AtomicBool = AtomicBool::new(false);
+
 #[derive(Debug)]
 pub struct LoginPageModel {
     pwd_login: PasswordLogin,
     enable_btn: bool,
-    remember_pwd: bool,
-    auto_login: bool,
     toast: RefCell<Option<String>>,
     sender: Option<Sender>,
 }
@@ -88,20 +90,26 @@ impl SimpleComponent for LoginPageModel {
         });
 
         // load config
-        let remember_pwd = load_sql_config(&"remember_pwd")
-            .ok()
-            .flatten()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(false);
+        REMEMBER_PWD.store(
+            load_sql_config("remember_pwd")
+                .ok()
+                .flatten()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(false),
+            Ordering::Relaxed,
+        );
 
-        let auto_login = load_sql_config(&"auto_login")
-            .ok()
-            .flatten()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(false);
+        AUTO_LOGIN.store(
+            load_sql_config("auto_login")
+                .ok()
+                .flatten()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(false),
+            Ordering::Relaxed,
+        );
 
         // load safe account
-        let account = if !remember_pwd {
+        let account = if !REMEMBER_PWD.load(Ordering::Relaxed) {
             None
         } else {
             LocalAccount::get_account()
@@ -114,8 +122,8 @@ impl SimpleComponent for LoginPageModel {
                 account: account_ref.map(|a| a.account),
                 avatar,
                 token: account.map(|a| a.token),
-                remember_pwd,
-                auto_login,
+                remember_pwd: REMEMBER_PWD.load(Ordering::Relaxed),
+                auto_login: AUTO_LOGIN.load(Ordering::Relaxed),
             })
             .forward(sender.input_sender(), |out| match out {
                 pwd_login::Output::Login { account, pwd } => LoginPageMsg::PwdLogin(account, pwd),
@@ -131,8 +139,6 @@ impl SimpleComponent for LoginPageModel {
             pwd_login,
             toast: RefCell::new(None),
             enable_btn: false,
-            remember_pwd,
-            auto_login,
             sender: None,
         };
 
@@ -154,10 +160,10 @@ impl SimpleComponent for LoginPageModel {
                 }
             }
             RememberPwd(b) => {
-                self.remember_pwd = b;
+                REMEMBER_PWD.store(b, Ordering::Relaxed);
             }
             AutoLogin(b) => {
-                self.auto_login = b;
+                AUTO_LOGIN.store(b, Ordering::Relaxed);
             }
             TokenLogin(token) => {
                 if let Some(sender) = &mut self.sender {
@@ -288,8 +294,16 @@ impl SimpleComponent for LoginPageModel {
 
 impl LoginPageModel {
     fn save_login_setting(&self) {
-        save_sql_config(&"remember_pwd", &self.remember_pwd.to_string()).expect("Save cfg Error");
-        save_sql_config(&"auto_login", &self.auto_login.to_string()).expect("Save cfg Error");
+        save_sql_config(
+            "remember_pwd",
+            REMEMBER_PWD.load(Ordering::Relaxed).to_string(),
+        )
+        .expect("Save cfg Error");
+        save_sql_config(
+            "auto_login",
+            AUTO_LOGIN.load(Ordering::Relaxed).to_string(),
+        )
+        .expect("Save cfg Error");
     }
 }
 
