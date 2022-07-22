@@ -299,11 +299,8 @@ impl LoginPageModel {
             REMEMBER_PWD.load(Ordering::Relaxed).to_string(),
         )
         .expect("Save cfg Error");
-        save_sql_config(
-            "auto_login",
-            AUTO_LOGIN.load(Ordering::Relaxed).to_string(),
-        )
-        .expect("Save cfg Error");
+        save_sql_config("auto_login", AUTO_LOGIN.load(Ordering::Relaxed).to_string())
+            .expect("Save cfg Error");
     }
 }
 
