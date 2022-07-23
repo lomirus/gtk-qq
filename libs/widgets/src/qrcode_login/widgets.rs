@@ -1,5 +1,6 @@
 use relm4::gtk::{traits::BoxExt, Align, Box, Label, Picture};
 
+#[derive(Debug)]
 pub struct QrCodeLoginWidgets {
     pub(super) qr_code: Picture,
     _label: Label,

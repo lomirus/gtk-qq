@@ -1,22 +1,19 @@
-use std::path::Path;
+use std::{cell::RefCell, path::Path};
 
 use relm4::{
-    adw::Window,
-    gtk::{self, gdk_pixbuf::Pixbuf, traits::GtkWindowExt},
+    gtk::{self, gdk_pixbuf::Pixbuf},
     ComponentParts, ComponentSender,
 };
 
 use super::{
-    background::qr_code_handler,
-    payloads::{self, Input, Output},
+    payloads::{self},
     widgets::QrCodeLoginWidgets,
 };
 
+#[derive(Debug)]
 pub struct QrCodeLoginModel {
-    picture: Option<Pixbuf>,
+    picture: RefCell<Option<Pixbuf>>,
     temp_path: &'static Path,
-    widows: Window,
-    task_handle: tokio::task::JoinHandle<()>,
 }
 
 impl relm4::SimpleComponent for QrCodeLoginModel {
@@ -41,57 +38,31 @@ impl relm4::SimpleComponent for QrCodeLoginModel {
     fn init(
         params: Self::InitParams,
         root: &Self::Root,
-        sender: &ComponentSender<Self>,
+        _: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let widget = QrCodeLoginWidgets::new(root);
-
-        let handle = tokio::spawn(qr_code_handler(
-            params.client,
-            sender.input_sender().clone(),
-            params.temp_img_path,
-        ));
-
         ComponentParts {
             model: Self {
-                picture: None,
+                picture: RefCell::new(None),
                 temp_path: params.temp_img_path,
-                widows: params.windows,
-                task_handle: handle,
             },
             widgets: widget,
         }
     }
 
-    fn update(&mut self, message: Self::Input, sender: &ComponentSender<Self>) {
+    fn update(&mut self, message: Self::Input, _: &ComponentSender<Self>) {
         match message {
             payloads::Input::UpdateQrCode => {
-                let qrcode = Pixbuf::from_file(self.temp_path).expect("Error to load QrCode");
-                self.picture.replace(qrcode);
-            }
-            payloads::Input::FollowLogin(login_resp) => {
-                sender.output(Output::LoginGoAhead(login_resp));
-                self.widows.close();
-            }
-            payloads::Input::Error(err) => {
-                sender.output(Output::Error(err));
-                self.widows.close();
-            }
-            payloads::Input::Updated => {
-                self.picture.take();
+                self.picture
+                    .borrow_mut()
+                    .replace(Pixbuf::from_file(self.temp_path).expect("Error to load QrCode"));
             }
         }
     }
 
-    fn update_view(&self, widgets: &mut Self::Widgets, sender: &ComponentSender<Self>) {
-        if self.picture.is_some() {
-            widgets
-                .qr_code
-                .set_pixbuf(Into::<Option<&Pixbuf>>::into(&self.picture));
-            sender.input(Input::Updated);
+    fn update_view(&self, widgets: &mut Self::Widgets, _: &ComponentSender<Self>) {
+        if let Some(pic) = self.picture.borrow_mut().take() {
+            widgets.qr_code.set_pixbuf(Some(&pic));
         }
-    }
-
-    fn shutdown(&mut self, _: &mut Self::Widgets, _: relm4::Sender<Self::Output>) {
-        self.task_handle.abort()
     }
 }
