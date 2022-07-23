@@ -175,7 +175,6 @@ impl SimpleComponent for LoginPageModel {
                 }
             }
             EnableLogin(enabled) => {
-                dbg!();
                 self.btn_enabled = enabled && self.sender.is_some() && !self.is_logging;
             }
             StartLogin => {
@@ -289,7 +288,6 @@ impl SimpleComponent for LoginPageModel {
         if let Some(ref content) = self.toast.borrow_mut().take() {
             widgets.toast_overlay.add_toast(&Toast::new(content));
         }
-        dbg!(widgets.login_btn.is_sensitive());
         widgets.login_btn.set_sensitive(self.btn_enabled);
     }
 
