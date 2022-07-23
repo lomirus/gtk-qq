@@ -1,4 +1,3 @@
-
 // pub(super) async fn qr_code_handler(client: Arc<Client>, sender: Sender<Input>, temp_path: &Path) {
 //     let mut timer = tokio::time::interval(Duration::from_millis(400));
 //     let mut qrcode_state = match client.fetch_qrcode().await {

@@ -12,6 +12,6 @@ pub use ops::{
     avatar::{Group as AvatarGroup, User as AvatarUser},
     client::{Device, Protocol},
     database::SqlDataBase,
-    temporary::{CaptchaQrCode, TempDir,QrCodeLoginCode},
+    temporary::{CaptchaQrCode, QrCodeLoginCode, TempDir},
     AsyncCreatePath, AsyncLoadResource, DirAction, GetPath, SyncCreatePath, SyncLoadResource,
 };
