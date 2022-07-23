@@ -43,7 +43,8 @@ pub(in crate::app::login) static AUTO_LOGIN: AtomicBool = AtomicBool::new(false)
 #[derive(Debug)]
 pub struct LoginPageModel {
     pwd_login: PasswordLogin,
-    enable_btn: bool,
+    btn_enabled: bool,
+    is_logging: bool,
     toast: RefCell<Option<String>>,
     sender: Option<Sender>,
 }
@@ -138,7 +139,8 @@ impl SimpleComponent for LoginPageModel {
         let model = LoginPageModel {
             pwd_login,
             toast: RefCell::new(None),
-            enable_btn: false,
+            btn_enabled: false,
+            is_logging: false,
             sender: None,
         };
 
@@ -172,11 +174,12 @@ impl SimpleComponent for LoginPageModel {
                     sender.input(LoginFailed("Client Not Init. Please Wait".into()));
                 }
             }
-            EnableLogin(enable) => {
-                self.enable_btn = enable && self.sender.is_some();
+            EnableLogin(enabled) => {
+                self.btn_enabled = enabled && self.sender.is_some() && !self.is_logging;
             }
             StartLogin => {
-                self.enable_btn = false;
+                self.btn_enabled = false;
+                self.is_logging = true;
                 self.pwd_login.emit(Input::Login);
             }
             PwdLogin(uin, pwd) => {
@@ -191,7 +194,8 @@ impl SimpleComponent for LoginPageModel {
                 sender.output(AppMessage::LoginSuccessful);
             }
             LoginFailed(msg) => {
-                self.enable_btn = true;
+                self.btn_enabled = true;
+                self.is_logging = false;
                 *(self.toast.borrow_mut()) = Some(msg);
             }
             NeedCaptcha(verify_url, client) => {
@@ -284,7 +288,7 @@ impl SimpleComponent for LoginPageModel {
         if let Some(ref content) = self.toast.borrow_mut().take() {
             widgets.toast_overlay.add_toast(&Toast::new(content));
         }
-        widgets.login_btn.set_sensitive(self.enable_btn);
+        widgets.login_btn.set_sensitive(self.btn_enabled);
     }
 
     fn shutdown(&mut self, _: &mut Self::Widgets, _: relm4::Sender<Self::Output>) {
