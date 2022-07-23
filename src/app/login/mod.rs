@@ -2,54 +2,71 @@ mod captcha;
 mod device_lock;
 mod service;
 
+use crate::app::login::service::login_server::Login;
+use crate::db::sql::{load_sql_config, save_sql_config};
+use crate::gtk::Button;
+use std::boxed;
+use std::cell::RefCell;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use once_cell::sync::OnceCell;
+use relm4::gtk::gdk::Paintable;
 use relm4::{
     adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, SimpleComponent,
 };
 
 use adw::prelude::*;
-use adw::{ActionRow, Avatar, HeaderBar, PreferencesGroup, Toast, ToastOverlay, Window};
-use gtk::gdk::Paintable;
-use gtk::gdk_pixbuf::Pixbuf;
-use gtk::{Align, Box, Button, Entry, EntryBuffer, Label, MenuButton, Orientation, Picture};
+use adw::{HeaderBar, Toast, ToastOverlay, Window};
 
-use ricq::Client;
+use gtk::gdk_pixbuf::Pixbuf;
+use gtk::{Box, Label, MenuButton, Orientation, Picture};
+
+use ricq::client::Token;
+use ricq::{Client, LoginResponse};
 use tokio::task;
+use widgets::pwd_login::{self, Input, PasswordLogin, PasswordLoginModel, Payload};
 
 use crate::actions::{AboutAction, ShortcutsAction};
 use crate::app::AppMessage;
 use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::global::WINDOW;
-use crate::utils::avatar::loader::{AvatarLoader, User};
 
-use self::service::{get_login_info, login};
+use self::service::login_server::{self, LoginHandle, Sender};
+use self::service::token::LocalAccount;
 
 type SmsPhone = Option<String>;
 type VerifyUrl = String;
-type UserId = i64;
-type Password = String;
 
-pub static LOGIN_SENDER: OnceCell<ComponentSender<LoginPageModel>> = OnceCell::new();
+pub(in crate::app::login) static REMEMBER_PWD: AtomicBool = AtomicBool::new(false);
+pub(in crate::app::login) static AUTO_LOGIN: AtomicBool = AtomicBool::new(false);
 
 #[derive(Debug)]
 pub struct LoginPageModel {
-    account: String,
-    password: String,
-    is_login_button_enabled: bool,
-    toast: Option<String>,
+    pwd_login: PasswordLogin,
+    btn_enabled: bool,
+    is_logging: bool,
+    toast: RefCell<Option<String>>,
+    sender: Option<Sender>,
 }
 
 pub enum LoginPageMsg {
-    LoginStart,
-    LoginSuccessful,
+    ClientInit(LoginHandle),
+
+    StartLogin,
+    PwdLogin(i64, String),
+    TokenLogin(Token),
+    LoginRespond(boxed::Box<LoginResponse>),
+    LoginSuccessful(Arc<Client>),
+
     LoginFailed(String),
-    AccountChange(String),
-    PasswordChange(String),
-    NeedCaptcha(String, Arc<Client>, UserId, Password),
+    NeedCaptcha(String, Arc<Client>),
     DeviceLock(VerifyUrl, SmsPhone),
     ConfirmVerification,
+
+    EnableLogin(bool),
+    RememberPwd(bool),
+    AutoLogin(bool),
+
     LinkCopied,
 }
 
@@ -65,37 +82,66 @@ impl SimpleComponent for LoginPageModel {
         root: &Self::Root,
         sender: &ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        if LOGIN_SENDER.set(sender.clone()).is_err() {
-            panic!("failed to initialize login sender");
-        }
+        // start client
+        let t_sender = sender.input_sender().clone();
+        tokio::spawn(async move {
+            t_sender.send(LoginPageMsg::ClientInit(
+                LoginHandle::new(t_sender.clone()).await,
+            ))
+        });
+
+        // load config
+        REMEMBER_PWD.store(
+            load_sql_config("remember_pwd")
+                .ok()
+                .flatten()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(false),
+            Ordering::Relaxed,
+        );
+
+        AUTO_LOGIN.store(
+            load_sql_config("auto_login")
+                .ok()
+                .flatten()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(false),
+            Ordering::Relaxed,
+        );
+
+        // load safe account
+        let account = if !REMEMBER_PWD.load(Ordering::Relaxed) {
+            None
+        } else {
+            LocalAccount::get_account()
+        };
+        let account_ref = Into::<Option<&LocalAccount>>::into(&account);
+        let avatar = load_avatar(account_ref.map(|a| a.account), true);
+
+        let pwd_login = PasswordLoginModel::builder()
+            .launch(Payload {
+                account: account_ref.map(|a| a.account),
+                avatar,
+                token: account.map(|a| a.token),
+                remember_pwd: REMEMBER_PWD.load(Ordering::Relaxed),
+                auto_login: AUTO_LOGIN.load(Ordering::Relaxed),
+            })
+            .forward(sender.input_sender(), |out| match out {
+                pwd_login::Output::Login { account, pwd } => LoginPageMsg::PwdLogin(account, pwd),
+                pwd_login::Output::EnableLogin(enable) => LoginPageMsg::EnableLogin(enable),
+                pwd_login::Output::TokenLogin(token) => LoginPageMsg::TokenLogin(token),
+                pwd_login::Output::RememberPwd(b) => LoginPageMsg::RememberPwd(b),
+                pwd_login::Output::AutoLogin(b) => LoginPageMsg::AutoLogin(b),
+            });
 
         let widgets = view_output!();
 
-        let (account, password) = get_login_info();
-        let account_buffer = EntryBuffer::new(Some(&account));
-        let password_buffer = EntryBuffer::new(Some(&password));
-        widgets.account_entry.set_buffer(&account_buffer);
-        widgets.password_entry.set_buffer(&password_buffer);
-
-        if let Ok(account) = account.parse::<i64>() {
-            let path = get_user_avatar_path(account);
-            if path.exists() {
-                if let Ok(pixbuf) = Pixbuf::from_file_at_size(path, 96, 96) {
-                    let image = Picture::for_pixbuf(&pixbuf);
-                    if let Some(paintable) = image.paintable() {
-                        widgets.avatar.set_custom_image(Some(&paintable));
-                    }
-                }
-            } else {
-                task::spawn(download_user_avatar_file(account));
-            }
-        }
-
         let model = LoginPageModel {
-            account,
-            password,
-            is_login_button_enabled: true,
-            toast: None,
+            pwd_login,
+            toast: RefCell::new(None),
+            btn_enabled: false,
+            is_logging: false,
+            sender: None,
         };
 
         ComponentParts { model, widgets }
@@ -104,36 +150,55 @@ impl SimpleComponent for LoginPageModel {
     fn update(&mut self, msg: LoginPageMsg, sender: &ComponentSender<Self>) {
         use LoginPageMsg::*;
         match msg {
-            LoginStart => {
-                // Get the account
-                let account: i64 = match self.account.parse::<i64>() {
-                    Ok(account) => account,
-                    Err(_) => {
-                        self.toast = Some("Account is invalid".to_string());
-                        return;
-                    }
-                };
-                // Get the password
-                let password = if self.password.is_empty() {
-                    self.toast = Some("Password cannot be empty".to_string());
-                    return;
-                } else {
-                    self.password.to_string()
-                };
-
-                self.is_login_button_enabled = false;
-                task::spawn(login(account, password));
+            ClientInit(client) => {
+                self.sender.replace(client.get_sender());
+                client.start_handle();
             }
-            LoginSuccessful => {
+            LoginRespond(boxed_login_resp) => {
+                if let Some(sender) = &mut self.sender {
+                    sender.send(login_server::Input::LoginRespond(boxed_login_resp))
+                } else {
+                    sender.input(LoginFailed("Client Not Init. Please Wait".into()));
+                }
+            }
+            RememberPwd(b) => {
+                REMEMBER_PWD.store(b, Ordering::Relaxed);
+            }
+            AutoLogin(b) => {
+                AUTO_LOGIN.store(b, Ordering::Relaxed);
+            }
+            TokenLogin(token) => {
+                if let Some(sender) = &mut self.sender {
+                    sender.send(login_server::Input::Login(Login::Token(token.into())))
+                } else {
+                    sender.input(LoginFailed("Client Not Init. Please Wait".into()));
+                }
+            }
+            EnableLogin(enabled) => {
+                self.btn_enabled = enabled && self.sender.is_some() && !self.is_logging;
+            }
+            StartLogin => {
+                self.btn_enabled = false;
+                self.is_logging = true;
+                self.pwd_login.emit(Input::Login);
+            }
+            PwdLogin(uin, pwd) => {
+                if let Some(sender) = &mut self.sender {
+                    sender.send(login_server::Input::Login(Login::Pwd(uin, pwd)))
+                } else {
+                    sender.input(LoginFailed("Client Not Init. Please Wait".into()));
+                }
+            }
+            LoginSuccessful(_) => {
+                self.save_login_setting();
                 sender.output(AppMessage::LoginSuccessful);
             }
             LoginFailed(msg) => {
-                self.toast = Some(msg);
-                self.is_login_button_enabled = true;
+                self.btn_enabled = true;
+                self.is_logging = false;
+                *(self.toast.borrow_mut()) = Some(msg);
             }
-            AccountChange(new_account) => self.account = new_account,
-            PasswordChange(new_password) => self.password = new_password,
-            NeedCaptcha(verify_url, client, account, password) => {
+            NeedCaptcha(verify_url, client) => {
                 sender.input(LoginPageMsg::LoginFailed(
                     "Need Captcha. See more in the pop-up window.".to_string(),
                 ));
@@ -151,17 +216,13 @@ impl SimpleComponent for LoginPageModel {
                         client: Arc::clone(&client),
                         verify_url,
                         window: window.clone(),
-                        account,
-                        password,
                     })
                     .forward(sender.input_sender(), |output| output);
 
                 window.set_content(Some(captcha.widget()));
                 window.present();
             }
-            LinkCopied => {
-                self.toast.replace("Link Copied".into());
-            }
+
             DeviceLock(verify_url, sms) => {
                 let window = Window::builder()
                     .transient_for(&WINDOW.get().unwrap().window)
@@ -180,7 +241,10 @@ impl SimpleComponent for LoginPageModel {
                 window.present()
             }
             // TODO: proc follow operate
-            ConfirmVerification => sender.input(LoginStart),
+            ConfirmVerification => sender.input(LoginPageMsg::StartLogin),
+            LinkCopied => {
+                self.toast.borrow_mut().replace("Link Copied".into());
+            }
         }
     }
 
@@ -201,11 +265,12 @@ impl SimpleComponent for LoginPageModel {
                 set_title_widget = Some(&Label) {
                     set_label: "Login"
                 },
-                pack_end: go_next_button = &Button {
-                    set_icon_name: "go-next",
-                    connect_clicked[sender] => move |_| {
-                        sender.input(LoginPageMsg::LoginStart);
-                    },
+                pack_end : login_btn = &Button{
+                    set_icon_name : "go-next",
+                    set_sensitive : false,
+                    connect_clicked[sender] => move |_|{
+                        sender.input(LoginPageMsg::StartLogin)
+                    }
                 },
                 pack_end = &MenuButton {
                     set_icon_name: "menu-symbolic",
@@ -214,63 +279,49 @@ impl SimpleComponent for LoginPageModel {
             },
             #[name = "toast_overlay"]
             ToastOverlay {
-                set_child = Some(&Box) {
-                    set_halign: Align::Center,
-                    set_valign: Align::Center,
-                    set_vexpand: true,
-                    set_spacing: 32,
-                    #[name = "avatar"]
-                    Avatar {
-                        set_size: 96,
-                    },
-                    PreferencesGroup {
-                        add = &ActionRow {
-                            set_title: "Account",
-                            set_focusable: false,
-                            add_suffix: account_entry = &Entry {
-                                set_valign: Align::Center,
-                                set_placeholder_text: Some("Please input your QQ account "),
-                                connect_changed[sender] => move |e| {
-                                    sender.input(LoginPageMsg::AccountChange(e.buffer().text()));
-                                }
-                            },
-                        },
-                        add = &ActionRow {
-                            set_title: "Password",
-                            set_focusable: false,
-                            add_suffix: password_entry = &Entry {
-                                set_valign: Align::Center,
-                                set_placeholder_text: Some("Please input your QQ password"),
-                                set_visibility: false,
-                                connect_changed[sender] => move |e| {
-                                    sender.input(LoginPageMsg::PasswordChange(e.buffer().text()));
-                                }
-                            },
-                        },
-                    },
-                },
+                set_child : Some(pwd_login.widget()),
             }
         }
     }
 
     fn pre_view(&self, widgets: &mut Self::Widgets, sender: &ComponentSender<Self>) {
-        if let Some(content) = &self.toast {
+        if let Some(ref content) = self.toast.borrow_mut().take() {
             widgets.toast_overlay.add_toast(&Toast::new(content));
         }
-        widgets
-            .go_next_button
-            .set_sensitive(self.is_login_button_enabled);
-
-        let paint = self
-            .account
-            .parse::<i64>()
-            .ok()
-            .and_then(|id| User::get_avatar_as_pixbuf(id, 96, 96).ok())
-            .map(|pix_buf| Picture::for_pixbuf(&pix_buf))
-            .and_then(|pic| pic.paintable());
-
-        widgets
-            .avatar
-            .set_custom_image(Into::<Option<&'_ Paintable>>::into(&paint));
+        widgets.login_btn.set_sensitive(self.btn_enabled);
     }
+
+    fn shutdown(&mut self, _: &mut Self::Widgets, _: relm4::Sender<Self::Output>) {
+        self.save_login_setting()
+    }
+}
+
+impl LoginPageModel {
+    fn save_login_setting(&self) {
+        save_sql_config(
+            "remember_pwd",
+            REMEMBER_PWD.load(Ordering::Relaxed).to_string(),
+        )
+        .expect("Save cfg Error");
+        save_sql_config("auto_login", AUTO_LOGIN.load(Ordering::Relaxed).to_string())
+            .expect("Save cfg Error");
+    }
+}
+
+fn load_avatar(account: Option<i64>, auto_download: bool) -> Option<Paintable> {
+    account
+        .map(|uin| (uin, get_user_avatar_path(uin)))
+        .and_then(|(uin, path)| {
+            if path.exists() {
+                Some(path)
+            } else {
+                if auto_download {
+                    task::spawn(download_user_avatar_file(uin));
+                }
+                None
+            }
+        })
+        .and_then(|path| Pixbuf::from_file_at_size(path, 96, 96).ok())
+        .map(|pix| Picture::for_pixbuf(&pix))
+        .and_then(|pic| pic.paintable())
 }

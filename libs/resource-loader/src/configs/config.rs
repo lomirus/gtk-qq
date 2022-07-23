@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     avatar::AvatarConfig,
+    client::{ClientConfig, ClientInner},
     local_db::DbConfig,
     temporary::{InnerTemporaryConfig, TemporaryConfig},
     InnerAvatarConfig, InnerDbConfig,
@@ -26,12 +27,15 @@ pub struct Config {
     avatar: AvatarConfig,
     #[serde(default = "Default::default")]
     database: DbConfig,
+    #[serde(default = "Default::default")]
+    client: ClientConfig,
 }
 
 pub struct InnerConfig {
     pub(crate) temporary: InnerTemporaryConfig,
     pub(crate) avatar: InnerAvatarConfig,
     pub(crate) database: InnerDbConfig,
+    pub(crate) client: ClientInner,
 }
 
 impl Config {
@@ -42,6 +46,7 @@ impl Config {
             avatar: self.avatar.into_inner(root.as_path()),
             database: self.database.into_inner(root.as_path()),
             temporary: self.temporary.into_inner(),
+            client: self.client.into(),
         }
     }
 }
