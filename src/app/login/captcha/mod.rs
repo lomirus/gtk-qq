@@ -13,14 +13,11 @@ use ricq::Client;
 use tokio::task;
 use widgets::link_copier::{self, LinkCopierModel};
 
-use super::service::handle_login_response;
 use super::LoginPageMsg;
 
 #[derive(Clone)]
 pub struct CaptchaModel {
     pub(crate) client: Arc<Client>,
-    pub(crate) account: i64,
-    pub(crate) password: String,
     pub(crate) ticket: String,
 }
 
@@ -36,8 +33,6 @@ pub enum Input {
 
 pub struct PayLoad {
     pub(crate) client: Arc<Client>,
-    pub(crate) account: i64,
-    pub(crate) password: String,
     pub(crate) window: Window,
     pub(crate) verify_url: String,
 }
@@ -172,8 +167,6 @@ impl Component for CaptchaModel {
         relm4::ComponentParts {
             model: CaptchaModel {
                 client: params.client,
-                account: params.account,
-                password: params.password,
                 ticket: String::new(),
             },
             widgets: CaptchaWidgets {
@@ -205,15 +198,7 @@ impl Component for CaptchaModel {
 impl CaptchaModel {
     async fn submit_ticket(self, sender: ComponentSender<CaptchaModel>) {
         match self.client.submit_ticket(&self.ticket).await {
-            Ok(res) => {
-                handle_login_response(
-                    res,
-                    self.account,
-                    self.password.clone(),
-                    self.client.clone(),
-                )
-                .await
-            }
+            Ok(res) => sender.output(LoginPageMsg::LoginRespond(res.into())),
             Err(err) => {
                 sender.output(LoginPageMsg::LoginFailed(err.to_string()));
             }
