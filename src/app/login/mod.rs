@@ -11,6 +11,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use relm4::gtk::gdk::Paintable;
+use relm4::gtk::{Align, Stack};
 use relm4::{
     adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, SimpleComponent,
 };
@@ -21,10 +22,12 @@ use adw::{HeaderBar, Toast, ToastOverlay, Window};
 use gtk::gdk_pixbuf::Pixbuf;
 use gtk::{Box, Label, MenuButton, Orientation, Picture};
 
+use resource_loader::GetPath;
 use ricq::client::Token;
 use ricq::{Client, LoginResponse};
 use tokio::task;
 use widgets::pwd_login::{self, Input, PasswordLogin, PasswordLoginModel, Payload};
+use widgets::qrcode_login::{QrCodeLogin, QrCodeLoginModel};
 
 use crate::actions::{AboutAction, ShortcutsAction};
 use crate::app::AppMessage;
@@ -40,17 +43,28 @@ type VerifyUrl = String;
 pub(in crate::app::login) static REMEMBER_PWD: AtomicBool = AtomicBool::new(false);
 pub(in crate::app::login) static AUTO_LOGIN: AtomicBool = AtomicBool::new(false);
 
+#[derive(Debug, Default)]
+pub enum LoginState {
+    #[default]
+    Password,
+    QrCode,
+}
+
 #[derive(Debug)]
 pub struct LoginPageModel {
-    pwd_login: PasswordLogin,
     btn_enabled: bool,
     is_logging: bool,
+    pwd_login: PasswordLogin,
+    _qr_code_login: QrCodeLogin,
     toast: RefCell<Option<String>>,
     sender: Option<Sender>,
+    login_state: LoginState,
 }
 
 pub enum LoginPageMsg {
     ClientInit(LoginHandle),
+
+    LoginSwitch(LoginState),
 
     StartLogin,
     PwdLogin(i64, String),
@@ -134,13 +148,22 @@ impl SimpleComponent for LoginPageModel {
                 pwd_login::Output::AutoLogin(b) => LoginPageMsg::AutoLogin(b),
             });
 
+        let qr_code_login = QrCodeLoginModel::builder()
+            .launch(widgets::qrcode_login::PayLoad {
+                temp_img_path: resource_loader::QrCodeLoginCode::get_path(),
+            })
+            //TODO: forward Qr login Event
+            .detach();
+
         let widgets = view_output!();
 
         let model = LoginPageModel {
-            pwd_login,
-            toast: RefCell::new(None),
             btn_enabled: false,
             is_logging: false,
+            pwd_login,
+            _qr_code_login: qr_code_login,
+            login_state: Default::default(),
+            toast: RefCell::new(None),
             sender: None,
         };
 
@@ -153,6 +176,10 @@ impl SimpleComponent for LoginPageModel {
             ClientInit(client) => {
                 self.sender.replace(client.get_sender());
                 client.start_handle();
+            }
+            LoginSwitch(target) => {
+                // TODO: send switch msg to server
+                self.login_state = target;
             }
             LoginRespond(boxed_login_resp) => {
                 if let Some(sender) = &mut self.sender {
@@ -248,6 +275,10 @@ impl SimpleComponent for LoginPageModel {
         }
     }
 
+    fn shutdown(&mut self, _: &mut Self::Widgets, _: relm4::Sender<Self::Output>) {
+        self.save_login_setting()
+    }
+
     menu! {
         main_menu: {
             "Keyboard Shortcuts" => ShortcutsAction,
@@ -279,7 +310,33 @@ impl SimpleComponent for LoginPageModel {
             },
             #[name = "toast_overlay"]
             ToastOverlay {
-                set_child : Some(pwd_login.widget()),
+                set_child  =  Some(&gtk::Box){
+                    set_orientation:gtk::Orientation::Vertical,
+                    set_halign:Align::Center,
+                    set_valign:Align::Center,
+                    append : switch = &Button{
+                        set_label : " QrCode Login ",
+                        connect_clicked[sender] => move |this|{
+                            if this.label().unwrap() ==" QrCode Login "{
+                                this.set_label("Password Login");
+                                sender.input(LoginPageMsg::LoginSwitch(LoginState::QrCode));
+                            }else{
+                                this.set_label(" QrCode Login ");
+                                sender.input(LoginPageMsg::LoginSwitch(LoginState::Password));
+                            }
+                        }
+                    },
+                    append : stack= &Stack{
+                        set_halign:Align::Center,
+                        set_valign:Align::Center,
+                        add_child : pwd_login_box = &gtk::Box {
+                            append : pwd_login.widget(),
+                        },
+                        add_child: qr_code_login_box = &gtk::Box{
+                            append: qr_code_login.widget(),
+                        }
+                    }
+                }
             }
         }
     }
@@ -289,10 +346,11 @@ impl SimpleComponent for LoginPageModel {
             widgets.toast_overlay.add_toast(&Toast::new(content));
         }
         widgets.login_btn.set_sensitive(self.btn_enabled);
-    }
 
-    fn shutdown(&mut self, _: &mut Self::Widgets, _: relm4::Sender<Self::Output>) {
-        self.save_login_setting()
+        match self.login_state {
+            LoginState::Password => stack.set_visible_child(pwd_login_box),
+            LoginState::QrCode => stack.set_visible_child(qr_code_login_box),
+        }
     }
 }
 
