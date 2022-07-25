@@ -318,7 +318,19 @@ impl SimpleComponent for LoginPageModel {
                 pack_end = &MenuButton {
                     set_icon_name: "menu-symbolic",
                     set_menu_model: Some(&main_menu),
-                }
+                },
+                pack_end : switch = &Button{
+                    set_label : "QrCode",
+                    connect_clicked[sender] => move |this|{
+                        if this.label().unwrap() == "QrCode"{
+                            this.set_label("Password");
+                            sender.input(LoginPageMsg::LoginSwitch(LoginState::QrCode));
+                        }else{
+                            this.set_label("QrCode");
+                            sender.input(LoginPageMsg::LoginSwitch(LoginState::Password));
+                        }
+                    }
+                },
             },
             #[name = "toast_overlay"]
             ToastOverlay {
@@ -326,18 +338,6 @@ impl SimpleComponent for LoginPageModel {
                     set_orientation:gtk::Orientation::Vertical,
                     set_halign:Align::Center,
                     set_valign:Align::Center,
-                    append : switch = &Button{
-                        set_label : " QrCode Login ",
-                        connect_clicked[sender] => move |this|{
-                            if this.label().unwrap() ==" QrCode Login "{
-                                this.set_label("Password Login");
-                                sender.input(LoginPageMsg::LoginSwitch(LoginState::QrCode));
-                            }else{
-                                this.set_label(" QrCode Login ");
-                                sender.input(LoginPageMsg::LoginSwitch(LoginState::Password));
-                            }
-                        }
-                    },
                     append : stack= &Stack{
                         set_halign:Align::Center,
                         set_valign:Align::Center,
