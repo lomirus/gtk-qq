@@ -1,4 +1,4 @@
-use std::{cell::RefCell, path::Path};
+use std::path::Path;
 
 use relm4::{
     gtk::{self, gdk_pixbuf::Pixbuf},
@@ -12,7 +12,7 @@ use super::{
 
 #[derive(Debug)]
 pub struct QrCodeLoginModel {
-    picture: RefCell<Option<Pixbuf>>,
+    picture: Option<Pixbuf>,
     temp_path: &'static Path,
 }
 
@@ -43,7 +43,7 @@ impl relm4::SimpleComponent for QrCodeLoginModel {
         let widget = QrCodeLoginWidgets::new(root);
         ComponentParts {
             model: Self {
-                picture: RefCell::new(None),
+                picture: None,
                 temp_path: params.temp_img_path,
             },
             widgets: widget,
@@ -54,15 +54,14 @@ impl relm4::SimpleComponent for QrCodeLoginModel {
         match message {
             payloads::Input::UpdateQrCode => {
                 self.picture
-                    .borrow_mut()
                     .replace(Pixbuf::from_file(self.temp_path).expect("Error to load QrCode"));
             }
         }
     }
 
     fn update_view(&self, widgets: &mut Self::Widgets, _: &ComponentSender<Self>) {
-        if let Some(pic) = self.picture.borrow_mut().take() {
-            widgets.qr_code.set_pixbuf(Some(&pic));
+        if let Some(pic) = &self.picture {
+            widgets.qr_code.set_pixbuf(Some(pic));
         }
     }
 }

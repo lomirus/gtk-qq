@@ -2,7 +2,7 @@ mod captcha;
 mod device_lock;
 mod service;
 
-use crate::app::login::service::login_server::Login;
+use crate::app::login::service::login_server::{Login, Switch};
 use crate::db::sql::{load_sql_config, save_sql_config};
 use crate::gtk::Button;
 use std::boxed;
@@ -27,7 +27,7 @@ use ricq::client::Token;
 use ricq::{Client, LoginResponse};
 use tokio::task;
 use widgets::pwd_login::{self, Input, PasswordLogin, PasswordLoginModel, Payload};
-use widgets::qrcode_login::{QrCodeLogin, QrCodeLoginModel};
+use widgets::qrcode_login::{self, QrCodeLogin, QrCodeLoginModel};
 
 use crate::actions::{AboutAction, ShortcutsAction};
 use crate::app::AppMessage;
@@ -55,7 +55,7 @@ pub struct LoginPageModel {
     btn_enabled: bool,
     is_logging: bool,
     pwd_login: PasswordLogin,
-    _qr_code_login: QrCodeLogin,
+    qr_code_login: QrCodeLogin,
     toast: RefCell<Option<String>>,
     sender: Option<Sender>,
     login_state: LoginState,
@@ -80,6 +80,7 @@ pub enum LoginPageMsg {
     EnableLogin(bool),
     RememberPwd(bool),
     AutoLogin(bool),
+    UpdateQrCode,
 
     LinkCopied,
 }
@@ -161,7 +162,7 @@ impl SimpleComponent for LoginPageModel {
             btn_enabled: false,
             is_logging: false,
             pwd_login,
-            _qr_code_login: qr_code_login,
+            qr_code_login,
             login_state: Default::default(),
             toast: RefCell::new(None),
             sender: None,
@@ -173,12 +174,23 @@ impl SimpleComponent for LoginPageModel {
     fn update(&mut self, msg: LoginPageMsg, sender: &ComponentSender<Self>) {
         use LoginPageMsg::*;
         match msg {
+            UpdateQrCode => {
+                self.qr_code_login.emit(qrcode_login::Input::UpdateQrCode);
+            }
             ClientInit(client) => {
                 self.sender.replace(client.get_sender());
                 client.start_handle();
             }
             LoginSwitch(target) => {
-                // TODO: send switch msg to server
+                match (&target, &mut self.sender) {
+                    (LoginState::Password, Some(sender)) => {
+                        sender.send(login_server::Input::Switch(Switch::Password))
+                    }
+                    (LoginState::QrCode, Some(sender)) => {
+                        sender.send(login_server::Input::Switch(Switch::QrCode))
+                    }
+                    (_, _) => sender.input(LoginFailed("Client Not Init. Please Wait".into())),
+                };
                 self.login_state = target;
             }
             LoginRespond(boxed_login_resp) => {
