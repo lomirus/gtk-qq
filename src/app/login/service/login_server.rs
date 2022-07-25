@@ -129,6 +129,7 @@ impl LoginHandle {
     pub fn start_handle(mut self) -> JoinHandle<()> {
         let task = async move {
             let mut state = LocalState::Pwd;
+            let mut timer = interval(Duration::from_millis(2000));
 
             while let Some((input, sender)) = self.rx.recv().await {
                 match (input, &state) {
@@ -138,36 +139,46 @@ impl LoginHandle {
                         ));
                     }
                     // only work when using password login
-                    (Input::Login(login), LocalState::Pwd) => match login {
-                        Login::Pwd(account, pwd) => {
-                            super::pwd_login::login(account, pwd, &self.sender, &self.client).await;
+                    (Input::Login(login), LocalState::Pwd) => {
+                        timer.tick().await;
+                        match login {
+                            Login::Pwd(account, pwd) => {
+                                super::pwd_login::login(account, pwd, &self.sender, &self.client)
+                                    .await;
+                            }
+                            Login::Token(token) => {
+                                super::token::token_login(*token, &self.sender, &self.client).await;
+                            }
                         }
-                        Login::Token(token) => {
-                            super::token::token_login(*token, &self.sender, &self.client).await;
-                        }
-                    },
+                    }
                     (Input::LoginRespond(resp), _) => {
                         handle_login_response(&resp, &self.client, &self.sender).await;
                     }
-                    (Input::Switch(s), _) => match (&state, s) {
-                        (LocalState::Pwd, Switch::QrCode) => {
-                            let jh =
-                                tokio::spawn(qr_login(self.client.clone(), self.sender.clone()));
-                            state = LocalState::QrCode(jh);
-                            println!("switch to QR")
+                    (Input::Switch(s), _) => {
+                        timer.tick().await;
+                        match (&state, s) {
+                            (LocalState::Pwd, Switch::QrCode) => {
+                                let jh = tokio::spawn(qr_login(
+                                    self.client.clone(),
+                                    self.sender.clone(),
+                                ));
+                                state = LocalState::QrCode(jh);
+                                println!("switch to QR")
+                            }
+                            (LocalState::QrCode(jh), Switch::Password) => {
+                                jh.abort();
+                                state = LocalState::Pwd;
+                                println!("switch to PWD")
+                            }
+                            (LocalState::QrCode(_), Switch::QrCode)
+                            | (LocalState::Pwd, Switch::Password) => {
+                                // switch to same mod, nothing happen
+                            }
                         }
-                        (LocalState::QrCode(jh), Switch::Password) => {
-                            jh.abort();
-                            state = LocalState::Pwd;
-                            println!("switch to PWD")
-                        }
-                        (LocalState::QrCode(_), Switch::QrCode)
-                        | (LocalState::Pwd, Switch::Password) => {
-                            // switch to same mod, nothing happen
-                        }
-                    },
+                    }
                     (Input::Stop, _) => break,
                 }
+
                 sender.send(()).ok();
             }
         };
