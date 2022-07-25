@@ -2786,11 +2786,8 @@ dependencies = [
 name = "widgets"
 version = "0.1.0"
 dependencies = [
- "bytes",
- "dirs",
  "relm4",
  "ricq",
- "tokio",
  "typed-builder",
 ]
 

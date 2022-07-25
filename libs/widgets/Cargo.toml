@@ -12,9 +12,6 @@ features = ["macros", "libadwaita"]
 
 [dependencies]
 typed-builder = "0.10"
-dirs = "4.0.0"
-bytes = "1"
-tokio = { version = "1", features = ["time", "rt"] }
 
 [dependencies.ricq]
 git = "https://github.com/lz1998/ricq.git"
