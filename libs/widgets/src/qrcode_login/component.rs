@@ -29,6 +29,7 @@ impl relm4::SimpleComponent for QrCodeLoginModel {
 
     fn init_root() -> Self::Root {
         gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
             .width_request(400)
             .height_request(300)
             .spacing(5)
