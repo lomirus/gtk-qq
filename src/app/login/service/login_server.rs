@@ -27,7 +27,7 @@ pub enum Switch {
 
 enum LocalState {
     Pwd,
-    QrCode(JoinHandle<()>),
+    QrCode(oneshot::Sender<()>, JoinHandle<()>),
 }
 
 pub enum Input {
@@ -133,7 +133,7 @@ impl LoginHandle {
 
             while let Some((input, sender)) = self.rx.recv().await {
                 match (input, &state) {
-                    (Input::Login(_), LocalState::QrCode(_)) => {
+                    (Input::Login(_), LocalState::QrCode(..)) => {
                         self.sender.send(LoginPageMsg::LoginFailed(
                             "Under `QrCodeLogin` state can not using password login".to_string(),
                         ));
@@ -156,29 +156,35 @@ impl LoginHandle {
                     }
                     (Input::Switch(s), _) => {
                         timer.tick().await;
-                        match (&state, s) {
+                        let new_state = match (state, s) {
                             (LocalState::Pwd, Switch::QrCode) => {
+                                let (tx, rx) = oneshot::channel();
                                 let jh = tokio::spawn(qr_login(
                                     self.client.clone(),
                                     self.sender.clone(),
+                                    rx,
                                 ));
-                                state = LocalState::QrCode(jh);
-                                println!("switch to QR")
+
+                                println!("switch to QR");
+                                LocalState::QrCode(tx, jh)
                             }
-                            (LocalState::QrCode(jh), Switch::Password) => {
-                                jh.abort();
-                                state = LocalState::Pwd;
-                                println!("switch to PWD")
+                            (LocalState::QrCode(tx, jh), Switch::Password) => {
+                                // send stop signal
+                                tx.send(()).ok();
+                                // waiting for stop
+                                jh.await.ok();
+                                println!("switch to PWD");
+                                LocalState::Pwd
                             }
-                            (LocalState::QrCode(_), Switch::QrCode)
-                            | (LocalState::Pwd, Switch::Password) => {
+                            (state, _) => {
                                 // switch to same mod, nothing happen
+                                state
                             }
-                        }
+                        };
+                        state = new_state;
                     }
                     (Input::Stop, _) => break,
                 }
-
                 sender.send(()).ok();
             }
         };
@@ -187,7 +193,11 @@ impl LoginHandle {
     }
 }
 
-async fn qr_login(client: Arc<Client>, sender: relm4::Sender<LoginPageMsg>) {
+async fn qr_login(
+    client: Arc<Client>,
+    sender: relm4::Sender<LoginPageMsg>,
+    mut stopper: oneshot::Receiver<()>,
+) {
     use LoginPageMsg::*;
     let temp_path = QrCodeLoginCode::get_path();
     let mut timer = interval(Duration::from_millis(400));
@@ -200,7 +210,7 @@ async fn qr_login(client: Arc<Client>, sender: relm4::Sender<LoginPageMsg>) {
     };
 
     let mut qrcode_sign = Option::None;
-    loop {
+    while let Err(TryRecvError::Empty) = stopper.try_recv() {
         match qrcode_state {
             ricq::QRCodeState::ImageFetch(ref qrcode) => {
                 let img = &qrcode.image_data;
@@ -208,21 +218,30 @@ async fn qr_login(client: Arc<Client>, sender: relm4::Sender<LoginPageMsg>) {
                     .await
                     .expect("failure to write qrcode file");
                 qrcode_sign.replace(qrcode.sig.clone());
-                sender.send(UpdateQrCode)
+                sender.send(UpdateQrCode);
+                println!("QrCode fetch ,save in {:?}", temp_path);
             }
-            ricq::QRCodeState::WaitingForScan => {}
-            ricq::QRCodeState::WaitingForConfirm => {}
-            ricq::QRCodeState::Timeout => match client.fetch_qrcode().await {
-                Ok(qr_state) => {
-                    qrcode_state = qr_state;
-                    continue;
+            ricq::QRCodeState::WaitingForScan => {
+                println!("waiting for scan qrcode");
+            }
+            ricq::QRCodeState::WaitingForConfirm => {
+                println!("waiting for qrcode confirm");
+            }
+            ricq::QRCodeState::Timeout => {
+                println!("QrCode Timeout fetch again");
+                match client.fetch_qrcode().await {
+                    Ok(qr_state) => {
+                        qrcode_state = qr_state;
+                        continue;
+                    }
+                    Err(err) => {
+                        sender.send(LoginFailed(err.to_string()));
+                        return;
+                    }
                 }
-                Err(err) => {
-                    sender.send(LoginFailed(err.to_string()));
-                    return;
-                }
-            },
+            }
             ricq::QRCodeState::Confirmed(ref qrcode_confirm) => {
+                println!("QrCode confirmed, ready for login");
                 let login_respond = client
                     .qrcode_login(
                         &qrcode_confirm.tmp_pwd,
@@ -236,7 +255,11 @@ async fn qr_login(client: Arc<Client>, sender: relm4::Sender<LoginPageMsg>) {
                 }
                 return;
             }
-            ricq::QRCodeState::Canceled => todo!(),
+            ricq::QRCodeState::Canceled => {
+                println!("Canceled QrCode");
+                sender.send(LoginFailed("QrCode login has been canceled".into()));
+                return;
+            }
         }
 
         timer.tick().await;
