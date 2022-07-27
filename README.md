@@ -29,7 +29,17 @@ This app uses [ricq](https://github.com/lz1998/ricq) as the rust bindings of QQ 
 > 
 > The two screenshots have been a little outdated. The UI now has been adjusted and improved compared to them.
 
-## Run & Build
+## Installation
+
+### AUR
+
+For Arch users, you can install via the AUR package [gtk-qq-git](https://aur.archlinux.org/packages/gtk-qq-git):
+
+```
+paru -S gtk-qq-git
+```
+
+## Manual Build
 
 ### Requirements
 
@@ -49,12 +59,6 @@ sudo dnf install gtk4-devel libadwaita-devel
 
 #### Arch
 
-Complete build Via AUR PKGBUILD
-```
-paru -S gtk-qq-git
-```
-
-Or do it manually，Then follow the instructions below
 ```bash
 sudo pacman -S pkgconf gtk4 libadwaita
 ```
