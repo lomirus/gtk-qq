@@ -320,7 +320,7 @@ impl SimpleComponent for LoginPageModel {
                 set_title_widget = Some(&Label) {
                     set_label: "Login"
                 },
-                pack_end : login_btn = &Button{
+                pack_end: login_btn = &Button{
                     set_icon_name : "go-next",
                     set_sensitive : false,
                     connect_clicked[sender] => move |_|{
@@ -331,18 +331,18 @@ impl SimpleComponent for LoginPageModel {
                     set_icon_name: "menu-symbolic",
                     set_menu_model: Some(&main_menu),
                 },
-                pack_end : switch = &Button{
-                    set_label : "QrCode",
+                pack_start: qrcode_switcher = &Button{
+                    set_icon_name : "qr-code-symbolic",
                     connect_clicked[sender] => move |this|{
-                        if this.label().unwrap() == "QrCode"{
-                            this.set_label("Password");
+                        if this.icon_name().unwrap() == "qr-code-symbolic"{
+                            this.set_icon_name("keyboard-symbolic");
                             sender.input(LoginPageMsg::LoginSwitch(LoginState::QrCode));
-                        }else{
-                            this.set_label("QrCode");
+                        } else {
+                            this.set_icon_name("qr-code-symbolic");
                             sender.input(LoginPageMsg::LoginSwitch(LoginState::Password));
                         }
                     }
-                },
+                }
             },
             #[name = "toast_overlay"]
             ToastOverlay {
