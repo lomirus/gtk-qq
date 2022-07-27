@@ -2,40 +2,51 @@ mod captcha;
 mod device_lock;
 mod service;
 
-use crate::app::login::service::login_server::{Login, Switch};
-use crate::db::sql::{load_sql_config, save_sql_config};
-use crate::gtk::Button;
-use std::boxed;
-use std::cell::RefCell;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-
-use relm4::gtk::gdk::Paintable;
-use relm4::gtk::{Align, Stack};
-use relm4::{
-    adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, SimpleComponent,
+use crate::{
+    actions::{AboutAction, ShortcutsAction},
+    app::{
+        login::service::login_server::{Login, Switch},
+        AppMessage,
+    },
+    db::{
+        fs::{download_user_avatar_file, get_user_avatar_path},
+        sql::{load_sql_config, save_sql_config},
+    },
+    global::WINDOW,
+    gtk::Button,
 };
 
-use adw::prelude::*;
-use adw::{HeaderBar, Toast, ToastOverlay, Window};
+use std::{
+    boxed,
+    cell::RefCell,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
-use gtk::gdk_pixbuf::Pixbuf;
-use gtk::{Box, Label, MenuButton, Orientation, Picture};
+use relm4::{
+    adw,
+    gtk::{self, gdk::Paintable, Align, Stack},
+    Component, ComponentController, ComponentParts, ComponentSender, SimpleComponent,
+};
+
+use adw::{prelude::*, HeaderBar, Toast, ToastOverlay, Window};
+
+use gtk::{gdk_pixbuf::Pixbuf, Box, Label, MenuButton, Orientation, Picture};
 
 use resource_loader::GetPath;
-use ricq::client::Token;
-use ricq::{Client, LoginResponse};
+use ricq::{client::Token, Client, LoginResponse};
 use tokio::task;
-use widgets::pwd_login::{self, Input, PasswordLogin, PasswordLoginModel, Payload};
-use widgets::qrcode_login::{self, QrCodeLogin, QrCodeLoginModel};
+use widgets::{
+    pwd_login::{self, Input, PasswordLogin, PasswordLoginModel, Payload},
+    qrcode_login::{self, QrCodeLogin, QrCodeLoginModel},
+};
 
-use crate::actions::{AboutAction, ShortcutsAction};
-use crate::app::AppMessage;
-use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
-use crate::global::WINDOW;
-
-use self::service::login_server::{self, LoginHandle, Sender};
-use self::service::token::LocalAccount;
+use self::service::{
+    login_server::{self, LoginHandle, Sender},
+    token::LocalAccount,
+};
 
 type SmsPhone = Option<String>;
 type VerifyUrl = String;
@@ -124,7 +135,7 @@ impl SimpleComponent for LoginPageModel {
             Ordering::Relaxed,
         );
 
-        // load safe account
+        // load saved account
         let account = if !REMEMBER_PWD.load(Ordering::Relaxed) {
             None
         } else {
@@ -133,6 +144,7 @@ impl SimpleComponent for LoginPageModel {
         let account_ref = Into::<Option<&LocalAccount>>::into(&account);
         let avatar = load_avatar(account_ref.map(|a| a.account), true);
 
+        // init pwd login
         let pwd_login = PasswordLoginModel::builder()
             .launch(Payload {
                 account: account_ref.map(|a| a.account),
@@ -149,12 +161,12 @@ impl SimpleComponent for LoginPageModel {
                 pwd_login::Output::AutoLogin(b) => LoginPageMsg::AutoLogin(b),
             });
 
+        // init qr code login
         let qr_code_login = QrCodeLoginModel::builder()
             .launch(widgets::qrcode_login::PayLoad {
                 temp_img_path: resource_loader::QrCodeLoginCode::get_path(),
             })
-            //TODO: forward Qr login Event
-            .detach();
+            .forward(sender.input_sender(), |out| match out {});
 
         let widgets = view_output!();
 

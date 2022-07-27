@@ -5,10 +5,7 @@ use relm4::{
     ComponentParts, ComponentSender,
 };
 
-use super::{
-    payloads::{self},
-    widgets::QrCodeLoginWidgets,
-};
+use super::{payloads, widgets::QrCodeLoginWidgets};
 
 #[derive(Debug)]
 pub struct QrCodeLoginModel {
