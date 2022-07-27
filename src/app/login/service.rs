@@ -1,15 +1,16 @@
 use relm4::Sender;
 use resource_loader::SyncLoadResource;
-use std::sync::atomic::Ordering;
-use std::{io, sync::Arc};
+use std::{
+    io,
+    sync::{atomic::Ordering, Arc},
+};
 
 use qrcode_png::{Color, QrCode};
 
 use ricq::{ext::common::after_login, Client, LoginUnknownStatus};
 use tokio::{net::TcpStream, task};
 
-use crate::app::login::service::token::LocalAccount;
-use crate::app::login::{LoginPageMsg, REMEMBER_PWD};
+use crate::app::login::{service::token::LocalAccount, LoginPageMsg, REMEMBER_PWD};
 
 use crate::handler::{AppHandler, ACCOUNT, CLIENT};
 

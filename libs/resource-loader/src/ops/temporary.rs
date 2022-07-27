@@ -36,3 +36,17 @@ impl GetPath for CaptchaQrCode {
         None
     }
 }
+
+pub struct QrCodeLoginCode;
+
+impl GetPath for QrCodeLoginCode {
+    fn get_path() -> &'static Path {
+        load_cfg()
+            .tap(|_| logger!(info "loading `QrCode Login QrCode Picture` path"))
+            .temporary
+            .qrcode_login
+    }
+    fn path_for_create() -> Option<&'static Path> {
+        None
+    }
+}

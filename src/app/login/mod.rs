@@ -2,37 +2,51 @@ mod captcha;
 mod device_lock;
 mod service;
 
-use crate::app::login::service::login_server::Login;
-use crate::db::sql::{load_sql_config, save_sql_config};
-use crate::gtk::Button;
-use std::boxed;
-use std::cell::RefCell;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-
-use relm4::gtk::gdk::Paintable;
-use relm4::{
-    adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, SimpleComponent,
+use crate::{
+    actions::{AboutAction, ShortcutsAction},
+    app::{
+        login::service::login_server::{Login, Switch},
+        AppMessage,
+    },
+    db::{
+        fs::{download_user_avatar_file, get_user_avatar_path},
+        sql::{load_sql_config, save_sql_config},
+    },
+    global::WINDOW,
+    gtk::Button,
 };
 
-use adw::prelude::*;
-use adw::{HeaderBar, Toast, ToastOverlay, Window};
+use std::{
+    boxed,
+    cell::RefCell,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
-use gtk::gdk_pixbuf::Pixbuf;
-use gtk::{Box, Label, MenuButton, Orientation, Picture};
+use relm4::{
+    adw,
+    gtk::{self, gdk::Paintable, Align, Stack},
+    Component, ComponentController, ComponentParts, ComponentSender, SimpleComponent,
+};
 
-use ricq::client::Token;
-use ricq::{Client, LoginResponse};
+use adw::{prelude::*, HeaderBar, Toast, ToastOverlay, Window};
+
+use gtk::{gdk_pixbuf::Pixbuf, Box, Label, MenuButton, Orientation, Picture};
+
+use resource_loader::GetPath;
+use ricq::{client::Token, Client, LoginResponse};
 use tokio::task;
-use widgets::pwd_login::{self, Input, PasswordLogin, PasswordLoginModel, Payload};
+use widgets::{
+    pwd_login::{self, Input, PasswordLogin, PasswordLoginModel, Payload},
+    qrcode_login::{self, QrCodeLogin, QrCodeLoginModel},
+};
 
-use crate::actions::{AboutAction, ShortcutsAction};
-use crate::app::AppMessage;
-use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
-use crate::global::WINDOW;
-
-use self::service::login_server::{self, LoginHandle, Sender};
-use self::service::token::LocalAccount;
+use self::service::{
+    login_server::{self, LoginHandle, Sender},
+    token::LocalAccount,
+};
 
 type SmsPhone = Option<String>;
 type VerifyUrl = String;
@@ -40,17 +54,28 @@ type VerifyUrl = String;
 pub(in crate::app::login) static REMEMBER_PWD: AtomicBool = AtomicBool::new(false);
 pub(in crate::app::login) static AUTO_LOGIN: AtomicBool = AtomicBool::new(false);
 
+#[derive(Debug, Default)]
+pub enum LoginState {
+    #[default]
+    Password,
+    QrCode,
+}
+
 #[derive(Debug)]
 pub struct LoginPageModel {
-    pwd_login: PasswordLogin,
     btn_enabled: bool,
     is_logging: bool,
+    pwd_login: PasswordLogin,
+    qr_code_login: QrCodeLogin,
     toast: RefCell<Option<String>>,
     sender: Option<Sender>,
+    login_state: LoginState,
 }
 
 pub enum LoginPageMsg {
     ClientInit(LoginHandle),
+
+    LoginSwitch(LoginState),
 
     StartLogin,
     PwdLogin(i64, String),
@@ -66,6 +91,7 @@ pub enum LoginPageMsg {
     EnableLogin(bool),
     RememberPwd(bool),
     AutoLogin(bool),
+    UpdateQrCode,
 
     LinkCopied,
 }
@@ -109,7 +135,7 @@ impl SimpleComponent for LoginPageModel {
             Ordering::Relaxed,
         );
 
-        // load safe account
+        // load saved account
         let account = if !REMEMBER_PWD.load(Ordering::Relaxed) {
             None
         } else {
@@ -118,6 +144,7 @@ impl SimpleComponent for LoginPageModel {
         let account_ref = Into::<Option<&LocalAccount>>::into(&account);
         let avatar = load_avatar(account_ref.map(|a| a.account), true);
 
+        // init pwd login
         let pwd_login = PasswordLoginModel::builder()
             .launch(Payload {
                 account: account_ref.map(|a| a.account),
@@ -134,13 +161,22 @@ impl SimpleComponent for LoginPageModel {
                 pwd_login::Output::AutoLogin(b) => LoginPageMsg::AutoLogin(b),
             });
 
+        // init qr code login
+        let qr_code_login = QrCodeLoginModel::builder()
+            .launch(widgets::qrcode_login::PayLoad {
+                temp_img_path: resource_loader::QrCodeLoginCode::get_path(),
+            })
+            .forward(sender.input_sender(), |out| match out {});
+
         let widgets = view_output!();
 
         let model = LoginPageModel {
-            pwd_login,
-            toast: RefCell::new(None),
             btn_enabled: false,
             is_logging: false,
+            pwd_login,
+            qr_code_login,
+            login_state: Default::default(),
+            toast: RefCell::new(None),
             sender: None,
         };
 
@@ -150,9 +186,24 @@ impl SimpleComponent for LoginPageModel {
     fn update(&mut self, msg: LoginPageMsg, sender: &ComponentSender<Self>) {
         use LoginPageMsg::*;
         match msg {
+            UpdateQrCode => {
+                self.qr_code_login.emit(qrcode_login::Input::UpdateQrCode);
+            }
             ClientInit(client) => {
                 self.sender.replace(client.get_sender());
                 client.start_handle();
+            }
+            LoginSwitch(target) => {
+                match (&target, &mut self.sender) {
+                    (LoginState::Password, Some(sender)) => {
+                        sender.send(login_server::Input::Switch(Switch::Password))
+                    }
+                    (LoginState::QrCode, Some(sender)) => {
+                        sender.send(login_server::Input::Switch(Switch::QrCode))
+                    }
+                    (_, _) => sender.input(LoginFailed("Client Not Init. Please Wait".into())),
+                };
+                self.login_state = target;
             }
             LoginRespond(boxed_login_resp) => {
                 if let Some(sender) = &mut self.sender {
@@ -248,6 +299,10 @@ impl SimpleComponent for LoginPageModel {
         }
     }
 
+    fn shutdown(&mut self, _: &mut Self::Widgets, _: relm4::Sender<Self::Output>) {
+        self.save_login_setting()
+    }
+
     menu! {
         main_menu: {
             "Keyboard Shortcuts" => ShortcutsAction,
@@ -275,11 +330,37 @@ impl SimpleComponent for LoginPageModel {
                 pack_end = &MenuButton {
                     set_icon_name: "menu-symbolic",
                     set_menu_model: Some(&main_menu),
-                }
+                },
+                pack_end : switch = &Button{
+                    set_label : "QrCode",
+                    connect_clicked[sender] => move |this|{
+                        if this.label().unwrap() == "QrCode"{
+                            this.set_label("Password");
+                            sender.input(LoginPageMsg::LoginSwitch(LoginState::QrCode));
+                        }else{
+                            this.set_label("QrCode");
+                            sender.input(LoginPageMsg::LoginSwitch(LoginState::Password));
+                        }
+                    }
+                },
             },
             #[name = "toast_overlay"]
             ToastOverlay {
-                set_child : Some(pwd_login.widget()),
+                set_child  =  Some(&gtk::Box){
+                    set_orientation:gtk::Orientation::Vertical,
+                    set_halign:Align::Center,
+                    set_valign:Align::Center,
+                    append : stack= &Stack{
+                        set_halign:Align::Center,
+                        set_valign:Align::Center,
+                        add_child : pwd_login_box = &gtk::Box {
+                            append : pwd_login.widget(),
+                        },
+                        add_child: qr_code_login_box = &gtk::Box{
+                            append: qr_code_login.widget(),
+                        }
+                    }
+                }
             }
         }
     }
@@ -289,10 +370,11 @@ impl SimpleComponent for LoginPageModel {
             widgets.toast_overlay.add_toast(&Toast::new(content));
         }
         widgets.login_btn.set_sensitive(self.btn_enabled);
-    }
 
-    fn shutdown(&mut self, _: &mut Self::Widgets, _: relm4::Sender<Self::Output>) {
-        self.save_login_setting()
+        match self.login_state {
+            LoginState::Password => stack.set_visible_child(pwd_login_box),
+            LoginState::QrCode => stack.set_visible_child(qr_code_login_box),
+        }
     }
 }
 

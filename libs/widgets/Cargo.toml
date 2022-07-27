@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies.relm4]
 git = "https://github.com/Relm4/Relm4.git"
 # next, 2022/05/25
@@ -13,7 +12,6 @@ features = ["macros", "libadwaita"]
 
 [dependencies]
 typed-builder = "0.10"
-dirs = "4.0.0"
 
 [dependencies.ricq]
 git = "https://github.com/lz1998/ricq.git"

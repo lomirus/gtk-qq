@@ -2786,7 +2786,6 @@ dependencies = [
 name = "widgets"
 version = "0.1.0"
 dependencies = [
- "dirs",
  "relm4",
  "ricq",
  "typed-builder",
