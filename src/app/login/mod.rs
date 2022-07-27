@@ -63,7 +63,7 @@ pub enum LoginState {
 
 #[derive(Debug)]
 pub struct LoginPageModel {
-    btn_enabled: bool,
+    login_btn_enabled: bool,
     is_logging: bool,
     pwd_login: PasswordLogin,
     qr_code_login: QrCodeLogin,
@@ -171,7 +171,7 @@ impl SimpleComponent for LoginPageModel {
         let widgets = view_output!();
 
         let model = LoginPageModel {
-            btn_enabled: false,
+            login_btn_enabled: false,
             is_logging: false,
             pwd_login,
             qr_code_login,
@@ -226,10 +226,10 @@ impl SimpleComponent for LoginPageModel {
                 }
             }
             EnableLogin(enabled) => {
-                self.btn_enabled = enabled && self.sender.is_some() && !self.is_logging;
+                self.login_btn_enabled = enabled && self.sender.is_some() && !self.is_logging;
             }
             StartLogin => {
-                self.btn_enabled = false;
+                self.login_btn_enabled = false;
                 self.is_logging = true;
                 self.pwd_login.emit(Input::Login);
             }
@@ -245,7 +245,7 @@ impl SimpleComponent for LoginPageModel {
                 sender.output(AppMessage::LoginSuccessful);
             }
             LoginFailed(msg) => {
-                self.btn_enabled = true;
+                self.login_btn_enabled = true;
                 self.is_logging = false;
                 *(self.toast.borrow_mut()) = Some(msg);
             }
@@ -336,9 +336,11 @@ impl SimpleComponent for LoginPageModel {
                     connect_clicked[sender] => move |this|{
                         if this.icon_name().unwrap() == "qr-code-symbolic"{
                             this.set_icon_name("keyboard-symbolic");
+                            sender.input(LoginPageMsg::EnableLogin(false));
                             sender.input(LoginPageMsg::LoginSwitch(LoginState::QrCode));
                         } else {
                             this.set_icon_name("qr-code-symbolic");
+                            sender.input(LoginPageMsg::EnableLogin(true));
                             sender.input(LoginPageMsg::LoginSwitch(LoginState::Password));
                         }
                     }
@@ -369,7 +371,7 @@ impl SimpleComponent for LoginPageModel {
         if let Some(ref content) = self.toast.borrow_mut().take() {
             widgets.toast_overlay.add_toast(&Toast::new(content));
         }
-        widgets.login_btn.set_sensitive(self.btn_enabled);
+        widgets.login_btn.set_sensitive(self.login_btn_enabled);
 
         match self.login_state {
             LoginState::Password => stack.set_visible_child(pwd_login_box),
