@@ -49,12 +49,12 @@ sudo dnf install gtk4-devel libadwaita-devel
 
 #### Arch
 
-Via AUR
+Complete build Via AUR PKGBUILD
 ```
 paru -S gtk-qq-git
 ```
 
-Or do it manually
+Or do it manually，Then follow the instructions below
 ```bash
 sudo pacman -S pkgconf gtk4 libadwaita
 ```
