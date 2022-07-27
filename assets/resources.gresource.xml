@@ -7,5 +7,7 @@
     <file preprocess="xml-stripblanks" alias="menu-symbolic.svg">icons/menu-symbolic.svg</file>
     <file preprocess="xml-stripblanks" alias="people-symbolic.svg">icons/people-symbolic.svg</file>
     <file preprocess="xml-stripblanks" alias="person2-symbolic.svg">icons/person2-symbolic.svg</file>
+    <file preprocess="xml-stripblanks" alias="keyboard-symbolic.svg">icons/keyboard-symbolic.svg</file>
+    <file preprocess="xml-stripblanks" alias="qr-code-symbolic.svg">icons/qr-code-symbolic.svg</file>
   </gresource>
 </gresources>
