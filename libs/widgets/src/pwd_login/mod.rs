@@ -7,4 +7,4 @@ pub use payloads::{Input, Output, Payload};
 
 pub use widgets::PwdLoginWidget;
 
-pub type PasswordLogin = relm4::Controller<PasswordLoginModel>;
+pub type PasswordLogin = relm4::component::Controller<PasswordLoginModel>;

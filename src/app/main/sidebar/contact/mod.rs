@@ -2,8 +2,8 @@ mod friends;
 mod groups;
 
 use relm4::{
-    adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller,
-    SimpleComponent,
+    adw, component::Controller, gtk, Component, ComponentController, ComponentParts,
+    ComponentSender, SimpleComponent,
 };
 
 use adw::{prelude::*, ViewStack, ViewSwitcherBar};

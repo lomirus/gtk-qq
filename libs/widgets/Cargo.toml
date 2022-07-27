@@ -3,11 +3,10 @@ name = "widgets"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies.relm4]
 git = "https://github.com/Relm4/Relm4.git"
-# next, 2022/05/25
-rev = "968d09c9417dce6f84446948523e3befc4954d50"
+# next, 2022/05/30
+rev = "144f48319ffd7a889f28853df00e802cfc97dc26"
 features = ["macros", "libadwaita"]
 
 [dependencies]

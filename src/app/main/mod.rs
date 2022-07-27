@@ -6,7 +6,8 @@ use std::collections::VecDeque;
 use once_cell::sync::OnceCell;
 use relm4::factory::FactoryVecDeque;
 use relm4::{
-    adw, gtk, Component, ComponentController, ComponentParts, ComponentSender, Controller,
+    adw, component::Controller, gtk, Component, ComponentController, ComponentParts,
+    ComponentSender,
 };
 
 use adw::{prelude::*, HeaderBar, Leaflet, Toast, ToastOverlay};

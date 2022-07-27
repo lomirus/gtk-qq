@@ -6,4 +6,4 @@ pub use component::QrCodeLoginModel;
 pub use payloads::{Input, Output, PayLoad};
 pub use widgets::QrCodeLoginWidgets;
 
-pub type QrCodeLogin = relm4::Controller<QrCodeLoginModel>;
+pub type QrCodeLogin = relm4::component::Controller<QrCodeLoginModel>;
