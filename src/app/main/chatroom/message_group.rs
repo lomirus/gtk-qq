@@ -1,9 +1,9 @@
 use relm4::factory::{DynamicIndex, FactoryComponent};
-use relm4::{adw, gtk, Sender};
+use relm4::{adw, gtk, Sender, WidgetPlus};
 
 use adw::{prelude::*, Avatar};
 use gtk::gdk_pixbuf::Pixbuf;
-use gtk::{Align, Box, Label, ListBox, Orientation, Picture, Widget};
+use gtk::{Align, Box, Label, Orientation, Picture, Widget};
 
 use tokio::task;
 
@@ -59,6 +59,12 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
         _input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
     ) -> Self::Widgets {
+        let message_alignment = if &self.account == ACCOUNT.get().unwrap() {
+            Align::End
+        } else {
+            Align::Start
+        };
+        
         relm4::view! {
             avatar_box = Box {
                 set_orientation: Orientation::Vertical,
@@ -95,8 +101,8 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
                     }
                 },
                 #[name = "messages_box"]
-                ListBox {
-                    set_css_classes: &["boxed-list"]
+                Box {
+                    set_orientation: Orientation::Vertical,
                 }
             }
         }
@@ -104,10 +110,16 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
         for content in self.messages.iter() {
             relm4::view! {
                 message_box = Box {
-                    set_css_classes: &["header", "message-box"],
-                    Label {
-                        set_label: content.as_str(),
-                        set_selectable: true
+                    set_css_classes: &["card", "message-box"],
+                    set_halign: message_alignment,
+                    set_margin_all: 2,
+                    Box {
+                        set_css_classes: &["inner-message-box"],
+                        set_margin_all: 8,
+                        Label {
+                            set_label: content.as_str(),
+                            set_selectable: true
+                        }
                     }
                 }
             }
