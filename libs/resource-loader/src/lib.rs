@@ -1,3 +1,4 @@
+mod resource_directories;
 mod ops;
 #[macro_use]
 mod utils;

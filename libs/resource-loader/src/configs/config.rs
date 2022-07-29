@@ -11,15 +11,16 @@ use super::{
     InnerAvatarConfig, InnerDbConfig,
 };
 
-use crate::utils::resource_root;
+use crate::resource_directories::ResourceDirectories;
 
 #[derive(Debug, Serialize, Deserialize, Derivative)]
 #[derivative(Default)]
 pub struct Config {
-    #[derivative(Default(value = "resource_root()"))]
-    #[serde(default = "resource_root")]
+    #[derivative(Default(value = "None"))]
+    #[serde(default = "Default::default")]
     #[serde(alias = "res", alias = "resource")]
-    resource_root: PathBuf,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    resource_root: Option<PathBuf>,
     #[serde(default = "Default::default")]
     #[serde(alias = "temp", alias = "temporary")]
     temporary: TemporaryConfig,
@@ -39,12 +40,15 @@ pub struct InnerConfig {
 }
 
 impl Config {
-    pub(crate) fn into_inner(self) -> InnerConfig {
-        let root = self.resource_root;
+    pub(crate) fn into_inner(self, root: ResourceDirectories) -> InnerConfig {
+        let root = self
+            .resource_root
+            .map(ResourceDirectories::new_from)
+            .unwrap_or(root);
 
         InnerConfig {
-            avatar: self.avatar.into_inner(root.as_path()),
-            database: self.database.into_inner(root.as_path()),
+            avatar: self.avatar.into_inner(&root),
+            database: self.database.into_inner(&root),
             temporary: self.temporary.into_inner(),
             client: self.client.into(),
         }

@@ -1,7 +1,3 @@
-use std::path::PathBuf;
-
-use tap::Tap;
-
 macro_rules! default_string {
     ($name:ident=> $default:literal) => {
         struct $name;
@@ -64,11 +60,4 @@ macro_rules! logger {
             eprintln!("[ERROR] {}",format!($l, $($v),*));
         }
     };
-}
-
-pub(crate) fn resource_root() -> PathBuf {
-    dirs::home_dir()
-        .expect("User Home directory not exist")
-        .join(".gtk-qq")
-        .tap(|path| logger!(info "config local directory : {:?}", path))
 }

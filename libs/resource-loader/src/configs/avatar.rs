@@ -2,6 +2,8 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
+use crate::resource_directories::ResourceDirectories;
+
 use super::{free_path_ref, static_leak};
 
 default_string! {
@@ -36,8 +38,8 @@ pub(crate) struct InnerAvatarConfig {
     pub user: &'static Path,
 }
 impl AvatarConfig {
-    pub(crate) fn into_inner(self, root: &Path) -> InnerAvatarConfig {
-        let avatar = root.join(&self.base_dir);
+    pub(crate) fn into_inner(self, root: &ResourceDirectories) -> InnerAvatarConfig {
+        let avatar = root.get_data_home().join(&self.base_dir);
 
         let group = avatar.join(&self.group);
         let static_group = static_leak(group.into_boxed_path());
@@ -65,6 +67,8 @@ mod test {
     use std::path::Path;
 
     use serde_json::json;
+
+    use crate::resource_directories::ResourceDirectories;
 
     use super::{AvatarConfig, BaseDir, Group, User};
 
@@ -106,7 +110,7 @@ mod test {
     fn test_inner_drop() {
         let avatar = AvatarConfig::default();
 
-        let inner = avatar.into_inner(Path::new("gtk-qq"));
+        let inner = avatar.into_inner(&ResourceDirectories::new_from("gtk-qq"));
 
         assert_eq!(inner.group, Path::new("gtk-qq\\avatars\\groups"));
         assert_eq!(inner.user, Path::new("gtk-qq\\avatars\\users"))
