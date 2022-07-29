@@ -13,7 +13,7 @@ pub struct ResourceDirectories {
         all(target_os = "linux", any(target_arch = "x86_64", target_arch = "i864")),
         all(target_os = "macos", target_arch = "x86_64",)
     ))]
-    base_dir: xdg::BaseDirectories,
+    root_dir: xdg::BaseDirectories,
     #[cfg(not(any(
         all(target_os = "linux", any(target_arch = "x86_64", target_arch = "i864")),
         all(target_os = "macos", target_arch = "x86_64",)
@@ -84,5 +84,36 @@ impl ResourceDirectories {
     }
     pub fn get_data_home(&self) -> PathBuf {
         self.root_dir.clone()
+    }
+}
+#[allow(dead_code)]
+#[cfg(any(
+    all(target_os = "linux", any(target_arch = "x86_64", target_arch = "i864")),
+    all(target_os = "macos", target_arch = "x86_64",)
+))]
+impl ResourceDirectories {
+    pub fn create_base_dir(&self) -> io::Result<()> {
+        unimplemented!()
+    }
+
+    pub fn get_config_path(&self) -> PathBuf {
+        unimplemented!()
+    }
+
+    pub fn place_config_path(&self) -> io::Result<PathBuf> {
+        unimplemented!()
+    }
+
+    pub fn get_cache_home(&self) -> PathBuf {
+        unimplemented!()
+    }
+    pub fn get_state_home(&self) -> PathBuf {
+        unimplemented!()
+    }
+    pub fn get_runtime_home(&self) -> PathBuf {
+        unimplemented!()
+    }
+    pub fn get_data_home(&self) -> PathBuf {
+        unimplemented!()
     }
 }
