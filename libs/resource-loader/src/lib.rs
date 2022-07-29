@@ -1,5 +1,5 @@
-mod resource_directories;
 mod ops;
+mod resource_directories;
 #[macro_use]
 mod utils;
 mod configs;
