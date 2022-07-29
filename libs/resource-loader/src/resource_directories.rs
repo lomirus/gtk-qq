@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 use std::{
     io,
     path::{Path, PathBuf},
@@ -39,6 +41,20 @@ impl ResourceDirectories {
             .tap(|path| logger!(info "config local directory : {:?}", path));
 
         Self { root_dir }
+    }
+}
+
+#[cfg(any(
+    all(target_os = "linux", any(target_arch = "x86_64", target_arch = "i864")),
+    all(target_os = "macos", target_arch = "x86_64",)
+))]
+impl ResourceDirectories {
+    pub fn new_from(path: impl AsRef<Path>) -> Self {
+        unimplemented!()
+    }
+
+    pub fn new() -> Self {
+        unimplemented!()
     }
 }
 
