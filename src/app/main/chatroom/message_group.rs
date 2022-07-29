@@ -64,7 +64,7 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
         } else {
             Align::Start
         };
-        
+
         relm4::view! {
             avatar_box = Box {
                 set_orientation: Orientation::Vertical,
@@ -93,12 +93,10 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
             main_box = Box {
                 set_orientation: Orientation::Vertical,
                 set_spacing: 4,
-                #[name = "username_box"]
-                Box {
-                    Label {
-                        set_label: &self.name,
-                        set_css_classes: &["caption"]
-                    }
+                #[name = "username_label"]
+                Label {
+                    set_label: &self.name,
+                    set_css_classes: &["caption"]
                 },
                 #[name = "messages_box"]
                 Box {
@@ -127,11 +125,11 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
         }
 
         if &self.account == ACCOUNT.get().unwrap() {
-            username_box.set_halign(Align::End);
+            username_label.set_halign(Align::End);
             root.append(&main_box);
             root.append(&avatar_box);
         } else {
-            username_box.set_halign(Align::Start);
+            username_label.set_halign(Align::Start);
             root.append(&avatar_box);
             root.append(&main_box);
         }
