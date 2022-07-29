@@ -3,7 +3,7 @@
 }
 
 /* @override libadwaita */
-row > box.header.message-box {
+/* .message-box {
     margin: 6px;
     min-height: unset;
-}
+} */
