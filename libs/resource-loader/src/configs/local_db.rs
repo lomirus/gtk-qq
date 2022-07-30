@@ -2,6 +2,8 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
+use crate::resource_directories::ResourceDirectories;
+
 use super::{free_path_ref, static_leak};
 use derivative::Derivative;
 default_string! {
@@ -28,8 +30,8 @@ pub(crate) struct InnerDbConfig {
 }
 
 impl DbConfig {
-    pub(crate) fn into_inner(self, base: &Path) -> InnerDbConfig {
-        let base = base.join(&self.base_dir);
+    pub(crate) fn into_inner(self, base: &ResourceDirectories) -> InnerDbConfig {
+        let base = base.get_data_home().join(&self.base_dir);
 
         let sql_data = static_leak(base.join(&self.sql_data).into_boxed_path());
 
