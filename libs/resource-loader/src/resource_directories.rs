@@ -50,7 +50,7 @@ impl ResourceDirectories {
 ))]
 impl ResourceDirectories {
     /// ignore config set directory
-    pub fn with_set_path(self, _: impl AsRef<Path>) -> Self {
+    pub fn with_set_path(self, _: Option<impl AsRef<Path>>) -> Self {
         self
     }
 
@@ -91,9 +91,6 @@ impl ResourceDirectories {
     pub fn get_state_home(&self) -> PathBuf {
         self.root_dir.clone()
     }
-    pub fn get_runtime_home(&self) -> PathBuf {
-        self.root_dir.clone()
-    }
     pub fn get_data_home(&self) -> PathBuf {
         self.root_dir.clone()
     }
@@ -118,9 +115,6 @@ impl ResourceDirectories {
     }
     pub fn get_state_home(&self) -> PathBuf {
         self.root_dir.get_state_home()
-    }
-    pub fn get_runtime_home(&self) -> PathBuf {
-        self.root_dir.get_runtime_home()
     }
     pub fn get_data_home(&self) -> PathBuf {
         self.root_dir.get_data_home()
