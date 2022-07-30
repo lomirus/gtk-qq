@@ -1,4 +1,3 @@
-
 use std::{
     io,
     path::{Path, PathBuf},
@@ -56,10 +55,10 @@ impl ResourceDirectories {
     }
 
     pub fn new() -> Self {
-        Self{
+        Self {
             root_dir: xdg::BaseDirectories::with_prefix("gtk-qq")
-            .expect("XDG Path loading failure")
-            .tap(|path|logger!(info "config local directory : {:?}", path.get_config_home()))
+                .expect("XDG Path loading failure")
+                .tap(|path| logger!(info "config local directory : {:?}", path.get_config_home())),
         }
     }
 }
