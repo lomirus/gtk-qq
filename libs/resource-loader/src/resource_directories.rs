@@ -1,4 +1,3 @@
-#![allow(unused_imports)]
 
 use std::{
     io,
@@ -28,9 +27,11 @@ pub struct ResourceDirectories {
     all(target_os = "macos", target_arch = "x86_64",)
 )))]
 impl ResourceDirectories {
-    pub fn new_from(path: impl AsRef<Path>) -> Self {
+    pub fn with_set_path(self, path: Option<impl AsRef<Path>>) -> Self {
         Self {
-            root_dir: path.as_ref().to_path_buf(),
+            root_dir: path
+                .map(|p| p.as_ref().to_path_buf())
+                .unwrap_or(self.root_dir),
         }
     }
 
@@ -49,12 +50,17 @@ impl ResourceDirectories {
     all(target_os = "macos", target_arch = "x86_64",)
 ))]
 impl ResourceDirectories {
-    pub fn new_from(path: impl AsRef<Path>) -> Self {
-        unimplemented!()
+    /// ignore config set directory
+    pub fn with_set_path(self, _: impl AsRef<Path>) -> Self {
+        self
     }
 
     pub fn new() -> Self {
-        unimplemented!()
+        Self{
+            root_dir: xdg::BaseDirectories::with_prefix("gtk-qq")
+            .expect("XDG Path loading failure")
+            .tap(|path|logger!(info "config local directory : {:?}", path.get_config_home()))
+        }
     }
 }
 
@@ -67,15 +73,6 @@ impl ResourceDirectories {
     all(target_os = "macos", target_arch = "x86_64",)
 )))]
 impl ResourceDirectories {
-    pub fn create_base_dir(&self) -> io::Result<()> {
-        if !self.root_dir.exists() {
-            logger!(info "create gtk qq dir");
-            std::fs::create_dir_all(&self.root_dir)?;
-        }
-
-        Ok(())
-    }
-
     pub fn get_config_path(&self) -> PathBuf {
         self.root_dir.join("config.toml")
     }
@@ -102,34 +99,31 @@ impl ResourceDirectories {
         self.root_dir.clone()
     }
 }
+
 #[allow(dead_code)]
 #[cfg(any(
     all(target_os = "linux", any(target_arch = "x86_64", target_arch = "i864")),
     all(target_os = "macos", target_arch = "x86_64",)
 ))]
 impl ResourceDirectories {
-    pub fn create_base_dir(&self) -> io::Result<()> {
-        unimplemented!()
-    }
-
     pub fn get_config_path(&self) -> PathBuf {
-        unimplemented!()
+        self.root_dir.get_config_file("config.toml")
     }
 
     pub fn place_config_path(&self) -> io::Result<PathBuf> {
-        unimplemented!()
+        self.root_dir.place_config_file("config.toml")
     }
 
     pub fn get_cache_home(&self) -> PathBuf {
-        unimplemented!()
+        self.root_dir.get_cache_home()
     }
     pub fn get_state_home(&self) -> PathBuf {
-        unimplemented!()
+        self.root_dir.get_state_home()
     }
     pub fn get_runtime_home(&self) -> PathBuf {
-        unimplemented!()
+        self.root_dir.get_runtime_home()
     }
     pub fn get_data_home(&self) -> PathBuf {
-        unimplemented!()
+        self.root_dir.get_data_home()
     }
 }

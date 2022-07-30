@@ -110,7 +110,7 @@ mod test {
     fn test_inner_drop() {
         let avatar = AvatarConfig::default();
 
-        let inner = avatar.into_inner(&ResourceDirectories::new_from("gtk-qq"));
+        let inner = avatar.into_inner(&ResourceDirectories::new().with_set_path(Some("gtk-qq")));
 
         assert_eq!(inner.group, Path::new("gtk-qq\\avatars\\groups"));
         assert_eq!(inner.user, Path::new("gtk-qq\\avatars\\users"))
