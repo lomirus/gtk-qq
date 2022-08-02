@@ -12,12 +12,13 @@ use tokio::task;
 
 use crate::db::sql::get_friend_remark;
 use crate::handler::{ACCOUNT, CLIENT};
+use crate::utils::message::{Content, Message};
 
-use super::{MainMsg, Message};
+use super::MainMsg;
 use message_group::MessageGroup;
 
 #[derive(Debug)]
-pub struct Chatroom {
+pub(crate) struct Chatroom {
     pub account: i64,
     /// 群组/好友
     pub is_group: bool,
@@ -26,24 +27,24 @@ pub struct Chatroom {
 }
 
 impl Chatroom {
-    pub fn push_message(&mut self, message: Message) {
+    pub(crate) fn push_message(&mut self, message: Message) {
         if self.messages.is_empty() {
             self.messages.push_back(MessageGroup {
-                account: message.sender_id,
-                name: message.sender_name,
-                messages: vec![message.content],
+                sender_id: message.sender_id,
+                sender_name: message.sender_name.clone(),
+                messages: vec![message],
             });
         } else {
             let mut last_message_group = self.messages.pop_back().unwrap();
-            if last_message_group.account == message.sender_id {
-                last_message_group.messages.push(message.content);
+            if last_message_group.sender_id == message.sender_id {
+                last_message_group.messages.push(message);
                 self.messages.push_back(last_message_group);
             } else {
                 self.messages.push_back(last_message_group);
                 self.messages.push_back(MessageGroup {
-                    account: message.sender_id,
-                    name: message.sender_name,
-                    messages: vec![message.content],
+                    sender_id: message.sender_id,
+                    sender_name: message.sender_name.clone(),
+                    messages: vec![message],
                 });
             }
         }
@@ -63,7 +64,7 @@ async fn send_message(target: i64, is_group: bool, content: String, output: Send
                 message: Message {
                     sender_id: self_account,
                     sender_name: get_friend_remark(self_account),
-                    content,
+                    contents: vec![Content::Text(content)],
                 },
             }),
             Err(err) => panic!("err: {:?}", err),
@@ -75,7 +76,7 @@ async fn send_message(target: i64, is_group: bool, content: String, output: Send
                 message: Message {
                     sender_id: self_account,
                     sender_name: get_friend_remark(self_account),
-                    content,
+                    contents: vec![Content::Text(content)],
                 },
             }),
             Err(err) => panic!("err: {:?}", err),
@@ -84,12 +85,12 @@ async fn send_message(target: i64, is_group: bool, content: String, output: Send
 }
 
 #[derive(Debug)]
-pub enum ChatroomMsg {
+pub(crate) enum ChatroomMsg {
     AddMessage(Message),
     SendMessage(String),
 }
 
-pub struct ChatroomInitParams {
+pub(crate) struct ChatroomInitParams {
     pub account: i64,
     pub is_group: bool,
     pub messages: VecDeque<Message>,

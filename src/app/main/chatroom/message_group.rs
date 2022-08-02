@@ -4,19 +4,19 @@ use relm4::{adw, gtk, Sender, WidgetPlus};
 use adw::{prelude::*, Avatar};
 use gtk::gdk_pixbuf::Pixbuf;
 use gtk::{Align, Box, Label, Orientation, Picture, Widget};
-
 use tokio::task;
 
 use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::handler::ACCOUNT;
+use crate::utils::message::Message;
 
 use super::ChatroomMsg;
 
 #[derive(Debug, Clone)]
-pub struct MessageGroup {
-    pub account: i64,
-    pub name: String,
-    pub messages: Vec<String>,
+pub(crate) struct MessageGroup {
+    pub sender_id: i64,
+    pub sender_name: String,
+    pub messages: Vec<Message>,
 }
 
 impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
@@ -44,7 +44,7 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
             .margin_bottom(8)
             .build();
 
-        if &self.account == ACCOUNT.get().unwrap() {
+        if &self.sender_id == ACCOUNT.get().unwrap() {
             root_box.set_halign(Align::End)
         }
 
@@ -59,7 +59,7 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
         _input: &Sender<Self::Input>,
         _output: &Sender<Self::Output>,
     ) -> Self::Widgets {
-        let message_alignment = if &self.account == ACCOUNT.get().unwrap() {
+        let message_alignment = if &self.sender_id == ACCOUNT.get().unwrap() {
             Align::End
         } else {
             Align::Start
@@ -71,13 +71,13 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
                 #[name = "avatar"]
                 Avatar {
                     set_size: 32,
-                    set_text: Some(self.name.as_str()),
+                    set_text: Some(self.sender_name.as_str()),
                     set_show_initials: true
                 }
             }
         }
 
-        let avatar_path = get_user_avatar_path(self.account);
+        let avatar_path = get_user_avatar_path(self.sender_id);
         if avatar_path.exists() {
             if let Ok(pixbuf) = Pixbuf::from_file_at_size(avatar_path, 32, 32) {
                 let image = Picture::for_pixbuf(&pixbuf);
@@ -86,7 +86,7 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
                 }
             }
         } else {
-            task::spawn(download_user_avatar_file(self.account));
+            task::spawn(download_user_avatar_file(self.sender_id));
         }
 
         relm4::view! {
@@ -95,7 +95,7 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
                 set_spacing: 4,
                 #[name = "username_label"]
                 Label {
-                    set_label: &self.name,
+                    set_label: &self.sender_name,
                     set_css_classes: &["caption"]
                 },
                 #[name = "messages_box"]
@@ -105,7 +105,8 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
             }
         }
 
-        for content in self.messages.iter() {
+        for message in self.messages.iter() {
+            let label = message.text();
             relm4::view! {
                 message_box = Box {
                     set_css_classes: &["card", "message-box"],
@@ -115,7 +116,7 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
                         set_css_classes: &["inner-message-box"],
                         set_margin_all: 8,
                         Label {
-                            set_label: content.as_str(),
+                            set_label: &label,
                             set_selectable: true
                         }
                     }
@@ -124,7 +125,7 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
             messages_box.append(&message_box);
         }
 
-        if &self.account == ACCOUNT.get().unwrap() {
+        if &self.sender_id == ACCOUNT.get().unwrap() {
             username_label.set_halign(Align::End);
             root.append(&main_box);
             root.append(&avatar_box);
