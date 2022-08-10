@@ -41,6 +41,7 @@ pub struct InnerConfig {
 
 impl Config {
     pub(crate) fn into_inner(self, root: ResourceDirectories) -> InnerConfig {
+
         let root = root.with_set_path(self.resource_root);
         InnerConfig {
             avatar: self.avatar.into_inner(&root),

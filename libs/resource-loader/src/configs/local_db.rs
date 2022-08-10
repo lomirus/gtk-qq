@@ -31,7 +31,7 @@ pub(crate) struct InnerDbConfig {
 
 impl DbConfig {
     pub(crate) fn into_inner(self, base: &ResourceDirectories) -> InnerDbConfig {
-        let base = base.get_data_home().join(&self.base_dir);
+        let base = base.get_data_local_home().join(&self.base_dir);
 
         let sql_data = static_leak(base.join(&self.sql_data).into_boxed_path());
 
