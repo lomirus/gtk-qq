@@ -15,7 +15,7 @@ pub struct ResourceDirectories {
 
 impl ResourceDirectories {
     pub fn with_set_path(mut self, path: Option<impl AsRef<Path>>) -> Self {
-        self.data_move = path.map(|path|path.as_ref().to_path_buf());
+        self.data_move = path.map(|path| path.as_ref().to_path_buf());
         self
     }
 
