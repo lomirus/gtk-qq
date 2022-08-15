@@ -1,8 +1,8 @@
 mod content;
 mod utils;
 
-pub(crate) use self::content::Content;
 pub(crate) use self::content::get_text_from;
+pub(crate) use self::content::Content;
 pub(crate) use self::utils::get_contents_from;
 #[derive(Clone, Debug)]
 pub(crate) struct Message {

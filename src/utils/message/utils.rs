@@ -1,6 +1,6 @@
+use super::Content;
 use ricq::msg::elem::{FingerGuessing, FlashImage, RQElem};
 use ricq::msg::MessageChain;
-use super::Content;
 
 pub(crate) fn get_contents_from(message_chain: &MessageChain) -> Vec<Content> {
     let mut contents = Vec::<Content>::new();

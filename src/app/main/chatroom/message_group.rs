@@ -8,7 +8,7 @@ use tokio::task;
 
 use crate::db::fs::{download_user_avatar_file, get_user_avatar_path};
 use crate::handler::ACCOUNT;
-use crate::utils::message::{Message, Content};
+use crate::utils::message::{Content, Message};
 
 use super::ChatroomMsg;
 
@@ -125,10 +125,13 @@ impl FactoryComponent<Box, ChatroomMsg> for MessageGroup {
                         let label = Label::builder().label(&text).selectable(true).build();
                         inner_message_box.append(&label)
                     }
-                    Content::Image { url: _, filename: _ } => {
+                    Content::Image {
+                        url: _,
+                        filename: _,
+                    } => {
                         let label = Label::new(Some("[图片]"));
                         inner_message_box.append(&label)
-                    },
+                    }
                 }
             }
             messages_box.append(&message_box);
