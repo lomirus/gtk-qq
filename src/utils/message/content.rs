@@ -1,4 +1,5 @@
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub(crate) enum Content {
     Text(String),
     Image { url: String, filename: String },
@@ -13,7 +14,7 @@ impl Content {
     }
 }
 
-pub(crate) fn get_text_from(contents: &Vec<Content>) -> String {
+pub(crate) fn get_text_from(contents: &[Content]) -> String {
     contents
         .iter()
         .map(|content| content.text())
