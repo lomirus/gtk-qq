@@ -4,72 +4,17 @@ use async_trait::async_trait;
 use once_cell::sync::OnceCell;
 use ricq::client::event::*;
 use ricq::handler::{Handler, QEvent::*};
-use ricq::msg::elem::{FingerGuessing, RQElem};
-use ricq::msg::MessageChain;
 use ricq::Client;
 
-use crate::app::main::{MainMsg, Message, MAIN_SENDER};
+use crate::app::main::{MainMsg, MAIN_SENDER};
 use crate::db::sql::get_friend_remark;
+use crate::utils::message::{get_contents_from, get_text_from, Message};
 use crate::APP;
 
 pub struct AppHandler;
 
 pub static CLIENT: OnceCell<Arc<Client>> = OnceCell::new();
 pub static ACCOUNT: OnceCell<i64> = OnceCell::new();
-
-fn get_text_from(message_chain: &MessageChain) -> String {
-    let mut content = Vec::<String>::new();
-    for elem in message_chain.clone() {
-        match elem {
-            RQElem::At(at) => {
-                content.push(format!("[{}({})]", at.display, at.target));
-            }
-            RQElem::Text(ref text) => {
-                content.push(text.content.clone());
-            }
-            RQElem::Face(face) => {
-                content.push(format!("[{}]", face.name));
-            }
-            RQElem::MarketFace(face) => {
-                content.push(format!("[{}]", face.name));
-            }
-            RQElem::Dice(dice) => {
-                content.push(format!("[🎲({})]", dice.value));
-            }
-            RQElem::FingerGuessing(finger_guessing) => {
-                content.push(
-                    match finger_guessing {
-                        FingerGuessing::Rock => "[✊]",
-                        FingerGuessing::Scissors => "[✌]",
-                        FingerGuessing::Paper => "[✋]",
-                    }
-                    .to_string(),
-                );
-            }
-            RQElem::LightApp(light_app) => {
-                content.push(format!("[{:#?}]", light_app.content));
-            }
-            RQElem::RichMsg(rich_msg) => {
-                content.push("[RICH MESSAGE]".to_string());
-                println!("RichMsg: {:#?}", rich_msg);
-            }
-            RQElem::FriendImage(_) => {
-                content.push("[图片]".to_string());
-            }
-            RQElem::GroupImage(_) => {
-                content.push("[图片]".to_string());
-            }
-            RQElem::FlashImage(_) => {
-                content.push("[闪照]".to_string());
-            }
-            RQElem::VideoFile(_) => {
-                content.push("[视频文件]".to_string());
-            }
-            RQElem::Other(_) => {}
-        }
-    }
-    content.join(" ")
-}
 
 #[async_trait]
 impl Handler for AppHandler {
@@ -78,20 +23,20 @@ impl Handler for AppHandler {
             Login(_) => {}
             GroupMessage(GroupMessageEvent { message, .. }) => {
                 let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
-                let content = get_text_from(&message.elements);
+                let content = get_contents_from(&message.elements);
                 main_sender.input(MainMsg::GroupMessage {
                     group_id: message.group_code,
                     message: Message {
                         sender_id: message.from_uin,
                         sender_name: message.group_card,
-                        content: content.clone(),
+                        contents: content.clone(),
                     },
                 });
 
                 // Send notification
                 if &message.from_uin != ACCOUNT.get().unwrap() {
                     let app = APP.get().unwrap();
-                    app.notify_group_message(message.group_code, &content);
+                    app.notify_group_message(message.group_code, &get_text_from(&content));
                 }
             }
             #[allow(unused_variables)]
@@ -106,20 +51,20 @@ impl Handler for AppHandler {
                 } else {
                     message.from_uin
                 };
-                let content = get_text_from(&message.elements);
+                let contents = get_contents_from(&message.elements);
                 main_sender.input(MainMsg::FriendMessage {
                     friend_id,
                     message: Message {
                         sender_id: message.from_uin,
                         sender_name: get_friend_remark(message.from_uin),
-                        content: content.clone(),
+                        contents: contents.clone(),
                     },
                 });
 
                 // Send notification
                 if message.from_uin != *self_account {
                     let app = APP.get().unwrap();
-                    app.notify_friend_message(friend_id, &content);
+                    app.notify_friend_message(friend_id, &get_text_from(&contents));
                 }
             }
             #[allow(unused_variables)]

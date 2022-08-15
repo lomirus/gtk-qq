@@ -17,11 +17,12 @@ use chatroom::{Chatroom, ChatroomInitParams};
 use sidebar::{SidebarModel, SidebarMsg};
 
 use crate::db::sql::{get_db, get_group_name};
+use crate::utils::message::Message;
 
-pub static MAIN_SENDER: OnceCell<ComponentSender<MainPageModel>> = OnceCell::new();
+pub(crate) static MAIN_SENDER: OnceCell<ComponentSender<MainPageModel>> = OnceCell::new();
 
 #[derive(Debug)]
-pub struct MainPageModel {
+pub(crate) struct MainPageModel {
     sidebar: Controller<SidebarModel>,
     chatrooms: FactoryVecDeque<Stack, Chatroom, MainMsg>,
 }
@@ -71,15 +72,8 @@ impl MainPageModel {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Message {
-    pub sender_id: i64,
-    pub sender_name: String,
-    pub content: String,
-}
-
 #[derive(Debug)]
-pub enum MainMsg {
+pub(crate) enum MainMsg {
     WindowFolded,
     GroupMessage { group_id: i64, message: Message },
     FriendMessage { friend_id: i64, message: Message },
@@ -241,17 +235,13 @@ impl Component for MainPageModel {
             FriendMessage { friend_id, message } => {
                 use SidebarMsg::*;
                 if self.is_item_in_list(friend_id, false) {
-                    self.sidebar.sender().send(UpdateChatItem(
-                        friend_id,
-                        false,
-                        message.content.clone(),
-                    ));
+                    self.sidebar
+                        .sender()
+                        .send(UpdateChatItem(friend_id, false, message.text()));
                 } else {
-                    self.sidebar.sender().send(InsertChatItem(
-                        friend_id,
-                        false,
-                        message.content.clone(),
-                    ));
+                    self.sidebar
+                        .sender()
+                        .send(InsertChatItem(friend_id, false, message.text()));
                     self.insert_chatroom(friend_id, false);
                     // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
                     // 以触发自动更新 chatroom 的标题与副标题。
@@ -278,17 +268,13 @@ impl Component for MainPageModel {
             GroupMessage { group_id, message } => {
                 use SidebarMsg::*;
                 if self.is_item_in_list(group_id, true) {
-                    self.sidebar.sender().send(UpdateChatItem(
-                        group_id,
-                        true,
-                        message.content.clone(),
-                    ));
+                    self.sidebar
+                        .sender()
+                        .send(UpdateChatItem(group_id, true, message.text()));
                 } else {
-                    self.sidebar.sender().send(InsertChatItem(
-                        group_id,
-                        true,
-                        message.content.clone(),
-                    ));
+                    self.sidebar
+                        .sender()
+                        .send(InsertChatItem(group_id, true, message.text()));
                     self.insert_chatroom(group_id, true);
                     // 当所插入的 chatroom 为唯一的一个 chatroom 时，将其设为焦点，
                     // 以触发自动更新 chatroom 的标题与副标题。

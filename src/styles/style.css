@@ -1,9 +1,3 @@
 .chatroom-box {
     padding: 8px;
 }
-
-/* @override libadwaita */
-row > box.header.message-box {
-    margin: 6px;
-    min-height: unset;
-}

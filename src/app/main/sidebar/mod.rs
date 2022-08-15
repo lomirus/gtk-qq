@@ -14,7 +14,7 @@ use chats::{ChatsModel, ChatsMsg};
 use contact::ContactModel;
 
 #[derive(Debug)]
-pub struct SidebarModel {
+pub(crate) struct SidebarModel {
     chats: Controller<ChatsModel>,
     contact: Controller<ContactModel>,
 }
