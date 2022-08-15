@@ -6,7 +6,7 @@ use once_cell::sync::OnceCell;
 
 use crate::{
     configs::{Config, InnerConfig},
-    utils::resource_root,
+    resource_directories::ResourceDirectories,
 };
 
 static CONFIGURATION: OnceCell<InnerConfig> = OnceCell::new();
@@ -17,28 +17,25 @@ pub(crate) fn load_cfg() -> &'static InnerConfig {
     logger!(info "Loading Config");
     CONFIGURATION.get_or_init(|| {
         logger!(warn "Config not set. Using Default Config");
-        Config::default().into_inner()
+        Config::default().into_inner(ResourceDirectories::new())
     })
 }
 
 fn create_and_get_config_path() -> io::Result<PathBuf> {
-    let res_root = resource_root();
-
-    if !res_root.exists() {
-        logger!(info "config location directory need create");
-        std::fs::create_dir_all(&res_root)?;
-    }
-    Ok(res_root.join("config.toml"))
+    ResourceDirectories::new().place_config_path()
 }
 
 fn get_config_path() -> PathBuf {
-    resource_root().join("config.toml")
+    ResourceDirectories::new().get_config_path()
 }
 
 impl ResourceConfig {
     pub fn set_config(cfg: Config) {
         logger!(info "setting config");
-        if CONFIGURATION.set(cfg.into_inner()).is_err() {
+        if CONFIGURATION
+            .set(cfg.into_inner(ResourceDirectories::new()))
+            .is_err()
+        {
             panic!("Config had been set")
         }
     }
