@@ -57,9 +57,10 @@ fn init_logger() {
             })
             .bold();
             out.finish(format_args!(
-                "[{level}]{time}[{model}:{line}] {message}",
-                time = chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                "[{level}]{time}[{file}:{line}][{model}] {message}",
+                time = chrono::Local::now().format("[%Y-%m-%d %H:%M:%S]"),
                 model = record.target(),
+                file = record.file().unwrap_or("<unknown>"),
                 line = record.line().unwrap_or(0),
                 level = log_color.paint(record.level()),
             ))
