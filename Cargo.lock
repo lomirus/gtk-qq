@@ -561,6 +561,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fern"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3bdd7b0849075e79ee9a1836df22c717d1eba30451796fdc631b04565dd11e2a"
+dependencies = [
+ "log",
+]
+
+[[package]]
 name = "ff"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -979,6 +988,8 @@ dependencies = [
  "async-trait",
  "base64",
  "bincode",
+ "fern",
+ "log",
  "once_cell",
  "qrcode-png",
  "rand",
