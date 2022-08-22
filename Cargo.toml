@@ -22,6 +22,7 @@ path = "./libs/widgets"
 
 [dependencies.resource-loader]
 path = "./libs/resource-loader"
+features = ["logger"]
 
 [dependencies]
 tokio = { version = "1.18.2", features = ["sync"] }
@@ -34,6 +35,11 @@ qrcode-png = "0.4.0"
 typed-builder = "0.10"
 bincode = "1.3.3"
 base64 = "0.13.0"
+# logger
+log = "0.4.17"
+fern = "0.6.1"
+yansi = "0.5.1"
+chrono = "0.4.22"
 
 [profile.release]
 lto = true
