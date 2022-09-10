@@ -21,123 +21,123 @@ impl Handler for AppHandler {
     async fn handle(&self, event: ricq::handler::QEvent) {
         match event {
             Login(_) => {}
-            GroupMessage(GroupMessageEvent { message, .. }) => {
+            GroupMessage(GroupMessageEvent { inner, .. }) => {
                 let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
-                let content = get_contents_from(&message.elements);
+                let content = get_contents_from(&inner.elements);
                 main_sender.input(MainMsg::GroupMessage {
-                    group_id: message.group_code,
+                    group_id: inner.group_code,
                     message: Message {
-                        sender_id: message.from_uin,
-                        sender_name: message.group_card,
+                        sender_id: inner.from_uin,
+                        sender_name: inner.group_card,
                         contents: content.clone(),
                     },
                 });
 
                 // Send notification
-                if &message.from_uin != ACCOUNT.get().unwrap() {
+                if &inner.from_uin != ACCOUNT.get().unwrap() {
                     let app = APP.get().unwrap();
-                    app.notify_group_message(message.group_code, &get_text_from(&content));
+                    app.notify_group_message(inner.group_code, &get_text_from(&content));
                 }
             }
             #[allow(unused_variables)]
-            GroupAudioMessage(GroupAudioMessageEvent { client, message }) => {
+            GroupAudioMessage(GroupAudioMessageEvent { client, inner }) => {
                 println!("GroupAudioMessage");
             }
-            FriendMessage(FriendMessageEvent { message, .. }) => {
+            FriendMessage(FriendMessageEvent { inner, .. }) => {
                 let main_sender = MAIN_SENDER.get().expect("failed to get main sender");
                 let self_account = ACCOUNT.get().unwrap();
-                let friend_id = if message.from_uin == *self_account {
-                    message.target
+                let friend_id = if inner.from_uin == *self_account {
+                    inner.target
                 } else {
-                    message.from_uin
+                    inner.from_uin
                 };
-                let contents = get_contents_from(&message.elements);
+                let contents = get_contents_from(&inner.elements);
                 main_sender.input(MainMsg::FriendMessage {
                     friend_id,
                     message: Message {
-                        sender_id: message.from_uin,
-                        sender_name: get_friend_remark(message.from_uin),
+                        sender_id: inner.from_uin,
+                        sender_name: get_friend_remark(inner.from_uin),
                         contents: contents.clone(),
                     },
                 });
 
                 // Send notification
-                if message.from_uin != *self_account {
+                if inner.from_uin != *self_account {
                     let app = APP.get().unwrap();
                     app.notify_friend_message(friend_id, &get_text_from(&contents));
                 }
             }
             #[allow(unused_variables)]
-            FriendAudioMessage(FriendAudioMessageEvent { client, message }) => {
+            FriendAudioMessage(FriendAudioMessageEvent { client, inner }) => {
                 println!("FriendAudioMessage");
             }
             #[allow(unused_variables)]
-            GroupTempMessage(GroupTempMessageEvent { client, message }) => {
+            GroupTempMessage(GroupTempMessageEvent { client, inner }) => {
                 println!("GroupTempMessage");
             }
             #[allow(unused_variables)]
-            GroupRequest(GroupRequestEvent { client, request }) => {
-                println!("GroupRequest");
-            }
-            #[allow(unused_variables)]
-            SelfInvited(SelfInvitedEvent { client, request }) => {
+            SelfInvited(SelfInvitedEvent { client, inner }) => {
                 println!("SelfInvited");
             }
             #[allow(unused_variables)]
-            FriendRequest(FriendRequestEvent { client, request }) => {
-                println!("FriendRequest");
-            }
-            #[allow(unused_variables)]
-            NewMember(NewMemberEvent { client, new_member }) => {
+            NewMember(NewMemberEvent { client, inner }) => {
                 println!("NewMember");
             }
             #[allow(unused_variables)]
-            GroupMute(GroupMuteEvent { client, group_mute }) => {
+            GroupMute(GroupMuteEvent { client, inner }) => {
                 println!("GroupMute");
             }
             #[allow(unused_variables)]
-            FriendMessageRecall(FriendMessageRecallEvent { client, recall }) => {
+            FriendMessageRecall(FriendMessageRecallEvent { client, inner }) => {
                 println!("FriendMessageRecall");
             }
             #[allow(unused_variables)]
-            GroupMessageRecall(GroupMessageRecallEvent { client, recall }) => {
+            GroupMessageRecall(GroupMessageRecallEvent { client, inner }) => {
                 println!("GroupMessageRecall");
             }
             #[allow(unused_variables)]
-            NewFriend(NewFriendEvent { client, friend }) => {
+            NewFriend(NewFriendEvent { client, inner }) => {
                 println!("NewFriend");
             }
             #[allow(unused_variables)]
-            GroupLeave(GroupLeaveEvent { client, leave }) => {
+            GroupLeave(GroupLeaveEvent { client, inner }) => {
                 println!("GroupLeave");
             }
             #[allow(unused_variables)]
-            GroupDisband(GroupDisbandEvent { client, disband }) => {
+            GroupDisband(GroupDisbandEvent { client, inner }) => {
                 println!("GroupDisband");
             }
             #[allow(unused_variables)]
-            FriendPoke(FriendPokeEvent { client, poke }) => {
+            FriendPoke(FriendPokeEvent { client, inner }) => {
                 println!("FriendPoke");
             }
             #[allow(unused_variables)]
-            GroupNameUpdate(GroupNameUpdateEvent { client, update }) => {
+            GroupNameUpdate(GroupNameUpdateEvent { client, inner }) => {
                 println!("GroupNameUpdate");
             }
             #[allow(unused_variables)]
-            DeleteFriend(DeleteFriendEvent { client, delete }) => {
+            DeleteFriend(DeleteFriendEvent { client, inner }) => {
                 println!("DeleteFriend");
             }
             #[allow(unused_variables)]
-            MemberPermissionChange(MemberPermissionChangeEvent { client, change }) => {
+            MemberPermissionChange(MemberPermissionChangeEvent { client, inner }) => {
                 println!("MemberPermissionChange");
             }
             #[allow(unused_variables)]
-            KickedOffline(KickedOfflineEvent { client, offline }) => {
+            KickedOffline(KickedOfflineEvent { client, inner }) => {
                 println!("KickedOffline");
             }
             #[allow(unused_variables)]
-            MSFOffline(MSFOfflineEvent { client, offline }) => {
+            MSFOffline(MSFOfflineEvent { client, inner }) => {
                 println!("MSFOffline");
+            }
+            #[allow(unused_variables)]
+            GroupRequest(_) => {
+                println!("GroupRequest");
+            },
+            #[allow(unused_variables)]
+            NewFriendRequest(_) => {
+                println!("NewFriendRequest");
             }
         };
     }

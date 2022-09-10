@@ -21,12 +21,12 @@ impl SyncLoadResource<ricq::device::Device> for Device {
 
 pub struct Protocol;
 
-impl SyncLoadResource<&'static ricq::version::Version> for Protocol {
+impl SyncLoadResource<ricq::version::Version> for Protocol {
     type Args = ();
 
     type Error = Infallible;
 
-    fn load_resource(_: Self::Args) -> Result<&'static ricq::version::Version, Self::Error> {
-        Ok(load_cfg().client.version)
+    fn load_resource(_: Self::Args) -> Result<ricq::version::Version, Self::Error> {
+        Ok(load_cfg().client.version.clone())
     }
 }

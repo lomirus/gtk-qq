@@ -7,8 +7,12 @@ use std::{
 
 use qrcode_png::{Color, QrCode};
 
-use ricq::{ext::common::after_login, Client, LoginUnknownStatus};
-use tokio::{net::TcpStream, task};
+use ricq::{
+    client::{Connector, DefaultConnector},
+    ext::common::after_login,
+    Client, LoginUnknownStatus,
+};
+use tokio::task;
 
 use crate::app::login::{service::token::LocalAccount, LoginPageMsg, REMEMBER_PWD};
 
@@ -27,9 +31,13 @@ pub(crate) async fn init_client() -> io::Result<Arc<Client>> {
     ));
 
     // Connect to server
-    let stream = TcpStream::connect(client.get_address()).await?;
-    let client_cloned = client.clone();
-    tokio::spawn(async move { client_cloned.start(stream).await });
+    tokio::spawn({
+        let client = client.clone();
+        // 连接所有服务器，哪个最快用哪个，可以使用 TcpStream::connect 代替
+        let stream = DefaultConnector.connect(&client).await.unwrap();
+        async move { client.start(stream).await }
+    });
+
     task::yield_now().await;
 
     Ok(client)

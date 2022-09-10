@@ -14,5 +14,5 @@ typed-builder = "0.10"
 
 [dependencies.ricq]
 git = "https://github.com/lz1998/ricq.git"
-# v0.1.10, master, 2022/06/08
-rev = "38fff7007cb51bc39acc30087c3f042031a38eda"
+# v0.1.17, master, 2022/09/07
+rev = "56620d755f35f7b6ade52991be62360b3377547c"

@@ -16,7 +16,7 @@ pub struct ClientConfig {
 
 pub struct ClientInner {
     pub(crate) device_seed: u64,
-    pub(crate) version: &'static Version,
+    pub(crate) version: Version,
 }
 
 impl From<ClientConfig> for ClientInner {
