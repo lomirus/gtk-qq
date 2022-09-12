@@ -62,11 +62,13 @@ pub(in crate::app) async fn handle_login_response(
             sender.send(LoginFailed(
                 "Device Locked. See more in the pop-up window.".to_string(),
             ));
-
-            sender.send(LoginPageMsg::DeviceLock(
-                verify_url.clone().unwrap_or_else(|| "<unknown>".into()),
-                sms_phone.clone(),
-            ));
+            let verify_url = if let Some(url) = verify_url {
+                url.to_owned()
+            } else {
+                sender.send(LoginFailed("Cannot Fetch Device Lock".to_string()));
+                return;
+            };
+            sender.send(LoginPageMsg::DeviceLock(verify_url, sms_phone.clone()));
         }
         LoginResponse::TooManySMSRequest => {
             sender.send(LoginFailed("Too Many SMS Request".to_string()));

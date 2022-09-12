@@ -83,7 +83,7 @@ impl PwdLoginWidget {
                 }
             }
         }
-        
+
         relm4::view! {
             #[name = "avatar"]
             Avatar {
