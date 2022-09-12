@@ -117,7 +117,7 @@ impl relm4::SimpleComponent for PasswordLoginModel {
         }
 
         if let PwdEntry::None = self.password {
-            widgets._pwd.set_text("");
+            widgets.pwd.set_text("");
         }
 
         sender.output(Output::EnableLogin(

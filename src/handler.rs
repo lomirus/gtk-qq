@@ -134,7 +134,7 @@ impl Handler for AppHandler {
             #[allow(unused_variables)]
             GroupRequest(_) => {
                 println!("GroupRequest");
-            },
+            }
             #[allow(unused_variables)]
             NewFriendRequest(_) => {
                 println!("NewFriendRequest");
