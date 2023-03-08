@@ -19,6 +19,18 @@ Unofficial Linux [QQ](https://im.qq.com/) client, based on GTK4 and libadwaita, 
 
 This app uses [ricq](https://github.com/lz1998/ricq) as the rust bindings of QQ APIs.
 
+## Current Status
+
+> **Warning**
+>
+> This project has been discontinued due to following reasons:
+> - Tencent has released the official [Linux QQ](https://im.qq.com/linuxqq/index.shtml) in early 2023. Therefore this project may have copyright issues with it if continues.
+> - This project is based on the `gtk-rs`. To be honest, it is a disastrous development experience with it. If I could restart this project, I would not choose this library anymore. I've tried Tauri before when it's only in v0.x, the development experience is fine but the webview it uses on linux is too old to support many new features on modern browers now at that time.
+> - It is a very rare skill to develop app with `gtk-rs`. Only few people are able to contribute to this project, and the code quality is far from what I expected.
+> - The owner and main maintainer of this repository @lomirus is busy with some other projects and affairs IRL, and he doesn't use QQ on Linux very much now. So for now, he doesn't have enough motivation on this project.
+>
+> However, you can still create any pull request if you want. And if you want to find any alternative, [https://github.com/Icalingua-plus-plus/Icalingua-plus-plus] would be a good choice (compared with the official one :p)
+
 ## Screenshots
 
 | Light                                      | Dark                                     |
