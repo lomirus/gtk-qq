@@ -29,7 +29,7 @@ This app uses [ricq](https://github.com/lz1998/ricq) as the rust bindings of QQ 
 > - It is a very rare skill to develop app with `gtk-rs`. Only few people are able to contribute to this project, and the code quality is far from what I expected.
 > - The owner and main maintainer of this repository @lomirus is busy with some other projects and affairs IRL, and he doesn't use QQ on Linux very much now. So for now, he doesn't have enough motivation on this project.
 >
-> However, you can still create any pull request if you want. And if you want to find any alternative, [https://github.com/Icalingua-plus-plus/Icalingua-plus-plus] would be a good choice (compared with the official one :p)
+> However, you can still create any pull request if you want. And if you want to find any alternative, [Icalingua plus plus](https://github.com/Icalingua-plus-plus/Icalingua-plus-plus) would be a good choice (compared with the official one :p)
 
 ## Screenshots
 
