@@ -55,7 +55,7 @@ paru -S gtk-qq-git
 
 ### Requirements
 
-You will need to install [Rust](https://www.rust-lang.org/tools/install) and [Meson](https://mesonbuild.com/Getting-meson.html) to build this project, and the neccessary libraries below:
+You will need to install [Rust](https://www.rust-lang.org/tools/install) and [Meson](https://mesonbuild.com/Getting-meson.html) to build this project, and the necessary libraries below:
 
 #### Ubuntu (>= 22.04)
 

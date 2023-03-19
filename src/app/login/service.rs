@@ -48,10 +48,10 @@ pub(crate) async fn finish_login(client: Arc<Client>, sender: &Sender<LoginPageM
 
     use LoginPageMsg::LoginSuccessful;
     if CLIENT.set(client.clone()).is_err() {
-        panic!("falied to store client");
+        panic!("failed to store client");
     };
     if ACCOUNT.set(local.account).is_err() {
-        panic!("falied to store account");
+        panic!("failed to store account");
     };
     if REMEMBER_PWD.load(Ordering::Relaxed) {
         local.save_account(sender);
